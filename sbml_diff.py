@@ -61,16 +61,16 @@ def get_species(model, compartment_id):
     return ids
 
 
-def print_species(species_list, status):
+def print_species(species_list, status, colors):
     if status == "a_only":
-        format_sting = '"%s" [color="red"];'
+        color = colors[0]
     elif status == "b_only":
-        format_sting = '"%s" [color="green"];'
+        color = colors[1]
     else:
-        format_sting = '"%s" [color="grey"];'
+        color = 'grey'
 
-    for s in species_list:
-        print format_sting % s
+    for species in species_list:
+        print '"%s" [color="%s"];' % (species, color)
 
 
 def categorise(a, b):
@@ -99,30 +99,30 @@ def get_reaction_details(model, reaction_id):
     return reactant_list, product_list
 
 
-def diff_reactions(model1, model2):
+def diff_reactions(model1, model2, colors):
     # NB. models do not have an associated compartment!
     reactions1 = set(get_reactions(model1))
     reactions2 = set(get_reactions(model2))
 
     a_only, b_only, both = categorise(reactions1, reactions2)
 
-    for r in both:
-        diff_reaction_common(model1, model2, r)
+    for reaction_id in both:
+        diff_reaction_common(model1, model2, reaction_id, colors)
 
     for reaction_id in a_only:
-        print_reaction_unique(model1, reaction_id, "a_only")
+        print_reaction_unique(model1, reaction_id, "a_only", colors)
 
-    for r in b_only:
-        print_reaction_unique(model2, reaction_id, "b_only")
+    for reaction_id in b_only:
+        print_reaction_unique(model2, reaction_id, "b_only", colors)
 
 
-def print_reaction_unique(model, reaction_id, status):
+def print_reaction_unique(model, reaction_id, status, colors):
     # handles a reaction that is present in only one
 
     if status == "a_only":
-        color = "red"
+        color = colors[0]
     else:
-        color = "green"
+        color = colors[1]
 
     reactant_list, product_list = get_reaction_details(model, reaction_id)
     for reactant in reactant_list:
@@ -132,7 +132,7 @@ def print_reaction_unique(model, reaction_id, status):
     print '%s [shape="square", color="%s"];' % (reaction_id, color)
 
 
-def diff_reaction_common(model1, model2, reaction_id):
+def diff_reaction_common(model1, model2, reaction_id, colors):
     # This handles a reaction that is present in both
     reactant_list1, product_list1 = get_reaction_details(model1, reaction_id)
     reactant_list2, product_list2 = get_reaction_details(model2, reaction_id)
@@ -141,10 +141,10 @@ def diff_reaction_common(model1, model2, reaction_id):
     a_only, b_only, both = categorise(set(reactant_list1), set(reactant_list2))
 
     for r in a_only:
-        print '%s -> %s [color="red"];' % (r, reaction_id)
+        print '%s -> %s [color="%s"];' % (r, reaction_id, colors[0])
 
     for r in b_only:
-        print '%s -> %s [color="green"];' % (r, reaction_id)
+        print '%s -> %s [color="%s"];' % (r, reaction_id, colors[1])
 
     for r in both:
         print '%s -> %s [color="grey"];' % (r, reaction_id)
@@ -153,10 +153,10 @@ def diff_reaction_common(model1, model2, reaction_id):
     a_only, b_only, both = categorise(set(product_list1), set(product_list2))
 
     for r in a_only:
-        print '%s -> %s [color="red"];' % (reaction_id, r)
+        print '%s -> %s [color="%s"];' % (reaction_id, r, colors[0])
 
     for r in b_only:
-        print '%s -> %s [color="green"];' % (reaction_id, r)
+        print '%s -> %s [color="%s"];' % (reaction_id, r, colors[1])
 
     for r in both:
         print '%s -> %s [color="grey"];' % (reaction_id, r)
@@ -171,7 +171,7 @@ def diff_reaction_common(model1, model2, reaction_id):
         print '%s [shape="square", color="black"];' % reaction_id
 
 
-def diff_compartment(compartment_id, model1, model2):
+def diff_compartment(compartment_id, model1, model2, colors):
     # add extra flag specifying status, to set color
 
     print "\n"
@@ -187,10 +187,9 @@ def diff_compartment(compartment_id, model1, model2):
     a_only, b_only, both = categorise(species1, species2)
 
     print "\n"
-    print_species(a_only, 'a_only')
-    print_species(b_only, 'b_only')
-    print_species(both, 'both')
-
+    print_species(a_only, 'a_only', colors)
+    print_species(b_only, 'b_only', colors)
+    print_species(both, 'both', colors)
 
 
     print "\n"
@@ -201,8 +200,8 @@ def diff_compartment(compartment_id, model1, model2):
 
     # print species
 
-
     print "}"
+
 
 def get_reactions(model):
     reactions = []
@@ -211,20 +210,20 @@ def get_reactions(model):
     return reactions
 
 
-def diff_models(model1, model2):
+def diff_models(model1, model2, colors):
     compare_params(model1, model2)
 
     print "\n\n"
     print "digraph comparison {"
 
-    diff_reactions(model1, model2)
+    diff_reactions(model1, model2, colors)
 
     for compartment in model1.select('compartment'):
         compartment_id = compartment.attrs["id"]
         compartment2 = model2.find(id=compartment_id)
 
         if compartment2:
-            diff_compartment(compartment_id, model1, model2)
+            diff_compartment(compartment_id, model1, model2, colors)
         else:
             pass
             # compartment only in A
@@ -241,8 +240,22 @@ def diff_models(model1, model2):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Produce graphical representation of one or more SBML models.')
     parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
+    parser.add_argument('--colors', help="Output file")
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
+
     args = parser.parse_args()
+
+    if args.colors:
+        colors = args.colors.split(",")
+        num_files = len(args.infile)
+
+        if len(colors) != num_files:
+            print "Error: number of colors (%s) does not match number of input files (%s)\n" % (len(colors), num_files)
+            parser.print_help()
+            sys.exit(0)
+
+    else:
+        colors = ["red", "blue"]
 
     # redirect STDOUT to specified file
     if args.outfile:
@@ -255,4 +268,4 @@ if __name__ == '__main__':
         html_doc2 = args.infile[1].read()
         soup2 = BeautifulSoup(html_doc2, 'xml')
 
-        diff_models(soup1, soup2)
+        diff_models(soup1, soup2, colors)
