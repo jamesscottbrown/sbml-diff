@@ -11,4 +11,4 @@ html_doc2 = f2.read()
 soup2 = BeautifulSoup(html_doc2, 'xml')
 
 
-sbml_diff.diff_models(soup1, soup2)
+sbml_diff.diff_models([soup1, soup2], ["red", "blue"])

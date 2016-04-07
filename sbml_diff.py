@@ -122,7 +122,6 @@ def diff_reactions(models, colors):
         # one
         if len(model_set) == 1:
             color = assign_color(models, model_set, colors)
-            print "REACTION ID", reaction_id
             reactant_list, product_list = get_reaction_details(models[model_set[0]], reaction_id)
 
             for reactant in reactant_list:
@@ -146,46 +145,69 @@ def diff_reactions(models, colors):
 
 
 def diff_reaction_common(models, reaction_id, colors):
+    # if a reaction is shared, we need to cosndier whether its products, reactants and rate law are also shared
 
-    model1 = models[0]
-    model2 = models[1]
+    reactant_status = {}
+    product_status = {}
+    rate_law = ""
 
-    # This handles a reaction that is present in both
-    reactant_list1, product_list1 = get_reaction_details(model1, reaction_id)
-    reactant_list2, product_list2 = get_reaction_details(model2, reaction_id)
+    for model_num, model in enumerate(models):
+        reactants, products = get_reaction_details(model, reaction_id)
+
+        if not rate_law:
+            rate_law = model.select_one("listOfReactions").find(id=reaction_id).select_one("kineticLaw")
+        if rate_law != model.select_one("listOfReactions").find(id=reaction_id).select_one("kineticLaw"):
+            rate_law = "different"
+
+        for reactant in reactants:
+            if reactant not in reactant_status.keys():
+                reactant_status[reactant] = set()
+            reactant_status[reactant].add(model_num)
+
+        for product in products:
+            if product not in product_status.keys():
+                product_status[product] = set()
+            product_status[product].add(model_num)
 
     # reactant arrows
-    a_only, b_only, both = categorise(set(reactant_list1), set(reactant_list2))
+    for reactant in reactant_status:
+        model_set = list(reactant_status[reactant])
 
-    for r in a_only:
-        print '%s -> %s [color="%s"];' % (r, reaction_id, colors[0])
+        # one
+        if len(model_set) == 1:
+            color = assign_color(models, model_set, colors)
+            print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
 
-    for r in b_only:
-        print '%s -> %s [color="%s"];' % (r, reaction_id, colors[1])
+        # all
+        if len(model_set) == len(models):
+             print '%s -> %s [color="grey"];' % (reactant, reaction_id)
 
-    for r in both:
-        print '%s -> %s [color="grey"];' % (r, reaction_id)
+        # some
+        if 0 <len(model_set) < len(models):
+             print '%s -> %s [color="pink"];' % (reactant, reaction_id)
 
     # product arrows
-    a_only, b_only, both = categorise(set(product_list1), set(product_list2))
+    for product in product_status:
+        model_set = list(product_status[product])
 
-    for r in a_only:
-        print '%s -> %s [color="%s"];' % (reaction_id, r, colors[0])
+        # one
+        if len(model_set) == 1:
+            color = assign_color(models, model_set, colors)
+            print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
-    for r in b_only:
-        print '%s -> %s [color="%s"];' % (reaction_id, r, colors[1])
+        # all
+        if len(model_set) == len(models):
+             print '%s -> %s [color="grey"];' % (reaction_id, product)
 
-    for r in both:
-        print '%s -> %s [color="grey"];' % (reaction_id, r)
+        # some
+        if 0 < len(model_set) < len(models):
+             print '%s -> %s [color="pink"];' % (reaction_id, product)
 
     # rate law
-    r1 = model1.select_one("listOfReactions").find(id=reaction_id).select_one("kineticLaw")
-    r2 = model2.select_one("listOfReactions").find(id=reaction_id).select_one("kineticLaw")
-
-    if r1.contents == r2.contents:
-        return '%s [shape="square", color="grey"];' % reaction_id
-    else:
+    if rate_law == "different":
         return '%s [shape="square", color="black"];' % reaction_id
+    else:
+        return '%s [shape="square", color="grey"];' % reaction_id
 
 
 def diff_compartment(compartment_id, models, colors):
@@ -231,9 +253,6 @@ def get_reactions(model):
 
 
 def diff_models(models, colors):
-    model1 = models[0]
-    model2 = models[1]
-
     compare_params(models)
 
     print "\n\n"
