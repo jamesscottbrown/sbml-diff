@@ -40,7 +40,7 @@ def compare_params(models):
     for model_num, model in enumerate(models):
         for param_id in param_status:
             model_list = list(param_status[param_id])
-            if len(model_list) == 1 and model_list[0] == model_num:
+            if len(model_list) == 1 and model_list[0] == model_num and len(models) > 1:
                 print "Only in model %s: %s" % (model_num, param_id)
 
     # all
@@ -132,7 +132,7 @@ def diff_reactions(models, colors):
         reactant_list, product_list, compartment = get_reaction_details(models[model_set[0]], reaction_id)
 
         # one
-        if len(model_set) == 1:
+        if len(model_set) == 1 and len(models) > 1:
             color = assign_color(models, model_set, colors)
 
             for reactant in reactant_list:
@@ -193,7 +193,7 @@ def diff_reaction_common(models, reaction_id, colors):
         model_set = list(reactant_status[reactant])
 
         # one
-        if len(model_set) == 1:
+        if len(model_set) == 1 and len(models) > 1:
             color = assign_color(models, model_set, colors)
             print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
 
@@ -210,7 +210,7 @@ def diff_reaction_common(models, reaction_id, colors):
         model_set = list(product_status[product])
 
         # one
-        if len(model_set) == 1:
+        if len(model_set) == 1 and len(models) > 1:
             color = assign_color(models, model_set, colors)
             print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
@@ -261,7 +261,7 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
 
 def assign_color(models, model_set, colors):
     # one
-    if len(model_set) == 1:
+    if len(model_set) == 1 and len(models) > 1:
         model_index = list(model_set)[0]
         return colors[model_index]
     # all
