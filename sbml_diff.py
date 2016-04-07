@@ -191,14 +191,7 @@ def diff_compartment(compartment_id, model1, model2, colors):
     print_species(b_only, 'b_only', colors)
     print_species(both, 'both', colors)
 
-
     print "\n"
-    #
-#    for r2 in model2.select_one("listOfReactions").select("reaction"):
- #       if r.contents == r2.contents:
-  #          print "A Match!"
-
-    # print species
 
     print "}"
 
@@ -236,6 +229,7 @@ def diff_models(model1, model2, colors):
             # compartment only in B
 
     print "}"
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Produce graphical representation of one or more SBML models.')
