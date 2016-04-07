@@ -34,7 +34,7 @@ def compare_params(models):
 
             param_status[param_id].add(model_num)
 
-    # print params in a single model
+    # one
     print "\nParameters in a single model only:"
 
     for model_num, model in enumerate(models):
@@ -43,7 +43,7 @@ def compare_params(models):
             if len(model_list) == 1 and model_list[0] == model_num:
                 print "Only in model %s: %s" % (model_num, param_id)
 
-    # print params in all
+    # all
     print "\nParameters in all models:"
 
     for param_id in param_status:
@@ -54,7 +54,7 @@ def compare_params(models):
         if len(model_list) == len(models):
             print "In all models (with %s values): %s" % (value, param_id)
 
-    # print params in some
+    # some
     print "\nParameters in some models:"
     for param_id in param_status:
         model_list = list(param_status[param_id])
@@ -73,14 +73,6 @@ def get_species(model, compartment_id):
         if s.attrs["compartment"] == compartment_id:
             ids.append(s.attrs["id"])
     return ids
-
-
-def categorise(a, b):
-    a_only = a.difference(b)
-    b_only = b.difference(a)
-    both = a.intersection(b)
-
-    return a_only, b_only, both
 
 
 def get_reaction_details(model, reaction_id):
@@ -133,11 +125,12 @@ def diff_reactions(models, colors):
             reaction_strings.append('%s [shape="square", color="%s"];' % (reaction_id, color))
 
         # all
-
         if len(model_set) == len(models):
             reaction_strings.append(diff_reaction_common(models, reaction_id, colors))
 
-        # TODO: some
+        # some
+        if 0 < len(model_set) < len(models):
+            print '%s -> %s [color="pink"];' % (reactant, reaction_id)
 
     # TODO: categorize by compartment
     return "\n".join(reaction_strings)
