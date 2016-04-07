@@ -278,8 +278,9 @@ def get_reactions(model):
     return reactions
 
 
-def diff_models(models, colors):
-    compare_params(models)
+def diff_models(models, colors, print_param_comparison=False):
+    if print_param_comparison:
+        compare_params(models)
 
     print "\n\n"
     print "digraph comparison {"
@@ -309,10 +310,10 @@ def diff_models(models, colors):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Produce graphical representation of one or more SBML models.')
+    parser.add_argument('--params', '-p', help='Also print textual comparison of params', action='store_true')
     parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
     parser.add_argument('--colors', help="Output file")
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
-
     args = parser.parse_args()
 
     if args.colors:
@@ -336,4 +337,4 @@ if __name__ == '__main__':
         html = inFile.read()
         all_models.append(BeautifulSoup(html, 'xml'))
 
-    diff_models(all_models, all_colors)
+    diff_models(all_models, all_colors, print_param_comparison=args.params)
