@@ -100,24 +100,30 @@ def get_reaction_details(model, reaction_id):
 
 
 def diff_reactions(model1, model2, colors):
-    # NB. models do not have an associated compartment!
+    # NB. reactions do not have an associated compartment!
     reactions1 = set(get_reactions(model1))
     reactions2 = set(get_reactions(model2))
 
     a_only, b_only, both = categorise(reactions1, reactions2)
 
+    reaction_strings = []
+
     for reaction_id in both:
-        diff_reaction_common(model1, model2, reaction_id, colors)
+        reaction_strings.append(diff_reaction_common(model1, model2, reaction_id, colors))
 
     for reaction_id in a_only:
-        print_reaction_unique(model1, reaction_id, "a_only", colors)
+        reaction_strings.append(print_reaction_unique(model1, reaction_id, "a_only", colors))
 
     for reaction_id in b_only:
-        print_reaction_unique(model2, reaction_id, "b_only", colors)
+        reaction_strings.append(print_reaction_unique(model2, reaction_id, "b_only", colors))
+
+    # TODO: categorize by compartment
+    return "\n".join(reaction_strings)
 
 
 def print_reaction_unique(model, reaction_id, status, colors):
     # handles a reaction that is present in only one
+    # print code for arrows; return code for reaction box
 
     if status == "a_only":
         color = colors[0]
@@ -129,7 +135,7 @@ def print_reaction_unique(model, reaction_id, status, colors):
         print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
     for product in product_list:
         print '%s -> %s [color="%s"];' % (reaction_id, product, color)
-    print '%s [shape="square", color="%s"];' % (reaction_id, color)
+    return '%s [shape="square", color="%s"];' % (reaction_id, color)
 
 
 def diff_reaction_common(model1, model2, reaction_id, colors):
@@ -166,9 +172,9 @@ def diff_reaction_common(model1, model2, reaction_id, colors):
     r2 = model2.select_one("listOfReactions").find(id=reaction_id).select_one("kineticLaw")
 
     if r1.contents == r2.contents:
-        print '%s [shape="square", color="grey"];' % reaction_id
+        return '%s [shape="square", color="grey"];' % reaction_id
     else:
-        print '%s [shape="square", color="black"];' % reaction_id
+        return '%s [shape="square", color="black"];' % reaction_id
 
 
 def diff_compartment(compartment_id, model1, model2, colors):
@@ -209,7 +215,8 @@ def diff_models(model1, model2, colors):
     print "\n\n"
     print "digraph comparison {"
 
-    diff_reactions(model1, model2, colors)
+    reaction_strings = diff_reactions(model1, model2, colors)
+    print reaction_strings
 
     for compartment in model1.select('compartment'):
         compartment_id = compartment.attrs["id"]
