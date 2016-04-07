@@ -1,4 +1,6 @@
 from bs4 import BeautifulSoup
+import argparse
+import sys
 
 
 def get_params(model):
@@ -235,3 +237,22 @@ def diff_models(model1, model2):
             # compartment only in B
 
     print "}"
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Produce graphical representation of one or more SBML models.')
+    parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
+    parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
+    args = parser.parse_args()
+
+    # redirect STDOUT to specified file
+    if args.outfile:
+        sys.stdout = args.outfile
+
+    if len(args.infile) == 2:
+        html_doc1 = args.infile[0].read()
+        soup1 = BeautifulSoup(html_doc1, 'xml')
+
+        html_doc2 = args.infile[1].read()
+        soup2 = BeautifulSoup(html_doc2, 'xml')
+
+        diff_models(soup1, soup2)
