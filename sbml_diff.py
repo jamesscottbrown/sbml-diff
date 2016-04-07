@@ -75,22 +75,41 @@ def get_species(model, compartment_id):
     return ids
 
 
+def get_species_compartment(model, species_id):
+    species = model.select_one("listOfSpecies").find(id=species_id)
+    return species.attrs["compartment"]
+
+
 def get_reaction_details(model, reaction_id):
     reaction = model.select_one("listOfReactions").find(id=reaction_id)
 
     reactants = reaction.select_one("listOfReactants")
     reactant_list = []
+    compartment = ""
     if reactants:
         for r in reactants.select("speciesReference"):
-            reactant_list.append(r.attrs["species"])
+            species = r.attrs["species"]
+            reactant_list.append(species)
+
+            if not compartment:
+                compartment = get_species_compartment(model, species)
+            if compartment != get_species_compartment(model, species):
+                compartment = "NONE"
 
     products = reaction.select_one("listOfProducts")
     product_list = []
     if products:
         for r in products.select("speciesReference"):
-            product_list.append(r.attrs["species"])
+            species = r.attrs["species"]
+            product_list.append(species)
 
-    return reactant_list, product_list
+            # if reaction has no reactants, try to categorise by products instead
+            if not compartment:
+                compartment = get_species_compartment(model, species)
+            if compartment != get_species_compartment(model, species):
+                compartment = "NONE"
+
+    return reactant_list, product_list, compartment
 
 
 def diff_reactions(models, colors):
@@ -106,15 +125,15 @@ def diff_reactions(models, colors):
 
             reaction_status[reaction].add(model_num)
 
-    reaction_strings = []
+    reaction_strings = {}
 
     for reaction_id in reaction_status:
         model_set = list(reaction_status[reaction_id])
+        reactant_list, product_list, compartment = get_reaction_details(models[model_set[0]], reaction_id)
 
         # one
         if len(model_set) == 1:
             color = assign_color(models, model_set, colors)
-            reactant_list, product_list = get_reaction_details(models[model_set[0]], reaction_id)
 
             for reactant in reactant_list:
                 print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
@@ -122,29 +141,37 @@ def diff_reactions(models, colors):
             for product in product_list:
                 print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
-            reaction_strings.append('%s [shape="square", color="%s"];' % (reaction_id, color))
+            if compartment not in reaction_strings.keys():
+                reaction_strings[compartment] = []
+            print '%s [shape="square", color="%s"];' % (reaction_id, color)
+            reaction_strings[compartment].append('%s [shape="square", color="%s"];' % (reaction_id, color))
 
         # all
         if len(model_set) == len(models):
-            reaction_strings.append(diff_reaction_common(models, reaction_id, colors))
+            if compartment not in reaction_strings.keys():
+                reaction_strings[compartment] = []
+            reaction_strings[compartment].append(diff_reaction_common(models, reaction_id, colors))
 
         # some
-        if 0 < len(model_set) < len(models):
+        if 1 < len(model_set) < len(models):
+            if compartment not in reaction_strings.keys():
+                reaction_strings[compartment] = []
+            reaction_strings[compartment].append('%s [shape="square", color="pink"];' % (reaction_id)) # TODO: compare more like all
+
             print '%s -> %s [color="pink"];' % (reactant, reaction_id)
 
-    # TODO: categorize by compartment
-    return "\n".join(reaction_strings)
+    return reaction_strings
 
 
 def diff_reaction_common(models, reaction_id, colors):
-    # if a reaction is shared, we need to cosndier whether its products, reactants and rate law are also shared
+    # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
 
     reactant_status = {}
     product_status = {}
     rate_law = ""
 
     for model_num, model in enumerate(models):
-        reactants, products = get_reaction_details(model, reaction_id)
+        reactants, products, compartment = get_reaction_details(model, reaction_id)
 
         if not rate_law:
             rate_law = model.select_one("listOfReactions").find(id=reaction_id).select_one("kineticLaw")
@@ -202,13 +229,16 @@ def diff_reaction_common(models, reaction_id, colors):
         return '%s [shape="square", color="grey"];' % reaction_id
 
 
-def diff_compartment(compartment_id, models, colors):
+def diff_compartment(compartment_id, models, colors, reaction_strings):
     # add extra flag specifying status, to set color
 
     print "\n"
     print "subgraph cluster_%s {" % compartment_id
     print "graph[style=dotted];"
     print 'label="%s";' % compartment_id
+
+    # print the reaction squares that belong in this compartment
+    print "\n".join(reaction_strings[compartment_id])
 
     # For each species, find set of models containing it
     species_status = {}
@@ -230,13 +260,15 @@ def diff_compartment(compartment_id, models, colors):
 
 
 def assign_color(models, model_set, colors):
+    # one
     if len(model_set) == 1:
-        # entity occurs in only one model
         model_index = list(model_set)[0]
         return colors[model_index]
+    # all
     elif len(model_set) == len(models):
-        # entity occurs in all
         return "grey"
+
+    # some - hardcoded pink
 
 
 def get_reactions(model):
@@ -253,7 +285,9 @@ def diff_models(models, colors):
     print "digraph comparison {"
 
     reaction_strings = diff_reactions(models, colors)
-    print reaction_strings
+
+    if "NONE" in reaction_strings.keys():
+        print reaction_strings["NONE"]
 
     # For every compartment in any model, record which models contain it
     compartment_status = {}
@@ -267,7 +301,7 @@ def diff_models(models, colors):
             compartment_status[compartment_id].add(model_num)
 
     for compartment_id in compartment_status:
-        diff_compartment(compartment_id, models, colors)
+        diff_compartment(compartment_id, models, colors, reaction_strings)
         # TODO: alter color if compartment_status[compartment] does not contain all models
 
     print "}"
