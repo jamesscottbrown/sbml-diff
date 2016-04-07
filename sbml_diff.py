@@ -15,40 +15,54 @@ def get_params(model):
     return set(param_ids), param_values
 
 
-def compare_params(model1, model2):
-    param_ids_1, param_values_1 = get_params(model1)
-    param_ids_2, param_values_2 = get_params(model2)
+def compare_params(models):
+    # For each param, find set of models containing it, and determine whether its value is the same across all models
 
-    a_only = param_ids_1.difference(param_ids_2)
-    b_only = param_ids_2.difference(param_ids_1)
-    both = param_ids_1.intersection(param_ids_2)
+    param_status = {}
+    param_value = {}
+    for model_num, model in enumerate(models):
+        param_ids, param_values = get_params(model)
 
-    if a_only:
-        print "\nParams in first model only:"
-        print "\n".join(a_only)
+        for param_id in param_ids:
 
-    if b_only:
-        print "Params in second model only:", " ".join(a_only)
+            if param_id not in param_status.keys():
+                param_status[param_id] = set()
+                param_value[param_id] = param_values[param_id]
 
-    if both:
-        same = []
-        different = []
+            if param_value[param_id] != param_values[param_id]:
+                param_value[param_id] = "different"
 
-        for param in both:
-            if param_values_1[param] == param_values_2[param]:
-                same.append(param)
-            else:
-                different.append(param)
+            param_status[param_id].add(model_num)
 
-        if different:
-            print "\nParams with different values in both models:"
-            for param in different:
-                print param, param_values_1[param], param_values_2[param]
+    # print params in a single model
+    print "\nParameters in a single model only:"
 
-        if same:
-            print "\nParams with same values in both models:"
-            for param in same:
-                print param, param_values_1[param]
+    for model_num, model in enumerate(models):
+        for param_id in param_status:
+            model_list = list(param_status[param_id])
+            if len(model_list) == 1 and model_list[0] == model_num:
+                print "Only in model %s: %s" % (model_num, param_id)
+
+    # print params in all
+    print "\nParameters in all models:"
+
+    for param_id in param_status:
+        model_list = list(param_status[param_id])
+        value = param_value[param_id]
+        if value != "different":
+            value = "same"
+        if len(model_list) == len(models):
+            print "In all models (with %s values): %s" % (value, param_id)
+
+    # print params in some
+    print "\nParameters in some models:"
+    for param_id in param_status:
+        model_list = list(param_status[param_id])
+        if value != "different":
+            value = "same"
+
+        if 1 < len(model_list) < len(models):
+            print "In some models (with %s values): %s (in %s)" % (value, param_id, ', '.join(model_list))
 
 
 def get_species(model, compartment_id):
@@ -59,18 +73,6 @@ def get_species(model, compartment_id):
         if s.attrs["compartment"] == compartment_id:
             ids.append(s.attrs["id"])
     return ids
-
-
-def print_species(species_list, status, colors):
-    if status == "a_only":
-        color = colors[0]
-    elif status == "b_only":
-        color = colors[1]
-    else:
-        color = 'grey'
-
-    for species in species_list:
-        print '"%s" [color="%s"];' % (species, color)
 
 
 def categorise(a, b):
@@ -99,46 +101,55 @@ def get_reaction_details(model, reaction_id):
     return reactant_list, product_list
 
 
-def diff_reactions(model1, model2, colors):
+def diff_reactions(models, colors):
     # NB. reactions do not have an associated compartment!
-    reactions1 = set(get_reactions(model1))
-    reactions2 = set(get_reactions(model2))
 
-    a_only, b_only, both = categorise(reactions1, reactions2)
+    reaction_status = {}
+    for model_num, model in enumerate(models):
+        reactions = get_reactions(model)
+
+        for reaction in reactions:
+            if reaction not in reaction_status.keys():
+                reaction_status[reaction] = set()
+
+            reaction_status[reaction].add(model_num)
 
     reaction_strings = []
 
-    for reaction_id in both:
-        reaction_strings.append(diff_reaction_common(model1, model2, reaction_id, colors))
+    for reaction_id in reaction_status:
+        model_set = list(reaction_status[reaction_id])
 
-    for reaction_id in a_only:
-        reaction_strings.append(print_reaction_unique(model1, reaction_id, "a_only", colors))
+        # one
+        if len(model_set) == 1:
+            color = assign_color(models, model_set, colors)
+            print "REACTION ID", reaction_id
+            reactant_list, product_list = get_reaction_details(models[model_set[0]], reaction_id)
 
-    for reaction_id in b_only:
-        reaction_strings.append(print_reaction_unique(model2, reaction_id, "b_only", colors))
+            for reactant in reactant_list:
+                print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
+
+            for product in product_list:
+                print '%s -> %s [color="%s"];' % (reaction_id, product, color)
+
+            reaction_strings.append( '%s [shape="square", color="%s"];' % (reaction_id, color) )
+
+        # all
+
+        if len(model_set) == len(models):
+            reaction_strings.append(diff_reaction_common(models, reaction_id, colors))
+
+        # TODO: some
+
 
     # TODO: categorize by compartment
     return "\n".join(reaction_strings)
 
 
-def print_reaction_unique(model, reaction_id, status, colors):
-    # handles a reaction that is present in only one
-    # print code for arrows; return code for reaction box
+def diff_reaction_common(models, reaction_id, colors):
 
-    if status == "a_only":
-        color = colors[0]
-    else:
-        color = colors[1]
+    model1 = models[0]
+    model2 = models[1]
 
-    reactant_list, product_list = get_reaction_details(model, reaction_id)
-    for reactant in reactant_list:
-        print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
-    for product in product_list:
-        print '%s -> %s [color="%s"];' % (reaction_id, product, color)
-    return '%s [shape="square", color="%s"];' % (reaction_id, color)
-
-
-def diff_reaction_common(model1, model2, reaction_id, colors):
     # This handles a reaction that is present in both
     reactant_list1, product_list1 = get_reaction_details(model1, reaction_id)
     reactant_list2, product_list2 = get_reaction_details(model2, reaction_id)
@@ -177,7 +188,7 @@ def diff_reaction_common(model1, model2, reaction_id, colors):
         return '%s [shape="square", color="black"];' % reaction_id
 
 
-def diff_compartment(compartment_id, model1, model2, colors):
+def diff_compartment(compartment_id, models, colors):
     # add extra flag specifying status, to set color
 
     print "\n"
@@ -185,22 +196,32 @@ def diff_compartment(compartment_id, model1, model2, colors):
     print "graph[style=dotted];"
     print 'label="%s";' % compartment_id
 
-    # compare species
-    #
-    species1 = set(get_species(model1, compartment_id))
-    species2 = set(get_species(model2, compartment_id))
+    # For each species, find set of models containing it
+    species_status = {}
+    for model_num, model in enumerate(models):
+        for species in get_species(model, compartment_id):
 
-    a_only, b_only, both = categorise(species1, species2)
+            if species not in species_status.keys():
+                species_status[species] = set()
 
-    print "\n"
-    print_species(a_only, 'a_only', colors)
-    print_species(b_only, 'b_only', colors)
-    print_species(both, 'both', colors)
+            species_status[species].add(model_num)
+
+    for species in species_status:
+        color = assign_color(models, species_status[species], colors)
+        print '"%s" [color="%s"];' % (species, color)
 
     print "\n"
 
     print "}"
 
+def assign_color(models, model_set, colors):
+    if len(model_set) == 1:
+        # entity occurs in only one model
+        model_index = list(model_set)[0]
+        return colors[model_index]
+    elif len(model_set) == len(models):
+        # entity occurs in all
+        return "grey"
 
 def get_reactions(model):
     reactions = []
@@ -209,31 +230,32 @@ def get_reactions(model):
     return reactions
 
 
-def diff_models(model1, model2, colors):
-    compare_params(model1, model2)
+def diff_models(models, colors):
+    model1 = models[0]
+    model2 = models[1]
+
+    compare_params(models)
 
     print "\n\n"
     print "digraph comparison {"
 
-    reaction_strings = diff_reactions(model1, model2, colors)
+    reaction_strings = diff_reactions(models, colors)
     print reaction_strings
 
-    for compartment in model1.select('compartment'):
-        compartment_id = compartment.attrs["id"]
-        compartment2 = model2.find(id=compartment_id)
+    # For every compartment in any model, record which models contain it
+    compartment_status = {}
+    for model_num, model in enumerate(models):
+        for compartment in model.select('compartment'):
+            compartment_id = compartment.attrs["id"]
 
-        if compartment2:
-            diff_compartment(compartment_id, model1, model2, colors)
-        else:
-            pass
-            # compartment only in A
+            if compartment_id not in compartment_status.keys():
+                compartment_status[compartment_id] = set()
 
-    for compartment in model2.select('compartment'):
-        compartment_id = compartment.attrs["id"]
-        compartment1 = model1.find(id=compartment_id)
-        if not compartment1:
-            pass
-            # compartment only in B
+            compartment_status[compartment_id].add(model_num)
+
+    for compartment_id in compartment_status:
+        diff_compartment(compartment_id, models, colors)
+        # TODO: alter color if compartment_status[compartment] does not contain all models
 
     print "}"
 
@@ -256,17 +278,15 @@ if __name__ == '__main__':
             sys.exit(0)
 
     else:
-        colors = ["red", "blue"]
+        colors = ["red", "blue"] # A only, B only, ..., all
 
     # redirect STDOUT to specified file
     if args.outfile:
         sys.stdout = args.outfile
 
-    if len(args.infile) == 2:
-        html_doc1 = args.infile[0].read()
-        soup1 = BeautifulSoup(html_doc1, 'xml')
+    models = []
+    for file in args.infile:
+        html = file.read()
+        models.append(BeautifulSoup(html, 'xml'))
 
-        html_doc2 = args.infile[1].read()
-        soup2 = BeautifulSoup(html_doc2, 'xml')
-
-        diff_models(soup1, soup2, colors)
+    diff_models(models, colors)
