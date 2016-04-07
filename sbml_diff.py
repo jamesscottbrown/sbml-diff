@@ -130,7 +130,7 @@ def diff_reactions(models, colors):
             for product in product_list:
                 print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
-            reaction_strings.append( '%s [shape="square", color="%s"];' % (reaction_id, color) )
+            reaction_strings.append('%s [shape="square", color="%s"];' % (reaction_id, color))
 
         # all
 
@@ -138,7 +138,6 @@ def diff_reactions(models, colors):
             reaction_strings.append(diff_reaction_common(models, reaction_id, colors))
 
         # TODO: some
-
 
     # TODO: categorize by compartment
     return "\n".join(reaction_strings)
@@ -180,11 +179,11 @@ def diff_reaction_common(models, reaction_id, colors):
 
         # all
         if len(model_set) == len(models):
-             print '%s -> %s [color="grey"];' % (reactant, reaction_id)
+            print '%s -> %s [color="grey"];' % (reactant, reaction_id)
 
         # some
-        if 0 <len(model_set) < len(models):
-             print '%s -> %s [color="pink"];' % (reactant, reaction_id)
+        if 0 < len(model_set) < len(models):
+            print '%s -> %s [color="pink"];' % (reactant, reaction_id)
 
     # product arrows
     for product in product_status:
@@ -197,11 +196,11 @@ def diff_reaction_common(models, reaction_id, colors):
 
         # all
         if len(model_set) == len(models):
-             print '%s -> %s [color="grey"];' % (reaction_id, product)
+            print '%s -> %s [color="grey"];' % (reaction_id, product)
 
         # some
         if 0 < len(model_set) < len(models):
-             print '%s -> %s [color="pink"];' % (reaction_id, product)
+            print '%s -> %s [color="pink"];' % (reaction_id, product)
 
     # rate law
     if rate_law == "different":
@@ -236,6 +235,7 @@ def diff_compartment(compartment_id, models, colors):
 
     print "}"
 
+
 def assign_color(models, model_set, colors):
     if len(model_set) == 1:
         # entity occurs in only one model
@@ -244,6 +244,7 @@ def assign_color(models, model_set, colors):
     elif len(model_set) == len(models):
         # entity occurs in all
         return "grey"
+
 
 def get_reactions(model):
     reactions = []
@@ -288,24 +289,24 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.colors:
-        colors = args.colors.split(",")
+        all_colors = args.colors.split(",")
         num_files = len(args.infile)
 
-        if len(colors) != num_files:
-            print "Error: number of colors (%s) does not match number of input files (%s)\n" % (len(colors), num_files)
+        if len(all_colors) != num_files:
+            print "Error: number of colors (%s) does not match number of input files (%s)\n" % (len(all_colors), num_files)
             parser.print_help()
             sys.exit(0)
 
     else:
-        colors = ["red", "blue"] # A only, B only, ..., all
+        all_colors = ["red", "blue"]  # A only, B only, ...
 
     # redirect STDOUT to specified file
     if args.outfile:
         sys.stdout = args.outfile
 
-    models = []
-    for file in args.infile:
-        html = file.read()
-        models.append(BeautifulSoup(html, 'xml'))
+    all_models = []
+    for inFile in args.infile:
+        html = inFile.read()
+        all_models.append(BeautifulSoup(html, 'xml'))
 
-    diff_models(models, colors)
+    diff_models(all_models, all_colors)
