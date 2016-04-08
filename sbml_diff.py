@@ -257,6 +257,14 @@ def diff_reaction_common(models, reaction_id, colors):
         return '%s [shape="square", color="grey"];' % reaction_id
 
 
+def get_species_name(model, species_id):
+        s = model.select_one("listOfSpecies").find(id=species_id)
+        if s.attrs["name"]:
+            return s.attrs["name"]
+        else:
+            return species_id
+
+
 def diff_compartment(compartment_id, models, colors, reaction_strings):
     # add extra flag specifying status, to set color
 
@@ -280,7 +288,7 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
 
     for species in species_status:
         color = assign_color(models, species_status[species], colors)
-        print '"%s" [color="%s"];' % (species, color)
+        print '"%s" [color="%s",label="%s"];' % (species, color, get_species_name(model, species)) # TODO: what if species name differs between models
 
     print "\n"
 
@@ -371,7 +379,7 @@ if __name__ == '__main__':
         model_names.append(os.path.splitext(file_name)[0])
 
 
-    if args.paramtable:
+    if args.kineticstable:
         print_rate_law_table(all_models, model_names)
     else:
         diff_models(all_models, all_colors, print_param_comparison=args.params)
