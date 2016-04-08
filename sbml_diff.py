@@ -159,6 +159,11 @@ def diff_reactions(models, colors):
         model_set = list(reaction_status[reaction_id])
         reactant_list, product_list, compartment = get_reaction_details(models[model_set[0]], reaction_id)
 
+        parent_model_index = list(reaction_status[reaction_id])[0]
+        parent_model = models[parent_model_index]
+        reaction_name = get_reaction_name(parent_model,reaction_id)
+
+
         # one
         if len(model_set) == 1 and len(models) > 1:
             color = assign_color(models, model_set, colors)
@@ -171,8 +176,8 @@ def diff_reactions(models, colors):
 
             if compartment not in reaction_strings.keys():
                 reaction_strings[compartment] = []
-            print '%s [shape="square", color="%s"];' % (reaction_id, color)
-            reaction_strings[compartment].append('%s [shape="square", color="%s"];' % (reaction_id, color))
+            #print '%s [shape="square", color="%s"];' % (reaction_id, color)
+            reaction_strings[compartment].append('%s [shape="square", color="%s", label="%s"];' % (reaction_id, color, reaction_name))
 
         # all
         if len(model_set) == len(models):
@@ -184,9 +189,9 @@ def diff_reactions(models, colors):
         if 1 < len(model_set) < len(models):
             if compartment not in reaction_strings.keys():
                 reaction_strings[compartment] = []
-            reaction_strings[compartment].append('%s [shape="square", color="pink"];' % (reaction_id)) # TODO: compare more like all
+            reaction_strings[compartment].append('%s [shape="square", color="pink", label="%s"];' % (reaction_id, reaction_name)) # TODO: compare more like all
 
-            print '%s -> %s [color="pink"];' % (reactant, reaction_id)
+            #print '%s -> %s [color="pink"];' % (reactant, reaction_id)
 
     return reaction_strings
 
@@ -251,10 +256,13 @@ def diff_reaction_common(models, reaction_id, colors):
             print '%s -> %s [color="pink"];' % (reaction_id, product)
 
     # rate law
+    parent_model = models[model_set[0]]
+    reaction_name = get_reaction_name(parent_model,reaction_id)
+
     if rate_law == "different":
-        return '%s [shape="square", color="black"];' % reaction_id
+        return '%s [shape="square", color="black", label="%s"];' % (reaction_id, reaction_name)
     else:
-        return '%s [shape="square", color="grey"];' % reaction_id
+        return '%s [shape="square", color="grey", label="%s"];' % (reaction_id, reaction_name)
 
 
 def get_species_name(model, species_id):
@@ -263,6 +271,14 @@ def get_species_name(model, species_id):
             return s.attrs["name"]
         else:
             return species_id
+
+
+def get_reaction_name(model, reaction_id):
+        r = model.select_one("listOfReactions").find(id=reaction_id)
+        if "name" in r.attrs.keys() and r.attrs["name"]:
+            return r.attrs["name"]
+        else:
+            return reaction_id
 
 
 def diff_compartment(compartment_id, models, colors, reaction_strings):
