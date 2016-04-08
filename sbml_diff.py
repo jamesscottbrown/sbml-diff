@@ -259,7 +259,7 @@ def diff_reaction_common(models, reaction_id, colors):
 
 def get_species_name(model, species_id):
         s = model.select_one("listOfSpecies").find(id=species_id)
-        if s.attrs["name"]:
+        if "name" in s.attrs.keys() and s.attrs["name"]:
             return s.attrs["name"]
         else:
             return species_id
@@ -283,12 +283,14 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
 
             if species not in species_status.keys():
                 species_status[species] = set()
-
             species_status[species].add(model_num)
 
     for species in species_status:
         color = assign_color(models, species_status[species], colors)
-        print '"%s" [color="%s",label="%s"];' % (species, color, get_species_name(model, species)) # TODO: what if species name differs between models
+
+        parent_model_index = list(species_status[species])[0]
+        parent_model = models[parent_model_index]
+        print '"%s" [color="%s",label="%s"];' % (species, color, get_species_name(parent_model, species)) # TODO: what if species name differs between models
 
     print "\n"
 
