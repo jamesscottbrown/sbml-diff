@@ -14,6 +14,24 @@ def get_params(model):
 
     return set(param_ids), param_values
 
+def get_regulatory_arrow(model, compartment):
+    species_ids = get_species(model, compartment)
+
+    # A c element may contain a species/compartment/parameter/function/reaction identifier
+    # note that we do not currently handle reaction identifiers correctly
+    arrows = []
+    for reaction in model.select_one("listOfReactions").select("reaction"):
+        reaction_id = reaction.attrs["id"]
+        for ci in reaction.select_one("kineticLaw").select("ci"):
+            species_id = ci.string.strip()
+            if species_id not in species_ids: continue
+
+            # if not a reactant, add regulatory arrow
+            reactant_list, product_list, compartment = get_reaction_details(model, reaction_id)
+            if species_id in reactant_list: continue
+            arrows.append(species_id + "->" + reaction_id)
+    return arrows
+
 
 def print_rate_law_table(models, model_names):
     print "<table>"
@@ -307,6 +325,20 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
         parent_model_index = list(species_status[species])[0]
         parent_model = models[parent_model_index]
         print '"%s" [color="%s",label="%s"];' % (species, color, get_species_name(parent_model, species)) # TODO: what if species name differs between models
+
+    # for each regulatory interaction, find set of models containing it
+    arrow_status = {}
+    for model_num, model in enumerate(models):
+        arrows = get_regulatory_arrow(model, compartment_id)
+        for arrow in arrows:
+            if arrow not in arrow_status.keys():
+                arrow_status[arrow] = set()
+            arrow_status[arrow].add(model_num)
+
+    for arrow in arrow_status:
+        color = assign_color(models, arrow_status[arrow], colors)
+        print '%s [color="%s", arrowhead="dot"];' % (arrow, color)
+
 
     print "\n"
 
