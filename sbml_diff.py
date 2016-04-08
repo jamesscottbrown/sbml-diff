@@ -18,7 +18,7 @@ def get_params(model):
 def print_rate_law_table(models, model_names):
     print "<table>"
 
-    print "<thead><tr><th></th><th> %s </th></tr></thead>" % ("</rh><th>".join(model_names))
+    print "<thead><tr><th></th><th> %s </th></tr></thead>" % ("</th><th>".join(model_names))
 
     # get list of all reactions in all models
     reactions = []
@@ -27,6 +27,7 @@ def print_rate_law_table(models, model_names):
     reactions = list(set(reactions))
     reactions.sort()
 
+    print "<tbody>"
     for reaction_id in reactions:
         rates = []
         for model_num, model in enumerate(models):
@@ -39,7 +40,7 @@ def print_rate_law_table(models, model_names):
 
         print "<tr> <td>%s</td> <td>%s</td></tr>" % (reaction_id, "</td><td>".join(rates))
 
-    print "<table>"
+    print "</tbody></table>"
 
 
 def compare_params(models):
