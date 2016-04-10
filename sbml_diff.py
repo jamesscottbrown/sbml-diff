@@ -9,7 +9,7 @@ def collate_interactions(child_classifications):
     if len(child_classifications) == 1 and "constant" in child_classifications:
         return "constant"
 
-    if "monotonic_increasing" in child_classifications and "montoic_decreasing" in child_classifications:
+    if "monotonic_increasing" in child_classifications and "monotonic_decreasing" in child_classifications:
         return "mixed"
 
     if len(child_classifications) == 2 and "monotonic_increasing" in child_classifications:
@@ -24,11 +24,11 @@ def invert_classification(classification):
     if classification in ["mixed", "constant"]:
         return classification
 
-    if classification == "monotic_increasing":
+    if classification == "monotonic_increasing":
         return "monotonic_decreasing"
 
     if classification == "monotonic_decreasing":
-        return "monotic_increasing"
+        return "monotonic_increasing"
 
 def classify_basic_interaction(operator, child_classifications):
     # if any children are mixed, so is result
