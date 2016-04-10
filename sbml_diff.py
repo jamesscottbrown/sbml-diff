@@ -1,7 +1,114 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 import argparse
 import sys
 import os
+
+def collate_interactions(child_classifications):
+    child_classifications = set(child_classifications)
+
+    if len(child_classifications) == 1 and "constant" in child_classifications:
+        return "constant"
+
+    if "monotonic_increasing" in child_classifications and "montoic_decreasing" in child_classifications:
+        return "mixed"
+
+    if len(child_classifications) == 2 and "monotonic_increasing" in child_classifications:
+        return "monotonic_increasing"
+
+    if len(child_classifications) == 2 and "monotonic_decreasing" in child_classifications:
+        return "monotonic_decreasing"
+
+
+def invert_classification(classification):
+
+    if classification in ["mixed", "constant"]:
+        return classification
+
+    if classification == "monotic_increasing":
+        return "monotonic_decreasing"
+
+    if classification == "monotonic_decreasing":
+        return "monotic_increasing"
+
+def classify_basic_interaction(operator, child_classifications):
+    # if any children are mixed, so is result
+    if "mixed" in child_classifications:
+        return "mixed"
+
+    # monotonic function of one input:
+    if operator in ["root", "exp", "ln", "log", "floor", "ceiling", "factorial"]:
+        return child_classifications[0]
+
+    if operator == "power":
+        return collate_interactions(child_classifications)
+        # TODO: check sign of second argument, which is in general hard
+
+    if operator in ["plus", "times"]:
+        # plus is an N-ary function
+        return collate_interactions(child_classifications)
+
+    # minus is unary or binary
+    if operator == "minus":
+        # unary case
+        if len(child_classifications) == 1:
+            invert_classification(child_classifications[0])
+
+        # binary case
+        child_classifications[1] = invert_classification(child_classifications[1])
+        return collate_interactions(child_classifications)
+
+
+    if operator == "divide":
+        # binary operator
+        child_classifications[1] = invert_classification(child_classifications[1])
+        return collate_interactions(child_classifications)
+
+
+
+
+def categoriseInteraction(kineticLaw, species_id):
+    for math in kineticLaw.select_one("math"):
+        if isinstance(math, NavigableString): continue
+        return categoriseInteractionInner(math, species_id)
+
+
+def categoriseInteractionInner(expression, species_id):
+    # We implicitly assume constants and powers are positive.
+
+    # Stuff we still need to handle:
+    # pi, infinity, exponential2
+    # delay csymbol
+    # piecewise functions
+
+    #print expression
+
+    if expression.name == "cn":
+        return "constant"
+
+    if expression.name == "ci":
+        if expression.string.strip() == species_id:
+            return "monotonic_increasing"
+        else:
+            return "constant"
+
+
+    # from a BS4 object, find the identity of the operator and array of it children
+    operator = None
+    args = []
+    for child in expression.children:
+        if not operator:
+            operator = child.name
+        elif child.name == "ci":
+            args.append(child)
+
+    # classify each of the children
+    child_classifications = []
+    for arg in args:
+        child_classifications.append( categoriseInteractionInner(arg, species_id) )
+
+    # combine these classifications based on identity of function
+    return classify_basic_interaction(operator, child_classifications)
+
 
 def get_params(model):
     param_ids = []
@@ -20,6 +127,7 @@ def get_regulatory_arrow(model, compartment):
     # A c element may contain a species/compartment/parameter/function/reaction identifier
     # note that we do not currently handle reaction identifiers correctly
     arrows = []
+    arrow_directions = []
     for reaction in model.select_one("listOfReactions").select("reaction"):
         reaction_id = reaction.attrs["id"]
         for ci in reaction.select_one("kineticLaw").select("ci"):
@@ -30,7 +138,10 @@ def get_regulatory_arrow(model, compartment):
             reactant_list, product_list, compartment = get_reaction_details(model, reaction_id)
             if species_id in reactant_list: continue
             arrows.append(species_id + "->" + reaction_id)
-    return arrows
+
+            arrow_direction = categoriseInteraction(reaction.select_one("kineticLaw"), species_id)
+            arrow_directions.append(arrow_direction)
+    return arrows, arrow_directions
 
 
 def print_rate_law_table(models, model_names):
@@ -329,15 +440,22 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
     # for each regulatory interaction, find set of models containing it
     arrow_status = {}
     for model_num, model in enumerate(models):
-        arrows = get_regulatory_arrow(model, compartment_id)
-        for arrow in arrows:
+        arrows, arrow_directions = get_regulatory_arrow(model, compartment_id)
+        for ind, arrow in enumerate(arrows):
             if arrow not in arrow_status.keys():
                 arrow_status[arrow] = set()
             arrow_status[arrow].add(model_num)
 
     for arrow in arrow_status:
         color = assign_color(models, arrow_status[arrow], colors)
-        print '%s [color="%s", arrowhead="dot"];' % (arrow, color)
+
+        if arrow_directions[ind] == "monotonic_increasing":
+            arrowhead = "lvee"
+        elif arrow_directions[ind] == "monotonic_decreasing":
+            arrowhead = "ltee"
+        else:
+            arrowhead = "dot"
+        print '%s [color="%s", arrowhead="%s"];' % (arrow, color, arrowhead)
 
 
     print "\n"
