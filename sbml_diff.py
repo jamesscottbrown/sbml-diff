@@ -1,8 +1,9 @@
 from bs4 import BeautifulSoup
-from effect_direction import categoriseInteraction
+from effect_direction import categorise_interaction
 import argparse
 import sys
 import os
+
 
 def get_params(model):
     param_ids = []
@@ -15,6 +16,7 @@ def get_params(model):
 
     return set(param_ids), param_values
 
+
 def get_regulatory_arrow(model, compartment):
     species_ids = get_species(model, compartment)
 
@@ -26,14 +28,16 @@ def get_regulatory_arrow(model, compartment):
         reaction_id = reaction.attrs["id"]
         for ci in reaction.select_one("kineticLaw").select("ci"):
             species_id = ci.string.strip()
-            if species_id not in species_ids: continue
+            if species_id not in species_ids:
+                continue
 
             # if not a reactant, add regulatory arrow
             reactant_list, product_list, compartment = get_reaction_details(model, reaction_id)
-            if species_id in reactant_list: continue
+            if species_id in reactant_list:
+                continue
             arrows.append(species_id + "->" + reaction_id)
 
-            arrow_direction = categoriseInteraction(reaction.select_one("kineticLaw"), species_id)
+            arrow_direction = categorise_interaction(reaction.select_one("kineticLaw"), species_id)
             arrow_directions.append(arrow_direction)
     return arrows, arrow_directions
 
@@ -184,8 +188,7 @@ def diff_reactions(models, colors):
 
         parent_model_index = list(reaction_status[reaction_id])[0]
         parent_model = models[parent_model_index]
-        reaction_name = get_reaction_name(parent_model,reaction_id)
-
+        reaction_name = get_reaction_name(parent_model, reaction_id)
 
         # one
         if len(model_set) == 1 and len(models) > 1:
@@ -199,7 +202,6 @@ def diff_reactions(models, colors):
 
             if compartment not in reaction_strings.keys():
                 reaction_strings[compartment] = []
-            #print '%s [shape="square", color="%s"];' % (reaction_id, color)
             reaction_strings[compartment].append('%s [shape="square", color="%s", label="%s"];' % (reaction_id, color, reaction_name))
 
         # all
@@ -212,9 +214,7 @@ def diff_reactions(models, colors):
         if 1 < len(model_set) < len(models):
             if compartment not in reaction_strings.keys():
                 reaction_strings[compartment] = []
-            reaction_strings[compartment].append('%s [shape="square", color="pink", label="%s"];' % (reaction_id, reaction_name)) # TODO: compare more like all
-
-            #print '%s -> %s [color="pink"];' % (reactant, reaction_id)
+            reaction_strings[compartment].append('%s [shape="square", color="pink", label="%s"];' % (reaction_id, reaction_name))
 
     return reaction_strings
 
@@ -280,7 +280,7 @@ def diff_reaction_common(models, reaction_id, colors):
 
     # rate law
     parent_model = models[model_set[0]]
-    reaction_name = get_reaction_name(parent_model,reaction_id)
+    reaction_name = get_reaction_name(parent_model, reaction_id)
 
     if rate_law == "different":
         return '%s [shape="square", color="black", label="%s"];' % (reaction_id, reaction_name)
@@ -329,7 +329,7 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
 
         parent_model_index = list(species_status[species])[0]
         parent_model = models[parent_model_index]
-        print '"%s" [color="%s",label="%s"];' % (species, color, get_species_name(parent_model, species)) # TODO: what if species name differs between models
+        print '"%s" [color="%s",label="%s"];' % (species, color, get_species_name(parent_model, species))
 
     # for each regulatory interaction, find set of models containing it
     arrow_status = {}
@@ -351,9 +351,7 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
             arrowhead = "dot"
         print '%s [color="%s", arrowhead="%s"];' % (arrow, color, arrowhead)
 
-
     print "\n"
-
     print "}"
 
 
@@ -439,7 +437,6 @@ if __name__ == '__main__':
 
         file_name = os.path.basename(os.path.split(inFile.name)[1])
         model_names.append(os.path.splitext(file_name)[0])
-
 
     if args.kineticstable:
         print_rate_law_table(all_models, model_names)
