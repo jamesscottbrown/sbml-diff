@@ -1,5 +1,6 @@
 from bs4 import NavigableString
 
+
 def collate_interactions(child_classifications):
     child_classifications = set(child_classifications)
 
@@ -30,6 +31,7 @@ def invert_classification(classification):
     if classification == "monotonic_decreasing":
         return "monotonic_increasing"
 
+
 def classify_basic_interaction(operator, child_classifications):
     # if any children are mixed, so is result
     if "mixed" in child_classifications:
@@ -57,30 +59,26 @@ def classify_basic_interaction(operator, child_classifications):
         child_classifications[1] = invert_classification(child_classifications[1])
         return collate_interactions(child_classifications)
 
-
     if operator == "divide":
         # binary operator
         child_classifications[1] = invert_classification(child_classifications[1])
         return collate_interactions(child_classifications)
 
 
+def categorise_interaction(kinetic_law, species_id):
+    for math in kinetic_law.select_one("math"):
+        if isinstance(math, NavigableString):
+            continue
+        return categorise_interaction_inner(math, species_id)
 
 
-def categoriseInteraction(kineticLaw, species_id):
-    for math in kineticLaw.select_one("math"):
-        if isinstance(math, NavigableString): continue
-        return categoriseInteractionInner(math, species_id)
-
-
-def categoriseInteractionInner(expression, species_id):
+def categorise_interaction_inner(expression, species_id):
     # We implicitly assume constants and powers are positive.
 
     # Stuff we still need to handle:
     # pi, infinity, exponential2
     # delay csymbol
     # piecewise functions
-
-    #print expression
 
     if expression.name == "cn":
         return "constant"
@@ -98,14 +96,14 @@ def categoriseInteractionInner(expression, species_id):
         if not operator:
             operator = child.name
         else:
-            if isinstance(child, NavigableString): continue
+            if isinstance(child, NavigableString):
+                continue
             args.append(child)
 
     # classify each of the children
     child_classifications = []
     for arg in args:
-        child_classifications.append( categoriseInteractionInner(arg, species_id) )
+        child_classifications.append(categorise_interaction_inner(arg, species_id))
 
     # combine these classifications based on identity of function
     return classify_basic_interaction(operator, child_classifications)
-
