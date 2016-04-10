@@ -6,12 +6,15 @@ import os
 def collate_interactions(child_classifications):
     child_classifications = set(child_classifications)
 
-    if len(child_classifications) == 1 and "constant" in child_classifications:
-        return "constant"
+    # all terms of same kind
+    if len(child_classifications) == 1:
+        return list(child_classifications)[0]
 
+    # both kinds of monotonic terms
     if "monotonic_increasing" in child_classifications and "monotonic_decreasing" in child_classifications:
         return "mixed"
 
+    # constant and one kind of monotonic term
     if len(child_classifications) == 2 and "monotonic_increasing" in child_classifications:
         return "monotonic_increasing"
 
@@ -91,14 +94,14 @@ def categoriseInteractionInner(expression, species_id):
         else:
             return "constant"
 
-
     # from a BS4 object, find the identity of the operator and array of it children
     operator = None
     args = []
     for child in expression.children:
         if not operator:
             operator = child.name
-        elif child.name == "ci":
+        else:
+            if isinstance(child, NavigableString): continue
             args.append(child)
 
     # classify each of the children
@@ -441,12 +444,12 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
     arrow_status = {}
     for model_num, model in enumerate(models):
         arrows, arrow_directions = get_regulatory_arrow(model, compartment_id)
-        for ind, arrow in enumerate(arrows):
+        for arrow in arrows:
             if arrow not in arrow_status.keys():
                 arrow_status[arrow] = set()
             arrow_status[arrow].add(model_num)
 
-    for arrow in arrow_status:
+    for ind, arrow in enumerate(arrow_status):
         color = assign_color(models, arrow_status[arrow], colors)
 
         if arrow_directions[ind] == "monotonic_increasing":
