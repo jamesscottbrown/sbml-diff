@@ -332,20 +332,25 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
         print '"%s" [color="%s",label="%s"];' % (species, color, get_species_name(parent_model, species))
 
     # for each regulatory interaction, find set of models containing it
+    # TODO: same regulatory arrow, but different direction in different models. Should really be comparing (reactant, reaction, direction) tuples
     arrow_status = {}
+    arrow_direction = {}
     for model_num, model in enumerate(models):
         arrows, arrow_directions = get_regulatory_arrow(model, compartment_id)
-        for arrow in arrows:
+
+        for ind, arrow in enumerate(arrows):
             if arrow not in arrow_status.keys():
                 arrow_status[arrow] = set()
             arrow_status[arrow].add(model_num)
 
+            arrow_direction[arrow] = arrow_directions[ind]
+
     for ind, arrow in enumerate(arrow_status):
         color = assign_color(models, arrow_status[arrow], colors)
 
-        if arrow_directions[ind] == "monotonic_increasing":
+        if arrow_direction[arrow] == "monotonic_increasing":
             arrowhead = "vee"
-        elif arrow_directions[ind] == "monotonic_decreasing":
+        elif arrow_direction[arrow] == "monotonic_decreasing":
             arrowhead = "tee"
         else:
             arrowhead = "dot"
