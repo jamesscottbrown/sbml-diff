@@ -2,7 +2,7 @@
 # It deals only with strings
 
 
-def assign_color2(num_models, model_set, colors):
+def assign_color(num_models, model_set, colors):
     # one
     if len(model_set) == 1 and num_models > 1:
         model_index = list(model_set)[0]
@@ -19,7 +19,7 @@ def print_reactant_arrow(num_models, model_set, colors, reactant, reaction_id):
 
     # one
     if len(model_set) == 1 and num_models > 1:
-        color = assign_color2(num_models, model_set, colors)
+        color = assign_color(num_models, model_set, colors)
         print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
 
     # all
@@ -34,7 +34,7 @@ def print_reactant_arrow(num_models, model_set, colors, reactant, reaction_id):
 def print_product_arrow(num_models, model_set, colors, reaction_id, product):
     # one
     if len(model_set) == 1 and num_models > 1:
-        color = assign_color2(num_models, model_set, colors)
+        color = assign_color(num_models, model_set, colors)
         print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
     # all
@@ -77,12 +77,12 @@ def print_compartment_footer():
 
 
 def print_species(num_models, colors, species, species_status, species_name):
-    color = assign_color2(num_models, species_status, colors)
+    color = assign_color(num_models, species_status, colors)
     print '"%s" [color="%s",label="%s"];' % (species, color, species_name)
 
 
 def print_regulatory_arrow(arrow_direction, arrow_status, arrow_main, colors, num_models):
-    color = assign_color2(num_models, arrow_status, colors)
+    color = assign_color(num_models, arrow_status, colors)
 
     if arrow_direction == "monotonic_increasing":
         arrowhead = "vee"
@@ -99,7 +99,7 @@ def print_reaction(num_models, model_set, colors, reactant_list, product_list, r
 
     # one
     if len(model_set) == 1 and num_models > 1:
-        color = assign_color2(num_models, model_set, colors)
+        color = assign_color(num_models, model_set, colors)
 
         for reactant in reactant_list:
             print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)

@@ -304,18 +304,6 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
     print_compartment_footer()
 
 
-def assign_color(models, model_set, colors):
-    # one
-    if len(model_set) == 1 and len(models) > 1:
-        model_index = list(model_set)[0]
-        return colors[model_index]
-    # all
-    elif len(model_set) == len(models):
-        return "grey"
-
-    # some - hardcoded pink
-
-
 def get_reactions(model):
     reactions = []
     for r in model.select_one("listOfReactions").select("reaction"):
