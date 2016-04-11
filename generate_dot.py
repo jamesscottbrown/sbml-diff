@@ -14,7 +14,6 @@ def assign_color2(num_models, model_set, colors):
     # some - hardcoded pink
 
 
-
 # Used by diff_reaction_common()
 def print_reactant_arrow(num_models, model_set, colors, reactant, reaction_id):
 
@@ -53,13 +52,16 @@ def print_rate_law(rate_law, reaction_id, reaction_name):
     else:
         return '%s [shape="square", color="grey", label="%s"];' % (reaction_id, reaction_name)
 
+
 # Used by diff_models()
 def print_header():
     print "\n\n"
     print "digraph comparison {"
 
+
 def print_footer():
     print "}"
+
 
 # Used by diff_compartment():
 def print_compartment_header(compartment_id):
@@ -90,8 +92,11 @@ def print_regulatory_arrow(arrow_direction, arrow_status, arrow_main, colors, nu
         arrowhead = "dot"
     print '%s [style="dashed", color="%s", arrowhead="%s"];' % (arrow_main, color, arrowhead)
 
-#
+
+# Used by diff_reactions()
 def print_reaction(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name):
+    reaction_string = ""
+
     # one
     if len(model_set) == 1 and num_models > 1:
         color = assign_color2(num_models, model_set, colors)

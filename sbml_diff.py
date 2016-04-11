@@ -246,7 +246,6 @@ def diff_reaction_common(models, reaction_id, colors):
     return print_rate_law(rate_law, reaction_id, reaction_name)
 
 
-
 def get_species_name(model, species_id):
         s = model.select_one("listOfSpecies").find(id=species_id)
         if "name" in s.attrs.keys() and s.attrs["name"]:
@@ -295,7 +294,6 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
             if arrow not in arrow_status.keys():
                 arrow_status[arrow] = set()
             arrow_status[arrow].add(model_num)
-
 
     for ind, arrow in enumerate(arrow_status):
         arrow_parts = arrow.split('-')
