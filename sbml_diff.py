@@ -23,7 +23,6 @@ def get_regulatory_arrow(model, compartment):
     # A c element may contain a species/compartment/parameter/function/reaction identifier
     # note that we do not currently handle reaction identifiers correctly
     arrows = []
-    arrow_directions = []
     for reaction in model.select_one("listOfReactions").select("reaction"):
         reaction_id = reaction.attrs["id"]
         for ci in reaction.select_one("kineticLaw").select("ci"):
@@ -35,11 +34,11 @@ def get_regulatory_arrow(model, compartment):
             reactant_list, product_list, compartment = get_reaction_details(model, reaction_id)
             if species_id in reactant_list:
                 continue
-            arrows.append(species_id + "->" + reaction_id)
 
             arrow_direction = categorise_interaction(reaction.select_one("kineticLaw"), species_id)
-            arrow_directions.append(arrow_direction)
-    return arrows, arrow_directions
+            arrows.append('"%s" -> "%s" -%s' % (species_id, reaction_id, arrow_direction))
+
+    return arrows
 
 
 def print_rate_law_table(models, model_names):
@@ -331,30 +330,31 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
         parent_model = models[parent_model_index]
         print '"%s" [color="%s",label="%s"];' % (species, color, get_species_name(parent_model, species))
 
-    # for each regulatory interaction, find set of models containing it
-    # TODO: same regulatory arrow, but different direction in different models. Should really be comparing (reactant, reaction, direction) tuples
+    # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
     arrow_status = {}
-    arrow_direction = {}
     for model_num, model in enumerate(models):
-        arrows, arrow_directions = get_regulatory_arrow(model, compartment_id)
+        arrows = get_regulatory_arrow(model, compartment_id)
 
         for ind, arrow in enumerate(arrows):
             if arrow not in arrow_status.keys():
                 arrow_status[arrow] = set()
             arrow_status[arrow].add(model_num)
 
-            arrow_direction[arrow] = arrow_directions[ind]
 
     for ind, arrow in enumerate(arrow_status):
         color = assign_color(models, arrow_status[arrow], colors)
 
-        if arrow_direction[arrow] == "monotonic_increasing":
+        arrow_parts = arrow.split('-')
+        arrow_main = '-'.join(arrow_parts[:-1])
+        arrow_direction = arrow_parts[-1]
+
+        if arrow_direction == "monotonic_increasing":
             arrowhead = "vee"
-        elif arrow_direction[arrow] == "monotonic_decreasing":
+        elif arrow_direction == "monotonic_decreasing":
             arrowhead = "tee"
         else:
             arrowhead = "dot"
-        print '%s [style="dashed", color="%s", arrowhead="%s"];' % (arrow, color, arrowhead)
+        print '%s [style="dashed", color="%s", arrowhead="%s"];' % (arrow_main, color, arrowhead)
 
     print "\n"
     print "}"
