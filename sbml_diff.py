@@ -282,7 +282,7 @@ def diff_reaction_common(models, reaction_id, colors):
     reaction_name = get_reaction_name(parent_model, reaction_id)
 
     if rate_law == "different":
-        return '%s [shape="square", color="black", label="%s"];' % (reaction_id, reaction_name)
+        return '%s [shape="square", fillcolor="grey", style="filled", label="%s"];' % (reaction_id, reaction_name)
     else:
         return '%s [shape="square", color="grey", label="%s"];' % (reaction_id, reaction_name)
 
