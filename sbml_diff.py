@@ -344,12 +344,12 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
         color = assign_color(models, arrow_status[arrow], colors)
 
         if arrow_directions[ind] == "monotonic_increasing":
-            arrowhead = "lvee"
+            arrowhead = "vee"
         elif arrow_directions[ind] == "monotonic_decreasing":
-            arrowhead = "ltee"
+            arrowhead = "tee"
         else:
             arrowhead = "dot"
-        print '%s [color="%s", arrowhead="%s"];' % (arrow, color, arrowhead)
+        print '%s [style="dashed", color="%s", arrowhead="%s"];' % (arrow, color, arrowhead)
 
     print "\n"
     print "}"
@@ -442,5 +442,3 @@ if __name__ == '__main__':
         print_rate_law_table(all_models, model_names)
     else:
         diff_models(all_models, all_colors, print_param_comparison=args.params)
-
-
