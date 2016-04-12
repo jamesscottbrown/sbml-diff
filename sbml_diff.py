@@ -243,7 +243,7 @@ def diff_reaction_common(models, reaction_id, colors):
     # rate law
     parent_model = models[model_set[0]]
     reaction_name = get_reaction_name(parent_model, reaction_id)
-    return print_rate_law(rate_law, reaction_id, reaction_name)
+    return print_rate_law(num_models, model_set, colors, rate_law, reaction_id, reaction_name)
 
 
 def get_species_name(model, species_id):

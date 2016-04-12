@@ -3,54 +3,38 @@
 
 
 def assign_color(num_models, model_set, colors):
+    if num_models == 1:
+        return "black"
     # one
-    if len(model_set) == 1 and num_models > 1:
+    elif len(model_set) == 1 and num_models > 1:
         model_index = list(model_set)[0]
         return colors[model_index]
     # all
     elif len(model_set) == num_models:
         return "grey"
-
-    # some - hardcoded pink
+    # some
+    elif 0 < len(model_set) < num_models:
+        return "pink"
 
 
 # Used by diff_reaction_common()
 def print_reactant_arrow(num_models, model_set, colors, reactant, reaction_id):
-
-    # one
-    if len(model_set) == 1 and num_models > 1:
-        color = assign_color(num_models, model_set, colors)
-        print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
-
-    # all
-    if len(model_set) == num_models:
-        print '%s -> %s [color="grey"];' % (reactant, reaction_id)
-
-    # some
-    if 0 < len(model_set) < num_models:
-        print '%s -> %s [color="pink"];' % (reactant, reaction_id)
+    color = assign_color(num_models, model_set, colors)
+    print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
 
 
 def print_product_arrow(num_models, model_set, colors, reaction_id, product):
-    # one
-    if len(model_set) == 1 and num_models > 1:
-        color = assign_color(num_models, model_set, colors)
-        print '%s -> %s [color="%s"];' % (reaction_id, product, color)
-
-    # all
-    if len(model_set) == num_models:
-        print '%s -> %s [color="grey"];' % (reaction_id, product)
-
-    # some
-    if 0 < len(model_set) < num_models:
-        print '%s -> %s [color="pink"];' % (reaction_id, product)
+    color = assign_color(num_models, model_set, colors)
+    print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
 
-def print_rate_law(rate_law, reaction_id, reaction_name):
+def print_rate_law(num_models, model_set, colors, rate_law, reaction_id, reaction_name):
+    fill = ''
     if rate_law == "different":
-        return '%s [shape="square", fillcolor="grey", style="filled", label="%s"];' % (reaction_id, reaction_name)
-    else:
-        return '%s [shape="square", color="grey", label="%s"];' % (reaction_id, reaction_name)
+        fill = 'fillcolor="grey", style="filled",'
+
+    color = assign_color(num_models, model_set, colors)
+    return '%s [shape="square", color="%s", %s label="%s"];' % (reaction_id, color, fill, reaction_name)
 
 
 # Used by diff_models()
@@ -95,11 +79,11 @@ def print_regulatory_arrow(arrow_direction, arrow_status, arrow_main, colors, nu
 
 # Used by diff_reactions()
 def print_reaction(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name):
-    reaction_string = ""
+    color = assign_color(num_models, model_set, colors)
+    reaction_string = '%s [shape="square", color="%s", label="%s"];' % (reaction_id, color, reaction_name)
 
-    # one
+    # one 
     if len(model_set) == 1 and num_models > 1:
-        color = assign_color(num_models, model_set, colors)
 
         for reactant in reactant_list:
             print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
@@ -107,12 +91,6 @@ def print_reaction(num_models, model_set, colors, reactant_list, product_list, r
         for product in product_list:
             print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
-        reaction_string = '%s [shape="square", color="%s", label="%s"];' % (reaction_id, color, reaction_name)
 
     # all - handled before this function is called
-
-    # some
-    if 1 < len(model_set) < num_models:
-        reaction_string = '%s [shape="square", color="pink", label="%s"];' % (reaction_id, reaction_name)
-
     return reaction_string
