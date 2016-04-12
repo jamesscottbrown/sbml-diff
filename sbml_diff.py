@@ -171,7 +171,7 @@ def get_reaction_details(model, reaction_id):
     return reactant_list, product_list, compartment, rate_law
 
 
-def diff_reactions(models, colors):
+def diff_reactions(models, generate_dot):
     # NB. reactions do not have an associated compartment!
     reaction_status = {}
     for model_num, model in enumerate(models):
@@ -192,13 +192,13 @@ def diff_reactions(models, colors):
         if compartment not in reaction_strings.keys():
             reaction_strings[compartment] = []
 
-        reaction_string = diff_reaction(models, reaction_id, colors)
+        reaction_string = diff_reaction(models, reaction_id, generate_dot)
         reaction_strings[compartment].append(reaction_string)
 
     return reaction_strings
 
 
-def diff_reaction(models, reaction_id, colors):
+def diff_reaction(models, reaction_id, generate_dot):
     # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
 
     num_models = len(models)
@@ -228,17 +228,17 @@ def diff_reaction(models, reaction_id, colors):
     # reactant arrows
     for reactant in reactant_status:
         model_set = list(reactant_status[reactant])
-        print_reactant_arrow(num_models, model_set, colors, reactant, reaction_id)
+        generate_dot.print_reactant_arrow(num_models, model_set, reactant, reaction_id)
 
     # product arrows
     for product in product_status:
         model_set = list(product_status[product])
-        print_product_arrow(num_models, model_set, colors, reaction_id, product)
+        generate_dot.print_product_arrow(num_models, model_set, reaction_id, product)
 
     # rate law
     parent_model = models[model_set[0]]
     reaction_name = get_reaction_name(parent_model, reaction_id)
-    return print_rate_law(num_models, model_set, colors, rate_law, reaction_id, reaction_name)
+    return generate_dot.print_rate_law(num_models, model_set, rate_law, reaction_id, reaction_name)
 
 
 def get_species_name(model, species_id):
@@ -257,10 +257,10 @@ def get_reaction_name(model, reaction_id):
             return reaction_id
 
 
-def diff_compartment(compartment_id, models, colors, reaction_strings):
+def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
     # add extra flag specifying status, to set color
     num_models = len(models)
-    print_compartment_header(compartment_id)
+    generate_dot.print_compartment_header(compartment_id)
 
     # print the reaction squares that belong in this compartment
     print "\n".join(reaction_strings[compartment_id])
@@ -278,7 +278,7 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
         parent_model_index = list(species_status[species])[0]
         parent_model = models[parent_model_index]
         species_name = get_species_name(parent_model, species)
-        print_species(num_models, colors, species, species_status[species], species_name)
+        generate_dot.print_species(num_models, species, species_status[species], species_name)
 
     # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
     arrow_status = {}
@@ -294,9 +294,9 @@ def diff_compartment(compartment_id, models, colors, reaction_strings):
         arrow_parts = arrow.split('-')
         arrow_main = '-'.join(arrow_parts[:-1])
         arrow_direction = arrow_parts[-1]
-        print_regulatory_arrow(arrow_direction, arrow_status[arrow], arrow_main, colors, num_models)
+        generate_dot.print_regulatory_arrow(arrow_direction, arrow_status[arrow], arrow_main, num_models)
 
-    print_compartment_footer()
+    generate_dot.print_compartment_footer()
 
 
 def get_reactions(model):
@@ -306,13 +306,13 @@ def get_reactions(model):
     return reactions
 
 
-def diff_models(models, colors, print_param_comparison=False):
+def diff_models(models, generate_dot, print_param_comparison=False):
     if print_param_comparison:
         compare_params(models)
 
-    print_header()
+    generate_dot.print_header()
 
-    reaction_strings = diff_reactions(models, colors)
+    reaction_strings = diff_reactions(models, generate_dot)
 
     if "NONE" in reaction_strings.keys():
         print reaction_strings["NONE"]
@@ -329,9 +329,9 @@ def diff_models(models, colors, print_param_comparison=False):
             compartment_status[compartment_id].add(model_num)
 
     for compartment_id in compartment_status:
-        diff_compartment(compartment_id, models, colors, reaction_strings)
+        diff_compartment(compartment_id, models, reaction_strings, generate_dot)
 
-    print_footer()
+    generate_dot.print_footer()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Produce graphical representation of one or more SBML models.')
@@ -370,4 +370,4 @@ if __name__ == '__main__':
     if args.kineticstable:
         print_rate_law_table(all_models, all_model_names)
     else:
-        diff_models(all_models, all_colors, print_param_comparison=args.params)
+        diff_models(all_models, GenerateDot(all_colors), print_param_comparison=args.params)
