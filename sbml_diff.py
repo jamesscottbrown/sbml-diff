@@ -21,12 +21,12 @@ def get_params(model):
 def get_regulatory_arrow(model, compartment):
     species_ids = get_species(model, compartment)
 
-    # A c element may contain a species/compartment/parameter/function/reaction identifier
-    # note that we do not currently handle reaction identifiers correctly
     arrows = []
     for reaction in model.select_one("listOfReactions").select("reaction"):
         reaction_id = reaction.attrs["id"]
         for ci in reaction.select_one("kineticLaw").select("ci"):
+
+            # Check if this is a species id (it could validly be a species/compartment/parameter/function/reaction id)
             species_id = ci.string.strip()
             if species_id not in species_ids:
                 continue
@@ -173,7 +173,6 @@ def get_reaction_details(model, reaction_id):
 
 def diff_reactions(models, colors):
     # NB. reactions do not have an associated compartment!
-    num_models = len(models)
     reaction_status = {}
     for model_num, model in enumerate(models):
         reactions = get_reactions(model)
@@ -189,10 +188,6 @@ def diff_reactions(models, colors):
     for reaction_id in reaction_status:
         model_set = list(reaction_status[reaction_id])
         reactant_list, product_list, compartment, rate_law = get_reaction_details(models[model_set[0]], reaction_id)
-
-        parent_model_index = list(reaction_status[reaction_id])[0]
-        parent_model = models[parent_model_index]
-        reaction_name = get_reaction_name(parent_model, reaction_id)
 
         if compartment not in reaction_strings.keys():
             reaction_strings[compartment] = []
@@ -335,7 +330,6 @@ def diff_models(models, colors, print_param_comparison=False):
 
     for compartment_id in compartment_status:
         diff_compartment(compartment_id, models, colors, reaction_strings)
-        # TODO: alter color if compartment_status[compartment] does not contain all models
 
     print_footer()
 
@@ -365,15 +359,15 @@ if __name__ == '__main__':
         sys.stdout = args.outfile
 
     all_models = []
-    model_names = []
+    all_model_names = []
     for inFile in args.infile:
         html = inFile.read()
         all_models.append(BeautifulSoup(html, 'xml'))
 
         file_name = os.path.basename(os.path.split(inFile.name)[1])
-        model_names.append(os.path.splitext(file_name)[0])
+        all_model_names.append(os.path.splitext(file_name)[0])
 
     if args.kineticstable:
-        print_rate_law_table(all_models, model_names)
+        print_rate_law_table(all_models, all_model_names)
     else:
         diff_models(all_models, all_colors, print_param_comparison=args.params)
