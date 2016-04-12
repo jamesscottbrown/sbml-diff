@@ -18,7 +18,7 @@ class GenerateDot():
             return "grey"
         # some
         elif 0 < len(model_set) < num_models:
-            return "pink"
+            return "black"
 
     # Used by diff_reaction()
     def print_reactant_arrow(self, num_models, model_set, reaction_id, reactant):
