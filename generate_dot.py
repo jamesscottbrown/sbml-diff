@@ -75,19 +75,3 @@ def print_regulatory_arrow(arrow_direction, arrow_status, arrow_main, colors, nu
     else:
         arrowhead = "dot"
     print '%s [style="dashed", color="%s", arrowhead="%s"];' % (arrow_main, color, arrowhead)
-
-
-# Used by diff_reactions()
-def print_reaction(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name):
-    color = assign_color(num_models, model_set, colors)
-    reaction_string = '%s [shape="square", color="%s", label="%s"];' % (reaction_id, color, reaction_name)
-
-    for reactant in reactant_list:
-        print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
-
-    for product in product_list:
-        print '%s -> %s [color="%s"];' % (reaction_id, product, color)
-
-
-    # all - handled before this function is called
-    return reaction_string
