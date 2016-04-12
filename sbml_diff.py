@@ -32,7 +32,7 @@ def get_regulatory_arrow(model, compartment):
                 continue
 
             # if not a reactant, add regulatory arrow
-            reactant_list, product_list, compartment = get_reaction_details(model, reaction_id)
+            reactant_list, product_list, compartment, rate_law = get_reaction_details(model, reaction_id)
             if species_id in reactant_list:
                 continue
 
@@ -138,6 +138,9 @@ def get_species_compartment(model, species_id):
 def get_reaction_details(model, reaction_id):
     reaction = model.select_one("listOfReactions").find(id=reaction_id)
 
+    if not reaction:
+        return [], [], False, False
+
     reactants = reaction.select_one("listOfReactants")
     reactant_list = []
     compartment = ""
@@ -164,7 +167,8 @@ def get_reaction_details(model, reaction_id):
             if compartment != get_species_compartment(model, species):
                 compartment = "NONE"
 
-    return reactant_list, product_list, compartment
+    rate_law = reaction.select_one("kineticLaw")
+    return reactant_list, product_list, compartment, rate_law
 
 
 def diff_reactions(models, colors):
@@ -184,7 +188,7 @@ def diff_reactions(models, colors):
 
     for reaction_id in reaction_status:
         model_set = list(reaction_status[reaction_id])
-        reactant_list, product_list, compartment = get_reaction_details(models[model_set[0]], reaction_id)
+        reactant_list, product_list, compartment, rate_law = get_reaction_details(models[model_set[0]], reaction_id)
 
         parent_model_index = list(reaction_status[reaction_id])[0]
         parent_model = models[parent_model_index]
@@ -193,26 +197,10 @@ def diff_reactions(models, colors):
         if compartment not in reaction_strings.keys():
             reaction_strings[compartment] = []
 
-        if len(model_set) == 1:
-            reaction_string = diff_reaction_unique(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name)
-        else:
-            reaction_string = diff_reaction_shared(models, reaction_id, colors)
-
+        reaction_string = diff_reaction_shared(models, reaction_id, colors)
         reaction_strings[compartment].append(reaction_string)
 
     return reaction_strings
-
-
-def diff_reaction_unique(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name):
-    reaction_string = print_rate_law(num_models, model_set, colors, "", reaction_id, reaction_name)
-
-    for reactant in reactant_list:
-        print_reactant_arrow(num_models, model_set, colors, reactant, reaction_id)
-
-    for product in product_list:
-        print_product_arrow(num_models, model_set, colors, reaction_id, product)
-
-    return reaction_string
 
 
 def diff_reaction_shared(models, reaction_id, colors):
@@ -222,15 +210,15 @@ def diff_reaction_shared(models, reaction_id, colors):
 
     reactant_status = {}
     product_status = {}
-    rate_law = ""
+    rate_laws = ""
 
     for model_num, model in enumerate(models):
-        reactants, products, compartment = get_reaction_details(model, reaction_id)
+        reactants, products, compartment, rate_law = get_reaction_details(model, reaction_id)
 
-        if not rate_law:
-            rate_law = model.select_one("listOfReactions").find(id=reaction_id).select_one("kineticLaw")
-        if rate_law != model.select_one("listOfReactions").find(id=reaction_id).select_one("kineticLaw"):
-            rate_law = "different"
+        if not rate_laws:
+            rate_laws = rate_law
+        if rate_laws != rate_law:
+            rate_laws = "different"
 
         for reactant in reactants:
             if reactant not in reactant_status.keys():
