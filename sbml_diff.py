@@ -193,20 +193,18 @@ def diff_reactions(models, colors):
         if compartment not in reaction_strings.keys():
             reaction_strings[compartment] = []
 
-        if len(model_set) == num_models:
-            reaction_string = diff_reaction_common(models, reaction_id, colors)
+        if len(model_set) == 1:
+            reaction_string = diff_reaction_unique(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name)
         else:
-            reaction_string = diff_reaction_some(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name)
+            reaction_string = diff_reaction_shared(models, reaction_id, colors)
 
         reaction_strings[compartment].append(reaction_string)
 
     return reaction_strings
 
 
-def diff_reaction_some(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name):
-    # reaction in some but not all models. TODO: check if rate_law should be different
-    rate_law = ""
-    reaction_string = print_rate_law(num_models, model_set, colors, rate_law, reaction_id, reaction_name)
+def diff_reaction_unique(num_models, model_set, colors, reactant_list, product_list, reaction_id, reaction_name):
+    reaction_string = print_rate_law(num_models, model_set, colors, "", reaction_id, reaction_name)
 
     for reactant in reactant_list:
         print_reactant_arrow(num_models, model_set, colors, reactant, reaction_id)
@@ -217,7 +215,7 @@ def diff_reaction_some(num_models, model_set, colors, reactant_list, product_lis
     return reaction_string
 
 
-def diff_reaction_common(models, reaction_id, colors):
+def diff_reaction_shared(models, reaction_id, colors):
     # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
 
     num_models = len(models)
