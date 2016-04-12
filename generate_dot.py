@@ -2,8 +2,9 @@ class GenerateDot():
     # This function has no dependency on BS4
     # It deals only with strings
 
-    def __init__(self, colors):
+    def __init__(self, colors, reaction_label=""):
         self.colors = colors
+        self.reaction_label = reaction_label
 
     def assign_color(self, num_models, model_set):
         if num_models == 1:
@@ -34,6 +35,10 @@ class GenerateDot():
             fill = 'fillcolor="grey", style="filled",'
 
         color = self.assign_color(num_models, model_set)
+
+        if self.reaction_label == "empty":
+            reaction_name = ""
+
         return '%s [shape="square", color="%s", %s label="%s"];' % (reaction_id, color, fill, reaction_name)
 
     # Used by diff_models()

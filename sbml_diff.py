@@ -338,7 +338,8 @@ if __name__ == '__main__':
     parser.add_argument('--params', '-p', help='Also print textual comparison of params', action='store_true')
     parser.add_argument('--kineticstable', help='Print textual comparison of params', action='store_true')
     parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
-    parser.add_argument('--colors', help="Output file")
+    parser.add_argument('--colors', help="List of colors (comma-separated)")
+    parser.add_argument('--reaction_unlabelled', help="Display reactions as squares without labels", action='store_true')
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
     args = parser.parse_args()
 
@@ -353,6 +354,10 @@ if __name__ == '__main__':
 
     else:
         all_colors = ["red", "blue"]  # A only, B only, ...
+
+    reaction_label = ""
+    if args.unlabelled_reaction:
+        reaction_label = "empty"
 
     # redirect STDOUT to specified file
     if args.outfile:
@@ -370,4 +375,4 @@ if __name__ == '__main__':
     if args.kineticstable:
         print_rate_law_table(all_models, all_model_names)
     else:
-        diff_models(all_models, GenerateDot(all_colors), print_param_comparison=args.params)
+        diff_models(all_models, GenerateDot(all_colors, reaction_label), print_param_comparison=args.params)
