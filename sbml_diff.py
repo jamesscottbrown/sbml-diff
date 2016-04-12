@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from effect_direction import categorise_interaction
 from generate_dot import *
 import argparse
@@ -171,6 +171,67 @@ def get_reaction_details(model, reaction_id):
     return reactant_list, product_list, compartment, rate_law
 
 
+def convert_rate_law(kinetic_law):
+    for math in kinetic_law.select_one("math"):
+        if isinstance(math, NavigableString):
+            continue
+        return convert_rate_law_inner(math)[1]
+
+
+def add_parens(term_elementary, terms):
+    if not term_elementary[0]:
+        terms[0] = "(%s)" % terms[0]
+    if not term_elementary[1]:
+        terms[1] = "(%s)" % terms[1]
+    return terms
+
+
+def convert_rate_law_inner(expression):
+
+    # Stuff we still need to handle:
+    # pi, infinity, exponential2
+    # delay csymbol
+    # piecewise functions
+
+    elementary = False
+    if expression.name in ["cn", "ci"]:
+        elementary = True
+        return elementary, expression.string.strip()
+
+    # First child is operator; next are arguments
+    operator = None
+    args = []
+    for child in expression.children:
+        if not operator:
+            operator = child.name
+        else:
+            if isinstance(child, NavigableString):
+                continue
+            args.append(child)
+
+    children_converted = []
+    children_elementary = []
+    for arg in args:
+        child_elementary, child_converted = convert_rate_law_inner(arg)
+        children_converted.append(child_converted)
+        children_elementary.append(child_elementary)
+
+    if operator == "plus":
+        return elementary, " + ".join(children_converted)
+    elif operator == "minus":
+        return elementary, " - ".join(children_converted)
+    elif operator == "times":
+        return elementary, " * ".join(children_converted)
+    elif operator == "divide":
+        children_converted = add_parens(children_elementary, children_converted)
+        return elementary, "%s / %s" % (children_converted[0], children_converted[1])
+    elif operator == "power":
+        children_converted = add_parens(children_elementary, children_converted)
+        return elementary, "%s ^ %s " % (children_converted[0], children_converted[1])
+    elif operator in ["root", "exp", "ln", "log", "floor", "ceiling", "factorial"]:
+        return elementary, "%s(%s)" % (operator, children_converted[0])
+
+
 def diff_reactions(models, generate_dot):
     # NB. reactions do not have an associated compartment!
     reaction_status = {}
@@ -210,9 +271,9 @@ def diff_reaction(models, reaction_id, generate_dot):
     for model_num, model in enumerate(models):
         reactants, products, compartment, rate_law = get_reaction_details(model, reaction_id)
 
-        if not rate_laws:
+        if rate_law and not rate_laws:
             rate_laws = rate_law
-        if rate_laws != rate_law:
+        if rate_laws and rate_law and rate_laws != rate_law:
             rate_laws = "different"
 
         for reactant in reactants:
@@ -238,7 +299,12 @@ def diff_reaction(models, reaction_id, generate_dot):
     # rate law
     parent_model = models[model_set[0]]
     reaction_name = get_reaction_name(parent_model, reaction_id)
-    return generate_dot.print_reaction_node(num_models, model_set, reaction_id, rate_law, reaction_name)
+
+    converted_rate_law = ""
+    if rate_laws and rate_laws != "different":
+        converted_rate_law = convert_rate_law(rate_laws)
+
+    return generate_dot.print_reaction_node(num_models, model_set, reaction_id, rate_law, reaction_name, converted_rate_law)
 
 
 def get_species_name(model, species_id):
@@ -339,7 +405,7 @@ if __name__ == '__main__':
     parser.add_argument('--kineticstable', help='Print textual comparison of params', action='store_true')
     parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
     parser.add_argument('--colors', help="List of colors (comma-separated)")
-    parser.add_argument('--reaction_unlabelled', help="Display reactions as squares without labels", action='store_true')
+    parser.add_argument('--reaction_labels', help="Style for reaction labels (none, name, name+rate, rate)")
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
     args = parser.parse_args()
 
@@ -355,9 +421,9 @@ if __name__ == '__main__':
     else:
         all_colors = ["red", "blue"]  # A only, B only, ...
 
-    reaction_label = ""
-    if args.reaction_unlabelled:
-        reaction_label = "empty"
+    reaction_labels = ""
+    if args.reaction_labels:
+        reaction_label = args.reaction_labels
 
     # redirect STDOUT to specified file
     if args.outfile:

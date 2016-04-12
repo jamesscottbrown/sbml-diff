@@ -29,15 +29,21 @@ class GenerateDot():
         color = self.assign_color(num_models, model_set)
         print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
-    def print_reaction_node(self, num_models, model_set, reaction_id, rate_law, reaction_name):
+    def print_reaction_node(self, num_models, model_set, reaction_id, rate_law, reaction_name, converted_law):
         fill = ''
         if rate_law == "different":
             fill = 'fillcolor="grey", style="filled",'
 
         color = self.assign_color(num_models, model_set)
 
-        if self.reaction_label == "empty":
+        if self.reaction_label == "none":
             reaction_name = ""
+        elif self.reaction_label == "name":
+            reaction_name = reaction_name
+        elif self.reaction_label == "name+rate":
+            reaction_name = reaction_name + "\n" + converted_law
+        elif self.reaction_label == "rate":
+            reaction_name = converted_law
 
         return '%s [shape="square", color="%s", %s label="%s"];' % (reaction_id, color, fill, reaction_name)
 
