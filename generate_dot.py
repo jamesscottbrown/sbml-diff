@@ -82,14 +82,11 @@ def print_reaction(num_models, model_set, colors, reactant_list, product_list, r
     color = assign_color(num_models, model_set, colors)
     reaction_string = '%s [shape="square", color="%s", label="%s"];' % (reaction_id, color, reaction_name)
 
-    # one 
-    if len(model_set) == 1 and num_models > 1:
+    for reactant in reactant_list:
+        print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
 
-        for reactant in reactant_list:
-            print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
-
-        for product in product_list:
-            print '%s -> %s [color="%s"];' % (reaction_id, product, color)
+    for product in product_list:
+        print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
 
     # all - handled before this function is called
