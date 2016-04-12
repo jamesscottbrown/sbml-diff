@@ -228,7 +228,7 @@ def diff_reaction(models, reaction_id, generate_dot):
     # reactant arrows
     for reactant in reactant_status:
         model_set = list(reactant_status[reactant])
-        generate_dot.print_reactant_arrow(num_models, model_set, reactant, reaction_id)
+        generate_dot.print_reactant_arrow(num_models, model_set, reaction_id, reactant)
 
     # product arrows
     for product in product_status:
@@ -238,7 +238,7 @@ def diff_reaction(models, reaction_id, generate_dot):
     # rate law
     parent_model = models[model_set[0]]
     reaction_name = get_reaction_name(parent_model, reaction_id)
-    return generate_dot.print_rate_law(num_models, model_set, rate_law, reaction_id, reaction_name)
+    return generate_dot.print_reaction_node(num_models, model_set, reaction_id, rate_law, reaction_name)
 
 
 def get_species_name(model, species_id):
@@ -278,7 +278,7 @@ def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
         parent_model_index = list(species_status[species])[0]
         parent_model = models[parent_model_index]
         species_name = get_species_name(parent_model, species)
-        generate_dot.print_species(num_models, species, species_status[species], species_name)
+        generate_dot.print_species_node(num_models, species_status[species], species, species_name)
 
     # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
     arrow_status = {}
@@ -294,7 +294,7 @@ def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
         arrow_parts = arrow.split('-')
         arrow_main = '-'.join(arrow_parts[:-1])
         arrow_direction = arrow_parts[-1]
-        generate_dot.print_regulatory_arrow(arrow_direction, arrow_status[arrow], arrow_main, num_models)
+        generate_dot.print_regulatory_arrow(num_models, arrow_status[arrow], arrow_main, arrow_direction)
 
     generate_dot.print_compartment_footer()
 
@@ -356,7 +356,7 @@ if __name__ == '__main__':
         all_colors = ["red", "blue"]  # A only, B only, ...
 
     reaction_label = ""
-    if args.unlabelled_reaction:
+    if args.reaction_unlabelled:
         reaction_label = "empty"
 
     # redirect STDOUT to specified file

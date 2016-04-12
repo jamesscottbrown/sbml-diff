@@ -21,7 +21,7 @@ class GenerateDot():
             return "pink"
 
     # Used by diff_reaction()
-    def print_reactant_arrow(self, num_models, model_set, reactant, reaction_id):
+    def print_reactant_arrow(self, num_models, model_set, reaction_id, reactant):
         color = self.assign_color(num_models, model_set)
         print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)
 
@@ -29,7 +29,7 @@ class GenerateDot():
         color = self.assign_color(num_models, model_set)
         print '%s -> %s [color="%s"];' % (reaction_id, product, color)
 
-    def print_rate_law(self, num_models, model_set, rate_law, reaction_id, reaction_name):
+    def print_reaction_node(self, num_models, model_set, reaction_id, rate_law, reaction_name):
         fill = ''
         if rate_law == "different":
             fill = 'fillcolor="grey", style="filled",'
@@ -60,12 +60,12 @@ class GenerateDot():
         print "\n"
         print "}"
 
-    def print_species(self, num_models, species, species_status, species_name):
-        color = self.assign_color(num_models, species_status)
-        print '"%s" [color="%s",label="%s"];' % (species, color, species_name)
+    def print_species_node(self, num_models, model_set, species_id, species_name):
+        color = self.assign_color(num_models, model_set)
+        print '"%s" [color="%s",label="%s"];' % (species_id, color, species_name)
 
-    def print_regulatory_arrow(self, arrow_direction, arrow_status, arrow_main, num_models):
-        color = self.assign_color(num_models, arrow_status)
+    def print_regulatory_arrow(self, num_models, model_set, arrow_main, arrow_direction):
+        color = self.assign_color(num_models, model_set)
 
         if arrow_direction == "monotonic_increasing":
             arrowhead = "vee"
