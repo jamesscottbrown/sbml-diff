@@ -17,7 +17,7 @@ def assign_color(num_models, model_set, colors):
         return "pink"
 
 
-# Used by diff_reaction_common()
+# Used by diff_reaction()
 def print_reactant_arrow(num_models, model_set, colors, reactant, reaction_id):
     color = assign_color(num_models, model_set, colors)
     print '%s -> %s [color="%s"];' % (reactant, reaction_id, color)

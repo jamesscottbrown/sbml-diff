@@ -192,13 +192,13 @@ def diff_reactions(models, colors):
         if compartment not in reaction_strings.keys():
             reaction_strings[compartment] = []
 
-        reaction_string = diff_reaction_shared(models, reaction_id, colors)
+        reaction_string = diff_reaction(models, reaction_id, colors)
         reaction_strings[compartment].append(reaction_string)
 
     return reaction_strings
 
 
-def diff_reaction_shared(models, reaction_id, colors):
+def diff_reaction(models, reaction_id, colors):
     # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
 
     num_models = len(models)
