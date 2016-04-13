@@ -262,8 +262,6 @@ def diff_reactions(models, generate_dot):
 def diff_reaction(models, reaction_id, generate_dot):
     # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
 
-    num_models = len(models)
-
     reactant_status = {}
     product_status = {}
     rate_laws = ""
@@ -289,12 +287,12 @@ def diff_reaction(models, reaction_id, generate_dot):
     # reactant arrows
     for reactant in reactant_status:
         model_set = list(reactant_status[reactant])
-        generate_dot.print_reactant_arrow(num_models, model_set, reaction_id, reactant)
+        generate_dot.print_reactant_arrow(model_set, reaction_id, reactant)
 
     # product arrows
     for product in product_status:
         model_set = list(product_status[product])
-        generate_dot.print_product_arrow(num_models, model_set, reaction_id, product)
+        generate_dot.print_product_arrow(model_set, reaction_id, product)
 
     # rate law
     parent_model = models[model_set[0]]
@@ -304,7 +302,7 @@ def diff_reaction(models, reaction_id, generate_dot):
     if rate_laws and rate_laws != "different":
         converted_rate_law = convert_rate_law(rate_laws)
 
-    return generate_dot.print_reaction_node(num_models, model_set, reaction_id, rate_law, reaction_name, converted_rate_law)
+    return generate_dot.print_reaction_node(model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
 
 def get_species_name(model, species_id):
@@ -325,7 +323,6 @@ def get_reaction_name(model, reaction_id):
 
 def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
     # add extra flag specifying status, to set color
-    num_models = len(models)
     generate_dot.print_compartment_header(compartment_id)
 
     # print the reaction squares that belong in this compartment
@@ -344,7 +341,7 @@ def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
         parent_model_index = list(species_status[species])[0]
         parent_model = models[parent_model_index]
         species_name = get_species_name(parent_model, species)
-        generate_dot.print_species_node(num_models, species_status[species], species, species_name)
+        generate_dot.print_species_node(species_status[species], species, species_name)
 
     # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
     arrow_status = {}
@@ -360,7 +357,7 @@ def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
         arrow_parts = arrow.split('-')
         arrow_main = '-'.join(arrow_parts[:-1])
         arrow_direction = arrow_parts[-1]
-        generate_dot.print_regulatory_arrow(num_models, arrow_status[arrow], arrow_main, arrow_direction)
+        generate_dot.print_regulatory_arrow(arrow_status[arrow], arrow_main, arrow_direction)
 
     generate_dot.print_compartment_footer()
 
@@ -410,9 +407,9 @@ if __name__ == '__main__':
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
     args = parser.parse_args()
 
+    num_files = len(args.infile)
     if args.colors:
         all_colors = args.colors.split(",")
-        num_files = len(args.infile)
 
         if len(all_colors) != num_files:
             print "Error: number of colors (%s) does not match number of input files (%s)\n" % (len(all_colors), num_files)
@@ -424,10 +421,10 @@ if __name__ == '__main__':
 
     reaction_labels = ""
     if args.reaction_labels:
-        reaction_label = args.reaction_labels
+        reaction_labels = args.reaction_labels
 
     selected_model = ""
-    if args.model != "":
+    if args.model:
         selected_model = args.model
 
     # redirect STDOUT to specified file
@@ -446,4 +443,4 @@ if __name__ == '__main__':
     if args.kineticstable:
         print_rate_law_table(all_models, all_model_names)
     else:
-        diff_models(all_models, GenerateDot(all_colors, reaction_label=reaction_label, selected_model=selected_model), print_param_comparison=args.params)
+        diff_models(all_models, GenerateDot(all_colors, num_files, reaction_label=reaction_labels, selected_model=selected_model), print_param_comparison=args.params)
