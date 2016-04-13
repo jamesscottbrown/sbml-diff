@@ -406,6 +406,7 @@ if __name__ == '__main__':
     parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
     parser.add_argument('--colors', help="List of colors (comma-separated)")
     parser.add_argument('--reaction_labels', help="Style for reaction labels (none, name, name+rate, rate)")
+    parser.add_argument('--model', help="Make visula elements not corresponding to the n'th model invisible")
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
     args = parser.parse_args()
 
@@ -425,6 +426,10 @@ if __name__ == '__main__':
     if args.reaction_labels:
         reaction_label = args.reaction_labels
 
+    selected_model = ""
+    if args.model != "":
+        selected_model = args.model
+
     # redirect STDOUT to specified file
     if args.outfile:
         sys.stdout = args.outfile
@@ -441,4 +446,4 @@ if __name__ == '__main__':
     if args.kineticstable:
         print_rate_law_table(all_models, all_model_names)
     else:
-        diff_models(all_models, GenerateDot(all_colors, reaction_label), print_param_comparison=args.params)
+        diff_models(all_models, GenerateDot(all_colors, reaction_label=reaction_label, selected_model=selected_model), print_param_comparison=args.params)
