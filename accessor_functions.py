@@ -83,7 +83,7 @@ def get_reaction_details(model, reaction_id):
             if compartment != get_species_compartment(model, species):
                 compartment = "NONE"
 
-    rate_law = reaction.select_one("kineticLaw")
+    rate_law = reaction.select_one("kineticLaw").select_one("math")
     return reactant_list, product_list, compartment, rate_law
 
 
@@ -121,7 +121,7 @@ def get_rule_details(model, target_id):
 
     compartment = get_species_compartment(model, target).strip()
 
-    rate_law = rule # TODO: check this
+    rate_law = rule.select_one("math")
 
     return modifiers, target, compartment, rate_law
 
