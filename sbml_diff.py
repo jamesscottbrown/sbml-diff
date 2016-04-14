@@ -1,45 +1,10 @@
-from bs4 import BeautifulSoup, NavigableString
-from effect_direction import categorise_interaction
+from bs4 import BeautifulSoup
+from accessor_functions import *
 from generate_dot import *
+from rate_laws import *
 import argparse
 import sys
 import os
-
-
-def get_params(model):
-    param_ids = []
-    param_values = {}
-
-    for param in model.select_one("listOfParameters").select("parameter"):
-        param_id = param.attrs["id"]
-        param_ids.append(param_id)
-        param_values[param_id] = param.attrs["value"]
-
-    return set(param_ids), param_values
-
-
-def get_regulatory_arrow(model, compartment):
-    species_ids = get_species(model, compartment)
-
-    arrows = []
-    for reaction in model.select_one("listOfReactions").select("reaction"):
-        reaction_id = reaction.attrs["id"]
-        for ci in reaction.select_one("kineticLaw").select("ci"):
-
-            # Check if this is a species id (it could validly be a species/compartment/parameter/function/reaction id)
-            species_id = ci.string.strip()
-            if species_id not in species_ids:
-                continue
-
-            # if not a reactant, add regulatory arrow
-            reactant_list, product_list, compartment, rate_law = get_reaction_details(model, reaction_id)
-            if species_id in reactant_list:
-                continue
-
-            arrow_direction = categorise_interaction(reaction.select_one("kineticLaw"), species_id)
-            arrows.append('"%s" -> "%s" -%s' % (species_id, reaction_id, arrow_direction))
-
-    return arrows
 
 
 def print_rate_law_table(models, model_names):
@@ -120,118 +85,6 @@ def compare_params(models):
             print "In some models (with %s values): %s (in %s)" % (value, param_id, ', '.join(model_list))
 
 
-def get_species(model, compartment_id):
-    # Return array of ids of species
-    # model is a BeatifulSoup object, and compartmentID is a string
-    ids = []
-    for s in model.select_one("listOfSpecies").select("species"):
-        if s.attrs["compartment"] == compartment_id:
-            ids.append(s.attrs["id"])
-    return ids
-
-
-def get_species_compartment(model, species_id):
-    species = model.select_one("listOfSpecies").find(id=species_id)
-    return species.attrs["compartment"]
-
-
-def get_reaction_details(model, reaction_id):
-    reaction = model.select_one("listOfReactions").find(id=reaction_id)
-
-    if not reaction:
-        return [], [], False, False
-
-    reactants = reaction.select_one("listOfReactants")
-    reactant_list = []
-    compartment = ""
-    if reactants:
-        for r in reactants.select("speciesReference"):
-            species = r.attrs["species"]
-            reactant_list.append(species)
-
-            if not compartment:
-                compartment = get_species_compartment(model, species)
-            if compartment != get_species_compartment(model, species):
-                compartment = "NONE"
-
-    products = reaction.select_one("listOfProducts")
-    product_list = []
-    if products:
-        for r in products.select("speciesReference"):
-            species = r.attrs["species"]
-            product_list.append(species)
-
-            # if reaction has no reactants, try to categorise by products instead
-            if not compartment:
-                compartment = get_species_compartment(model, species)
-            if compartment != get_species_compartment(model, species):
-                compartment = "NONE"
-
-    rate_law = reaction.select_one("kineticLaw")
-    return reactant_list, product_list, compartment, rate_law
-
-
-def convert_rate_law(kinetic_law):
-    for math in kinetic_law.select_one("math"):
-        if isinstance(math, NavigableString):
-            continue
-        return convert_rate_law_inner(math)[1]
-
-
-def add_parens(term_elementary, terms):
-    if not term_elementary[0]:
-        terms[0] = "(%s)" % terms[0]
-    if not term_elementary[1]:
-        terms[1] = "(%s)" % terms[1]
-    return terms
-
-
-def convert_rate_law_inner(expression):
-
-    # Stuff we still need to handle:
-    # pi, infinity, exponential2
-    # delay csymbol
-    # piecewise functions
-
-    elementary = False
-    if expression.name in ["cn", "ci"]:
-        elementary = True
-        return elementary, expression.string.strip()
-
-    # First child is operator; next are arguments
-    operator = None
-    args = []
-    for child in expression.children:
-        if not operator:
-            operator = child.name
-        else:
-            if isinstance(child, NavigableString):
-                continue
-            args.append(child)
-
-    children_converted = []
-    children_elementary = []
-    for arg in args:
-        child_elementary, child_converted = convert_rate_law_inner(arg)
-        children_converted.append(child_converted)
-        children_elementary.append(child_elementary)
-
-    if operator == "plus":
-        return elementary, " + ".join(children_converted)
-    elif operator == "minus":
-        return elementary, " - ".join(children_converted)
-    elif operator == "times":
-        return elementary, " * ".join(children_converted)
-    elif operator == "divide":
-        children_converted = add_parens(children_elementary, children_converted)
-        return elementary, "%s / %s" % (children_converted[0], children_converted[1])
-    elif operator == "power":
-        children_converted = add_parens(children_elementary, children_converted)
-        return elementary, "%s ^ %s " % (children_converted[0], children_converted[1])
-    elif operator in ["root", "exp", "ln", "log", "floor", "ceiling", "factorial"]:
-        return elementary, "%s(%s)" % (operator, children_converted[0])
-
-
 def diff_reactions(models, generate_dot):
     # NB. reactions do not have an associated compartment!
     reaction_status = {}
@@ -305,22 +158,6 @@ def diff_reaction(models, reaction_id, generate_dot):
     return generate_dot.print_reaction_node(model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
 
-def get_species_name(model, species_id):
-        s = model.select_one("listOfSpecies").find(id=species_id)
-        if "name" in s.attrs.keys() and s.attrs["name"]:
-            return s.attrs["name"]
-        else:
-            return species_id
-
-
-def get_reaction_name(model, reaction_id):
-        r = model.select_one("listOfReactions").find(id=reaction_id)
-        if "name" in r.attrs.keys() and r.attrs["name"]:
-            return r.attrs["name"]
-        else:
-            return reaction_id
-
-
 def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
     # add extra flag specifying status, to set color
     generate_dot.print_compartment_header(compartment_id)
@@ -360,13 +197,6 @@ def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
         generate_dot.print_regulatory_arrow(arrow_status[arrow], arrow_main, arrow_direction)
 
     generate_dot.print_compartment_footer()
-
-
-def get_reactions(model):
-    reactions = []
-    for r in model.select_one("listOfReactions").select("reaction"):
-        reactions.append(r.attrs["id"])
-    return reactions
 
 
 def diff_models(models, generate_dot, print_param_comparison=False):
