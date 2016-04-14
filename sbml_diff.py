@@ -85,6 +85,79 @@ def compare_params(models):
             print "In some models (with %s values): %s (in %s)" % (value, param_id, ', '.join(model_list))
 
 
+def diff_rules(models, generate_dot):
+    rule_status = {}
+    for model_num, model in enumerate(models):
+        rules = get_rules(model)
+
+        for rule in rules:
+            if rule not in rule_status.keys():
+                rule_status[rule] = set()
+
+            rule_status[rule].add(model_num)
+
+    rule_strings = {}
+
+    for rule_target in rule_status:
+        model_set = list(rule_status[rule])
+        inputs, output, compartment, rate_law = get_rule_details(models[model_set[0]], rule_target)
+
+        if compartment not in rule_strings.keys():
+            rule_strings[compartment] = []
+
+        rule_string = diff_rule(models, rule_target, generate_dot)
+        rule_strings[compartment].append(rule_string)
+
+    return rule_strings
+
+
+def diff_rule(models, rule_id, generate_dot):
+    # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
+
+    # 'modifiers' appear in the math expression of a rule that sets 'target'
+    # a rule has only one target, whereas reaction may have multiple products
+
+    modifier_status = {}
+    target_status = set()
+    rate_laws = ""
+
+    for model_num, model in enumerate(models):
+        modifiers, target, compartment, rate_law = get_rule_details(model, rule_id)
+
+        if rate_law and not rate_laws:
+            rate_laws = rate_law
+        if rate_laws and rate_law and rate_laws != rate_law:
+            rate_laws = "different"
+
+        for modifier in modifiers:
+            if modifier not in modifier_status.keys():
+                modifier_status[modifier] = set()
+            modifier_status[modifier].add(model_num)
+
+        # for target in targets:
+        target_status.add(model_num)
+
+    # modifier arrows
+    for modifier in modifier_status:
+        model_set = list(modifier_status[modifier])
+        generate_dot.print_rule_modifier_arrow(model_set, rule_id, modifier)
+
+    # target arrows
+    # for product in product_status:
+    model_set = list(target_status)
+    generate_dot.print_rule_target_arrow(model_set, rule_id, target)
+
+    # rate law
+    reaction_name = rule_id  # rules don't have name attributes
+
+    converted_rate_law = ""
+    if rate_laws and rate_laws != "different":
+        converted_rate_law = convert_rate_law(rate_laws)
+
+    return generate_dot.print_rule_node(model_set, rule_id, rate_laws, reaction_name, converted_rate_law)
+
+
+
 def diff_reactions(models, generate_dot):
     # NB. reactions do not have an associated compartment!
     reaction_status = {}
@@ -158,12 +231,17 @@ def diff_reaction(models, reaction_id, generate_dot):
     return generate_dot.print_reaction_node(model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
 
-def diff_compartment(compartment_id, models, reaction_strings, generate_dot):
+def diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot):
     # add extra flag specifying status, to set color
     generate_dot.print_compartment_header(compartment_id)
 
     # print the reaction squares that belong in this compartment
-    print "\n".join(reaction_strings[compartment_id])
+    if compartment_id in reaction_strings.keys():
+        print "\n".join(reaction_strings[compartment_id])
+
+    # print the rule nodes that belong in this compartment
+    if compartment_id in rule_strings.keys():
+        print "\n".join(rule_strings[compartment_id])
 
     # For each species, find set of models containing it
     species_status = {}
@@ -206,9 +284,12 @@ def diff_models(models, generate_dot, print_param_comparison=False):
     generate_dot.print_header()
 
     reaction_strings = diff_reactions(models, generate_dot)
+    rule_strings = diff_rules(models, generate_dot)
 
     if "NONE" in reaction_strings.keys():
         print reaction_strings["NONE"]
+    if "NONE" in rule_strings.keys():
+        print rule_strings["NONE"]
 
     # For every compartment in any model, record which models contain it
     compartment_status = {}
@@ -222,7 +303,7 @@ def diff_models(models, generate_dot, print_param_comparison=False):
             compartment_status[compartment_id].add(model_num)
 
     for compartment_id in compartment_status:
-        diff_compartment(compartment_id, models, reaction_strings, generate_dot)
+        diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot)
 
     generate_dot.print_footer()
 

@@ -93,6 +93,51 @@ def get_reactions(model):
         reactions.append(r.attrs["id"])
     return reactions
 
+def get_rule_details(model, target_id):
+    rule = model.select_one("listOfRules").find(variable=target_id)
+
+    species_ids = []
+    for s in model.select_one("listOfSpecies").select("species"):
+        species_ids.append(s.attrs["id"])
+
+    if not rule:
+        return [], [], False, False
+
+    # skip rules that set parameters rather than species concentrations
+    target = rule.attrs["variable"]
+    if not target or target not in species_ids:
+        return [], [], False, False
+
+    # get modifier details
+    modifiers = []
+    for ci in rule.select("ci"):
+
+        # Check if this is a species id (it could validly be a species/compartment/parameter/function/reaction id)
+        species_id = ci.string.strip()
+        if species_id not in species_ids:
+            continue
+
+        modifiers.append(species_id)
+
+    compartment = get_species_compartment(model, target).strip()
+
+    rate_law = rule # TODO: check this
+
+    return modifiers, target, compartment, rate_law
+
+def get_rules(model):
+    reactions = []
+    rule_list = model.select_one("listOfRules")
+
+    if not rule_list:
+        return []
+
+    for r in rule_list.select("assignmentRule"):
+        reactions.append(r.attrs["variable"])
+    for r in rule_list.select("rateRule"):
+        reactions.append(r.attrs["variable"])
+    return reactions
+
 
 def get_species_name(model, species_id):
         s = model.select_one("listOfSpecies").find(id=species_id)

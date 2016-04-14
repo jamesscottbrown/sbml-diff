@@ -32,7 +32,6 @@ class GenerateDot():
         else:
             return ', style="invis"'
 
-
     # Used by diff_reaction()
     def print_reactant_arrow(self, model_set, reaction_id, reactant):
         color = self.assign_color(model_set)
@@ -98,3 +97,29 @@ class GenerateDot():
         else:
             arrowhead = "dot"
         print '%s [style="dashed", color="%s", arrowhead="%s" %s];' % (arrow_main, color, arrowhead, visibility)
+
+    #
+    def print_rule_modifier_arrow(self, model_set, rule_id, modifier):
+        color = self.assign_color(model_set)
+        visibility = self.check_visibility(model_set)
+        print '%s -> rule_%s [color="%s", style="dotted" %s];' % (modifier, rule_id, color, visibility)
+
+    def print_rule_target_arrow(self, model_set, rule_id, target):
+        color = self.assign_color(model_set)
+        visibility = self.check_visibility(model_set)
+        print 'rule_%s -> %s [color="%s", style="dotted" %s];' % (rule_id, target, color, visibility)
+
+    def print_rule_node(self, model_set, rule_id, rate_law, reaction_name, converted_rate_law):
+        fill = ''
+        if rate_law == "different":
+            fill = 'fillcolor="grey", style="filled",'
+
+        color = self.assign_color(model_set)
+        visibility = self.check_visibility(model_set)
+
+        if self.reaction_label in ["none", "name", ""]:
+            rule_name = ""
+        elif self.reaction_label in ["name+rate", "rate"]:
+            rule_name = converted_rate_law
+
+        return 'rule_%s [shape="triangle", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, visibility)
