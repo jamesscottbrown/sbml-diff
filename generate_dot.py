@@ -122,4 +122,4 @@ class GenerateDot():
         elif self.reaction_label in ["name+rate", "rate"]:
             rule_name = converted_rate_law
 
-        return 'rule_%s [shape="triangle", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, visibility)
+        return 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, visibility)
