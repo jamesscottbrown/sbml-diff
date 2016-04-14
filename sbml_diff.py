@@ -124,6 +124,9 @@ def diff_rule(models, rule_id, generate_dot):
     for model_num, model in enumerate(models):
         modifiers, target, compartment, rate_law = get_rule_details(model, rule_id)
 
+        if not target:
+            return ""
+
         if rate_law and not rate_laws:
             rate_laws = rate_law
         if rate_laws and rate_law and rate_laws != rate_law:
