@@ -6,6 +6,11 @@ class GenerateDot():
         self.colors = colors
         self.num_models = num_models
 
+        # Categorical 12-step scheme from
+        # http://geog.uoregon.edu/datagraphics/color_scales.htm#Categorical%20Color%20Schemes
+        #self.colors = ["#FFBF7F", "#FF7F00", "#FFFF99", "#FFFF32", "#B2FF8C", "#32FF00",
+        #               "#A5EDFF", "#19B2FF", "#CCBFFF", "#654CFF", "#FF99BF", "#E51932"]
+
         self.selected_model = ""
         if selected_model != "":
             self.selected_model = int(selected_model) - 1
@@ -32,16 +37,24 @@ class GenerateDot():
         else:
             return ', style="invis"'
 
+    def check_bold(self, model_set):
+        if len(model_set) < self.num_models:
+            return ', style="bold"'
+        else:
+            return ""
+
     # Used by diff_reaction()
     def print_reactant_arrow(self, model_set, reaction_id, reactant):
         color = self.assign_color(model_set)
         visibility = self.check_visibility(model_set)
-        print '%s -> %s [color="%s" %s];' % (reactant, reaction_id, color, visibility)
+        bold = self.check_bold(model_set)
+        print '%s -> %s [color="%s" %s %s];' % (reactant, reaction_id, color, visibility, bold)
 
     def print_product_arrow(self, model_set, reaction_id, product):
         color = self.assign_color(model_set)
         visibility = self.check_visibility(model_set)
-        print '%s -> %s [color="%s" %s];' % (reaction_id, product, color, visibility)
+        bold = self.check_bold(model_set)
+        print '%s -> %s [color="%s" %s %s];' % (reaction_id, product, color, visibility, bold)
 
     def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law):
         fill = ''
@@ -50,6 +63,7 @@ class GenerateDot():
 
         color = self.assign_color(model_set)
         visibility = self.check_visibility(model_set)
+        bold = self.check_bold(model_set)
 
         if self.reaction_label == "none":
             reaction_name = ""
@@ -60,7 +74,7 @@ class GenerateDot():
         elif self.reaction_label == "rate":
             reaction_name = converted_law
 
-        return '%s [shape="square", color="%s", %s label="%s" %s];' % (reaction_id, color, fill, reaction_name, visibility)
+        return '%s [shape="square", color="%s", %s label="%s" %s %s];' % (reaction_id, color, fill, reaction_name, visibility, bold)
 
     # Used by diff_models()
     def print_header(self):
@@ -116,10 +130,12 @@ class GenerateDot():
 
         color = self.assign_color(model_set)
         visibility = self.check_visibility(model_set)
+        bold = self.check_bold(model_set)
+
 
         if self.reaction_label in ["none", "name", ""]:
             rule_name = ""
         elif self.reaction_label in ["name+rate", "rate"]:
             rule_name = converted_rate_law
 
-        return 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, visibility)
+        return 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s %s];' % (rule_id, color, fill, rule_name, visibility, bold)

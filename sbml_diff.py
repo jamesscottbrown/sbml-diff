@@ -331,7 +331,7 @@ if __name__ == '__main__':
             sys.exit(0)
 
     else:
-        all_colors = ["red", "blue"]  # A only, B only, ...
+        all_colors = ["#FF7F00",  "#32FF00", "#19B2FF", "#654CFF",  "#E51932", "#FFFF32"]
 
     reaction_labels = ""
     if args.reaction_labels:
