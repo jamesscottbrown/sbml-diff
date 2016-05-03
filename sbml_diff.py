@@ -290,9 +290,9 @@ def diff_models(models, generate_dot, print_param_comparison=False):
     rule_strings = diff_rules(models, generate_dot)
 
     if "NONE" in reaction_strings.keys():
-        print reaction_strings["NONE"]
+        print "\n".join(reaction_strings["NONE"])
     if "NONE" in rule_strings.keys():
-        print rule_strings["NONE"]
+        print "\n".join(rule_strings["NONE"])
 
     # For every compartment in any model, record which models contain it
     compartment_status = {}
