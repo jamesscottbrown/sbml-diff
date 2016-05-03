@@ -38,7 +38,7 @@ def classify_basic_interaction(operator, child_classifications):
         return "mixed"
 
     # monotonic function of one input:
-    if operator in ["root", "exp", "ln", "log", "floor", "ceiling", "factorial"]:
+    if operator in ["root", "exp", "ln", "log", "floor", "ceiling", "factorial", "delay"]:
         return child_classifications[0]
 
     if operator == "power":
@@ -77,7 +77,6 @@ def categorise_interaction_inner(expression, species_id):
 
     # Stuff we still need to handle:
     # pi, infinity, exponential2
-    # delay csymbol
     # piecewise functions
 
     if expression.name == "cn":
@@ -95,6 +94,8 @@ def categorise_interaction_inner(expression, species_id):
     for child in expression.children:
         if not operator:
             operator = child.name
+            if child.name == "csymbol" and child.string.strip() == "delay":
+                operator = "delay"
         else:
             if isinstance(child, NavigableString):
                 continue

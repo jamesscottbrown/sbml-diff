@@ -16,7 +16,6 @@ def convert_rate_law_inner(expression):
 
     # Stuff we still need to handle:
     # pi, infinity, exponential2
-    # delay csymbol
     # piecewise functions
 
     elementary = False
@@ -37,6 +36,8 @@ def convert_rate_law_inner(expression):
         for child in expression.children:
             if not operator:
                 operator = child.name
+                if child.name == "csymbol" and child.string.strip() == "delay":
+                    operator = "delay"
             else:
                 if isinstance(child, NavigableString):
                     continue
@@ -61,5 +62,7 @@ def convert_rate_law_inner(expression):
         elif operator == "power":
             children_converted = add_parens(children_elementary, children_converted)
             return elementary, "%s ^ %s " % (children_converted[0], children_converted[1])
+        elif operator == "delay":
+            return elementary, "delay(%s, %s)" % (children_converted[0], children_converted[1])
         elif operator in ["root", "exp", "ln", "log", "floor", "ceiling", "factorial"]:
             return elementary, "%s(%s)" % (operator, children_converted[0])
