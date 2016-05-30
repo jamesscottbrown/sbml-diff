@@ -9,5 +9,6 @@ setup(name='Distutils',
       author_email='james@jamesscottbrown.com',
       url='',
       packages=['sbml_diff'],
+      scripts=['sbml-diff.py'],
       install_requires=['BeautifulSoup']
      )
