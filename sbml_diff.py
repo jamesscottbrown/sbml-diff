@@ -317,7 +317,7 @@ if __name__ == '__main__':
     parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
     parser.add_argument('--colors', help="List of colors (comma-separated)")
     parser.add_argument('--reaction_labels', help="Style for reaction labels (none, name, name+rate, rate)")
-    parser.add_argument('--model', help="Make visula elements not corresponding to the n'th model invisible")
+    parser.add_argument('--model', help="Make visual elements not corresponding to the n'th model invisible")
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
     args = parser.parse_args()
 
