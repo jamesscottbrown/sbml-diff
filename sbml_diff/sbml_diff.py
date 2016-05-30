@@ -280,7 +280,8 @@ def diff_compartment(compartment_id, models, reaction_strings, rule_strings, gen
     generate_dot.print_compartment_footer()
 
 
-def diff_models(models, generate_dot, print_param_comparison=False):
+def diff_models(models_strings, generate_dot, print_param_comparison=False):
+    models = map(lambda x: BeautifulSoup(x, 'xml'), models_strings)
     if print_param_comparison:
         compare_params(models)
 
@@ -348,8 +349,8 @@ if __name__ == '__main__':
     all_models = []
     all_model_names = []
     for inFile in args.infile:
-        html = inFile.read()
-        all_models.append(BeautifulSoup(html, 'xml'))
+        model_string = inFile.read()
+        all_models.append(model_string)
 
         file_name = os.path.basename(os.path.split(inFile.name)[1])
         all_model_names.append(os.path.splitext(file_name)[0])

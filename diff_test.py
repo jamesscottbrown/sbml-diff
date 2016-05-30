@@ -1,14 +1,9 @@
-import sbml_diff
-from bs4 import BeautifulSoup
-from generate_dot import GenerateDot
+from sbml_diff import *
 
 f1 = open('examples/model-comparison/mRNAselfReg1.sbml', 'r')
-html_doc1 = f1.read()
-soup1 = BeautifulSoup(html_doc1, 'xml')
+m1 = f1.read()
 
 f2 = open('examples/model-comparison/mRNAselfReg2.sbml', 'r')
-html_doc2 = f2.read()
-soup2 = BeautifulSoup(html_doc2, 'xml')
+m2 = f2.read()
 
-
-sbml_diff.diff_models([soup1, soup2], GenerateDot(["red", "blue"]))
+sbml_diff.diff_models([m1, m2], sbml_diff.GenerateDot(["red", "blue"], 2))
