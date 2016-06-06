@@ -55,6 +55,7 @@ def convert_rate_law_inner(expression):
         elif operator == "minus":
             return elementary, " - ".join(children_converted)
         elif operator == "times":
+            children_converted = add_parens(children_elementary, children_converted)
             return elementary, " * ".join(children_converted)
         elif operator == "divide":
             children_converted = add_parens(children_elementary, children_converted)
