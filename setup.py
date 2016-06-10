@@ -2,9 +2,9 @@
 
 from setuptools import setup
 
-setup(name='Distutils',
+setup(name='sbml-diff',
       version='1.0',
-      description='Python Distribution Utilities',
+      description='sbml-diff is a tool for visually comparing SBML models',
       author='James Scott-Brown',
       author_email='james@jamesscottbrown.com',
       url='',
