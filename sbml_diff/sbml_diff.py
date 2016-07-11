@@ -306,3 +306,114 @@ def diff_models(models_strings, generate_dot, print_param_comparison=False):
         diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot)
 
     generate_dot.print_footer()
+
+
+def abstract_model(model):
+
+    # Get list of species
+    listOfSpecies = set()
+    for compartment in model.select('compartment'):
+        compartment_id = compartment.attrs["id"]
+        listOfSpecies = listOfSpecies.union(get_species(model, compartment_id))
+
+    # interaction[modifier][species]
+    interactions = {}
+    for s1 in listOfSpecies:
+        interactions[s1] = {}
+        for s2 in listOfSpecies:
+            interactions[s1][s2] = set()
+
+    # Loop over reactions, categorising each
+    reactions = get_reactions(model)
+    for reaction in reactions:
+        reactant_list, product_list, compartment, rate_law = get_reaction_details(model, reaction)
+
+        # Identify which of these affect reaction rate
+        modifiers = []
+        for ci in rate_law.findAll("ci"):
+            name = ci.text.strip()
+            if name in listOfSpecies:
+                modifiers.append(name)
+        modifiers = set(modifiers)
+
+        # Consider only species that affect reaction rate without being reactants
+        modifiers = modifiers.difference(reactant_list)
+
+        for modifier in modifiers:
+            for reactant in reactant_list:
+                effect = categorise_interaction(rate_law.parent, modifier)
+                if effect == "monotonic_increasing":
+                    interactions[modifier][reactant].add("increase-degredation")
+                elif effect == "monotonic_decreasing":
+                    interactions[modifier][reactant].add("decrease-degredation")
+
+            for product in product_list:
+                effect = categorise_interaction(rate_law.parent, modifier)
+                if effect == "monotonic_increasing":
+                    interactions[modifier][product].add("increase-production")
+                elif effect == "monotonic_decreasing":
+                    interactions[modifier][product].add("decrease-production")
+
+    return interactions, listOfSpecies
+
+
+# TODO: compartments!
+def diff_abstract_models(model_strings, generate_dot, ignored_species=False):
+    models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
+
+    effect_types = ["increase-degredation", "decrease-degredation", "increase-production", "decrease-production"]
+
+    # Construct abstracted version of each model
+    abstracted_model = [] * len(models)
+    species_list = set()
+    models_containing_species = {}
+
+    for model_num, model in enumerate(models):
+        abstract, species = abstract_model(model)
+
+        abstracted_model.append(abstract)
+        species_list = species_list.union(species)
+
+        for s in species:
+            if s not in models_containing_species.keys():
+                models_containing_species[s] = set()
+            models_containing_species[s].add(model_num)
+
+    species_list = species_list.difference(ignored_species)
+
+    print "digraph comparison {"
+
+    for s in species_list:
+        model_num = list(models_containing_species[s])[0]
+        species_name = get_species_name(models[model_num], s)
+        generate_dot.print_species_node(models_containing_species[s], s, species_name)
+
+    # Construct interactions[modifier][species][type] = set of model_numbers
+    interactions = {}
+    for s1 in species_list:
+        interactions[s1] = {}
+        for s2 in species_list:
+            interactions[s1][s2] = {}
+            for effect in effect_types:
+                interactions[s1][s2][effect] = set()
+
+    for model_num, model in enumerate(models):
+        for modifier in species_list:
+            if model_num not in models_containing_species[modifier]:
+                continue
+
+            for species in species_list:
+                if model_num not in models_containing_species[species]:
+                    continue
+
+                effects = abstracted_model[model_num][modifier][species]
+                for effect_type in effects:
+                    interactions[modifier][species][effect_type].add(model_num)
+
+    for modifier in species_list:
+        for species in species_list:
+            for effect_type in effect_types:
+                model_list = interactions[modifier][species][effect_type]
+                generate_dot.print_abstracted_arrow(model_list, modifier, species, effect_type)
+
+    print "}"

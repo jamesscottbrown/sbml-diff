@@ -32,7 +32,7 @@ class GenerateDot():
             return "black"
 
     def check_style(self, model_set):
-        style = ""
+        style = ', style=""'
         if self.selected_model == "" or self.selected_model in model_set:
             if len(model_set) < self.num_models:
                 style = ', style="bold"'
@@ -131,3 +131,21 @@ class GenerateDot():
             rule_name = converted_rate_law
 
         return 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style)
+
+    def print_abstracted_arrow(self, model_set, modifier, target, effect_type):
+
+        if len(model_set) == 0:
+            return
+
+        color = self.assign_color(model_set)
+        style = self.check_style(model_set)
+
+        if effect_type in ["decrease-degredation", "increase-production"]:
+            arrowhead = "vee"
+        else:
+            arrowhead = "tee"
+
+        if effect_type in ["increase-degredation", "decrease-degredation"]:
+            style = style[:-1] + 'dashed"'
+
+        print '%s -> %s [style="dashed", color="%s", arrowhead="%s" %s];' % (modifier, target, color, arrowhead, style)
