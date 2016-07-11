@@ -129,7 +129,7 @@ def check_sign_numerically(expr, param_names, species_id):
     # - the sign of its gradient depends on value of one of the parameters (eg x^a/x^b)
     # - the sign of its gradient depends on the concentration of the corresponding species
 
-    expr = convert_rate_law(expr)
+    expr = convert_rate_law(expr, variables_not_to_substitute=[species_id])
 
     replacement = {'^': '**', 'exp': 'math.exp', 'ln': 'math.log', 'log': 'math.log10', 'ceiling': 'math.ceil',
                    'floor': 'math.floor', 'factorial': 'math.factorial', 'delay': '', 'pi': 'math.pi',
@@ -139,9 +139,6 @@ def check_sign_numerically(expr, param_names, species_id):
         expr = expr.replace(old, replacement[old])
 
     param_names.remove(species_id)
-
-    for param in param_names:
-        expr = expr.replace(param, '1.0')
 
     rate_change = eval(expr.replace(species_id, '1')) - eval(expr.replace(species_id, '0'))
 

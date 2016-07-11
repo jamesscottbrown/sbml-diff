@@ -1,7 +1,8 @@
 from bs4 import BeautifulSoup, NavigableString
 
-def convert_rate_law(math):
-    return convert_rate_law_inner(math)[1]
+
+def convert_rate_law(math, variables_not_to_substitute=False):
+    return convert_rate_law_inner(math, variables_not_to_substitute)[1]
 
 
 def add_parens(term_elementary, terms):
@@ -12,7 +13,7 @@ def add_parens(term_elementary, terms):
     return terms
 
 
-def convert_rate_law_inner(expression):
+def convert_rate_law_inner(expression, variables_not_to_substitute=False):
 
     # Stuff we still need to handle:
     # pi, infinity, exponential2
@@ -21,13 +22,18 @@ def convert_rate_law_inner(expression):
     elementary = False
     if expression.name in ["cn", "ci"]:
         elementary = True
-        return elementary, expression.string.strip()
+        term = expression.string.strip()
+
+        if variables_not_to_substitute and term not in variables_not_to_substitute:
+            term = '1.0'
+
+        return elementary, term
 
     # math may contain either an <apply> or a <cn>
     if expression.name == "math":
         for child in expression.children:
             if not isinstance(child, NavigableString):
-                return convert_rate_law_inner(child)
+                return convert_rate_law_inner(child, variables_not_to_substitute)
 
     # First child is operator; next are arguments
     if expression.name == "apply":
@@ -46,7 +52,7 @@ def convert_rate_law_inner(expression):
         children_converted = []
         children_elementary = []
         for arg in args:
-            child_elementary, child_converted = convert_rate_law_inner(arg)
+            child_elementary, child_converted = convert_rate_law_inner(arg, variables_not_to_substitute)
             children_converted.append(child_converted)
             children_elementary.append(child_elementary)
 
