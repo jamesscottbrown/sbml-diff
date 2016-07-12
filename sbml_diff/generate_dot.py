@@ -2,7 +2,7 @@ class GenerateDot():
     # This function has no dependency on BS4
     # It deals only with strings
 
-    def __init__(self, colors, num_models, reaction_label="", selected_model=""):
+    def __init__(self, colors, num_models, reaction_label="", selected_model="", show_stoichiometry=False):
         self.colors = colors
         self.num_models = num_models
 
@@ -15,6 +15,7 @@ class GenerateDot():
         if selected_model != "":
             self.selected_model = int(selected_model) - 1
 
+        self.show_stoichiometry = show_stoichiometry
         self.reaction_label = reaction_label
 
     def assign_color(self, model_set):
@@ -41,15 +42,25 @@ class GenerateDot():
         return style
 
     # Used by diff_reaction()
-    def print_reactant_arrow(self, model_set, reaction_id, reactant):
+    def print_reactant_arrow(self, model_set, reaction_id, reactant, stoich):
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
-        print '%s -> %s [color="%s" %s];' % (reactant, reaction_id, color, style)
 
-    def print_product_arrow(self, model_set, reaction_id, product):
+        stoich_string = ''
+        if self.show_stoichiometry:
+            stoich_string = ', headlabel="%s", labelfontcolor=red' % stoich
+
+        print '%s -> %s [color="%s"%s%s];' % (reactant, reaction_id, color, stoich_string, style)
+
+    def print_product_arrow(self, model_set, reaction_id, product, stoich):
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
-        print '%s -> %s [color="%s" %s];' % (reaction_id, product, color, style)
+
+        stoich_string = ''
+        if self.show_stoichiometry:
+            stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
+
+        print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
 
     def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law):
         fill = ''
@@ -98,13 +109,15 @@ class GenerateDot():
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
 
+        style = style[:-1] + ',dashed"'
+
         if arrow_direction == "monotonic_increasing":
             arrowhead = "vee"
         elif arrow_direction == "monotonic_decreasing":
             arrowhead = "tee"
         else:
             arrowhead = "dot"
-        print '%s [style="dashed", color="%s", arrowhead="%s" %s];' % (arrow_main, color, arrowhead, style)
+        print '%s [color="%s", arrowhead="%s" %s];' % (arrow_main, color, arrowhead, style)
 
     #
     def print_rule_modifier_arrow(self, model_set, rule_id, modifier):

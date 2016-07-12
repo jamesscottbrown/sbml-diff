@@ -26,7 +26,7 @@ def get_regulatory_arrow(model, compartment):
                 continue
 
             # if not a reactant, add regulatory arrow
-            reactant_list, product_list, compartment, rate_law = get_reaction_details(model, reaction_id)
+            reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(model, reaction_id)
             if species_id in reactant_list:
                 continue
 
@@ -59,9 +59,13 @@ def get_reaction_details(model, reaction_id):
 
     reactants = reaction.select_one("listOfReactants")
     reactant_list = []
+    reactant_stoichiometries = []
     compartment = ""
     if reactants:
         for r in reactants.select("speciesReference"):
+            stoich = r.attrs["stoichiometry"]
+            reactant_stoichiometries.append(stoich)
+
             species = r.attrs["species"]
             reactant_list.append(species)
 
@@ -72,8 +76,12 @@ def get_reaction_details(model, reaction_id):
 
     products = reaction.select_one("listOfProducts")
     product_list = []
+    product_stoichiometries = []
     if products:
         for r in products.select("speciesReference"):
+            stoich = r.attrs["stoichiometry"]
+            product_stoichiometries.append(stoich)
+
             species = r.attrs["species"]
             product_list.append(species)
 
@@ -84,7 +92,7 @@ def get_reaction_details(model, reaction_id):
                 compartment = "NONE"
 
     rate_law = reaction.select_one("kineticLaw").select_one("math")
-    return reactant_list, product_list, compartment, rate_law
+    return reactant_list, product_list, compartment, rate_law, reactant_stoichiometries, product_stoichiometries
 
 
 def get_reactions(model):

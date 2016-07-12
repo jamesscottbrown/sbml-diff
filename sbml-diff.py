@@ -8,6 +8,7 @@ if __name__ == '__main__':
     parser.add_argument('--abstract', '-a', help='Rather than comparing all reactions, compare abstract regulatory network', action='store_true')
     parser.add_argument('--ignore', '-i', help="List of species to ignore (comma-separated). Works with -a only")
 
+    parser.add_argument('--stoich', '-s', help='Also label edges with stoichiometry', action='store_true')
     parser.add_argument('--params', '-p', help='Also print textual comparison of params', action='store_true')
     parser.add_argument('--kineticstable', help='Print textual comparison of params', action='store_true')
     parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
@@ -50,12 +51,15 @@ if __name__ == '__main__':
         file_name = os.path.basename(os.path.split(inFile.name)[1])
         all_model_names.append(os.path.splitext(file_name)[0])
 
+    output_formatter = sbml_diff.GenerateDot(all_colors, num_files, reaction_label=reaction_labels,
+                                             selected_model=selected_model, show_stoichiometry=args.stoich)
+
     if args.kineticstable:
         sbml_diff.print_rate_law_table(all_models, all_model_names)
     elif args.abstract:
         ignored_species = []
         if args.ignore:
             ignored_species = args.ignore.split(',')
-        sbml_diff.diff_abstract_models(all_models, sbml_diff.GenerateDot(all_colors, num_files, reaction_label=reaction_labels, selected_model=selected_model), ignored_species=ignored_species)
+        sbml_diff.diff_abstract_models(all_models, output_formatter, ignored_species=ignored_species)
     else:
-        sbml_diff.diff_models(all_models, sbml_diff.GenerateDot(all_colors, num_files, reaction_label=reaction_labels, selected_model=selected_model), print_param_comparison=args.params)
+        sbml_diff.diff_models(all_models, output_formatter, print_param_comparison=args.params)
