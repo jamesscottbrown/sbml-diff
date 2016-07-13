@@ -55,7 +55,7 @@ def get_reaction_details(model, reaction_id):
     reaction = model.select_one("listOfReactions").find(id=reaction_id)
 
     if not reaction:
-        return [], [], False, False
+        return [], [], False, False, [], []
 
     reactants = reaction.select_one("listOfReactants")
     reactant_list = []
