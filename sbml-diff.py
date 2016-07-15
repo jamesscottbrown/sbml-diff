@@ -7,6 +7,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--abstract', '-a', help='Rather than comparing all reactions, compare abstract regulatory network', action='store_true')
     parser.add_argument('--ignore', '-i', help="List of species to ignore (comma-separated). Works with -a only")
+    parser.add_argument('--elide', '-e', help="List of species to elide (comma-separated). Works with -a only")
 
     parser.add_argument('--stoich', '-s', help='Also label edges with stoichiometry', action='store_true')
     parser.add_argument('--params', '-p', help='Also print textual comparison of params', action='store_true')
@@ -57,9 +58,14 @@ if __name__ == '__main__':
     if args.kineticstable:
         sbml_diff.print_rate_law_table(all_models, all_model_names)
     elif args.abstract:
-        ignored_species = []
+        ignored = []
         if args.ignore:
-            ignored_species = args.ignore.split(',')
-        sbml_diff.diff_abstract_models(all_models, output_formatter, ignored_species=ignored_species)
+            ignored = args.ignore.split(',')
+
+        elided = []
+        if args.elide:
+            elided = args.elide.split(',')
+
+        sbml_diff.diff_abstract_models(all_models, output_formatter, ignored_species=ignored, elided_species=elided)
     else:
         sbml_diff.diff_models(all_models, output_formatter, print_param_comparison=args.params)

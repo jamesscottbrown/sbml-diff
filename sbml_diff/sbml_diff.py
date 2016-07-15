@@ -375,7 +375,7 @@ def abstract_model(model):
 
 
 # TODO: compartments!
-def diff_abstract_models(model_strings, generate_dot, ignored_species=False):
+def diff_abstract_models(model_strings, generate_dot, ignored_species=False, elided_species=False):
     models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
 
     effect_types = ["increase-degredation", "decrease-degredation", "increase-production", "decrease-production"]
@@ -397,10 +397,11 @@ def diff_abstract_models(model_strings, generate_dot, ignored_species=False):
             models_containing_species[s].add(model_num)
 
     species_list = species_list.difference(ignored_species)
+    retained_species = species_list.difference(elided_species)
 
     print "digraph comparison {"
 
-    for s in species_list:
+    for s in retained_species:
         model_num = list(models_containing_species[s])[0]
         species_name = get_species_name(models[model_num], s)
         generate_dot.print_species_node(models_containing_species[s], s, species_name)
@@ -427,10 +428,47 @@ def diff_abstract_models(model_strings, generate_dot, ignored_species=False):
                 for effect_type in effects:
                     interactions[modifier][species][effect_type].add(model_num)
 
-    for modifier in species_list:
-        for species in species_list:
+    if elided_species:
+        interactions = elide(interactions, elided_species, species_list, models, effect_types)
+
+    for modifier in retained_species:
+        for species in retained_species:
             for effect_type in effect_types:
                 model_list = interactions[modifier][species][effect_type]
                 generate_dot.print_abstracted_arrow(model_list, modifier, species, effect_type)
 
     print "}"
+
+def elide(interactions, elided_species, species_list, models, effect_types):
+    for model_num, model in enumerate(models):
+
+        # For each elided species,
+        for s in elided_species:
+
+            # find the 'downstream' species (eg. the protein produced from mRNA)
+            for s2 in species_list:
+                if model_num in interactions[s][s2]["increase-production"]:
+                    downstream = s2
+
+            if not downstream:
+                continue
+
+            # If an interaction targets the elided species, add the corresponding interaction directly to the elided species
+            for regulator in species_list:
+                for effect_type in effect_types:
+                    if model_num in interactions[regulator][s][effect_type]:
+
+                        # add direct interaction
+                        interactions[regulator][downstream][effect_type].add(model_num)
+
+
+    for s in elided_species:
+        interactions.pop(s)
+
+        for s2 in species_list:
+            if s2 in interactions.keys():
+                interactions[s2].pop(s)
+
+
+    # Then remove the elided species
+    return interactions
