@@ -32,13 +32,15 @@ class GenerateDot():
         elif 0 < len(model_set) < self.num_models:
             return "black"
 
-    def check_style(self, model_set):
-        style = ', style=""'
+    def check_style(self, model_set, base_style=''):
+        style = ', style="%s"' % base_style
+
+        base_style = "," + base_style
         if self.selected_model == "" or self.selected_model in model_set:
             if len(model_set) < self.num_models:
-                style = ', style="bold"'
+                style = ', style="bold%s"' % base_style
         else:
-            style = ', style="invis"'
+            style = ', style="invis%s"' % base_style
         return style
 
     # Used by diff_reaction()
@@ -64,11 +66,13 @@ class GenerateDot():
 
     def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law):
         fill = ''
+        base_style = ''
         if rate_law == "different":
-            fill = 'fillcolor="grey", style="filled",'
+            fill = 'fillcolor="grey",'
+            base_style = 'filled'
 
         color = self.assign_color(model_set)
-        style = self.check_style(model_set)
+        style = self.check_style(model_set, base_style)
 
         if self.reaction_label == "none":
             reaction_name = ""
@@ -107,9 +111,7 @@ class GenerateDot():
 
     def print_regulatory_arrow(self, model_set, arrow_main, arrow_direction):
         color = self.assign_color(model_set)
-        style = self.check_style(model_set)
-
-        style = style[:-1] + ',dashed"'
+        style = self.check_style(model_set, 'dashed')
 
         if arrow_direction == "monotonic_increasing":
             arrowhead = "vee"
@@ -132,11 +134,13 @@ class GenerateDot():
 
     def print_rule_node(self, model_set, rule_id, rate_law, reaction_name, converted_rate_law):
         fill = ''
+        base_style = ''
         if rate_law == "different":
-            fill = 'fillcolor="grey", style="filled",'
+            fill = 'fillcolor="grey",'
+            base_style = 'filled'
 
         color = self.assign_color(model_set)
-        style = self.check_style(model_set)
+        style = self.check_style(model_set, base_style)
 
         if self.reaction_label in ["none", "name", ""]:
             rule_name = ""
@@ -150,15 +154,15 @@ class GenerateDot():
         if len(model_set) == 0:
             return
 
+        if effect_type in ["increase-degredation", "decrease-degredation"]:
+            base_style = 'dashed'
+
         color = self.assign_color(model_set)
-        style = self.check_style(model_set)
+        style = self.check_style(model_set, base_style)
 
         if effect_type in ["decrease-degredation", "increase-production"]:
             arrowhead = "vee"
         else:
             arrowhead = "tee"
-
-        if effect_type in ["increase-degredation", "decrease-degredation"]:
-            style = style[:-1] + 'dashed"'
 
         print '%s -> %s [style="dashed", color="%s", arrowhead="%s" %s];' % (modifier, target, color, arrowhead, style)
