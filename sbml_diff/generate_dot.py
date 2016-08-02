@@ -142,9 +142,8 @@ class GenerateDot():
         color = self.assign_color(model_set)
         style = self.check_style(model_set, base_style)
 
-        if self.reaction_label in ["none", "name", ""]:
-            rule_name = ""
-        elif self.reaction_label in ["name+rate", "rate"]:
+        rule_name = ""
+        if self.reaction_label in ["name+rate", "rate"]:
             rule_name = converted_rate_law
 
         return 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style)
@@ -154,6 +153,7 @@ class GenerateDot():
         if len(model_set) == 0:
             return
 
+        base_style = ''
         if effect_type in ["increase-degredation", "decrease-degredation"]:
             base_style = 'dashed'
 

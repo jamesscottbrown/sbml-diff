@@ -445,6 +445,7 @@ def elide(interactions, elided_species, species_list, models, effect_types):
         # For each elided species,
         for s in elided_species:
 
+            downstream = False
             # find the 'downstream' species (eg. the protein produced from mRNA)
             for s2 in species_list:
                 if model_num in interactions[s][s2]["increase-production"]:
