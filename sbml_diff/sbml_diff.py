@@ -451,6 +451,10 @@ def elide(interactions, elided_species, species_list, models, effect_types):
         # For each elided species,
         for s in elided_species:
 
+            if s not in interactions.keys():
+                # TODO: print a warning to the user?
+                continue
+
             downstream = False
             # find the 'downstream' species (eg. the protein produced from mRNA)
             for s2 in species_list:
