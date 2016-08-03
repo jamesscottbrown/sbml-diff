@@ -446,15 +446,11 @@ def diff_abstract_models(model_strings, generate_dot, ignored_species=False, eli
     print "}"
 
 def elide(interactions, elided_species, species_list, models, effect_types):
+    elided_species = set(elided_species).intersection(species_list)
     for model_num, model in enumerate(models):
 
         # For each elided species,
         for s in elided_species:
-
-            if s not in interactions.keys():
-                # TODO: print a warning to the user?
-                continue
-
             downstream = False
             # find the 'downstream' species (eg. the protein produced from mRNA)
             for s2 in species_list:
