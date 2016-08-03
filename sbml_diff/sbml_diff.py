@@ -376,6 +376,12 @@ def abstract_model(model):
 
 # TODO: compartments!
 def diff_abstract_models(model_strings, generate_dot, ignored_species=False, elided_species=False):
+
+    if not ignored_species:
+        ignored_species = []
+    if not elided_species:
+        elided_species = []
+
     models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
 
     effect_types = ["increase-degredation", "decrease-degredation", "increase-production", "decrease-production"]
