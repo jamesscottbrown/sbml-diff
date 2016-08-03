@@ -63,7 +63,12 @@ def get_reaction_details(model, reaction_id):
     compartment = ""
     if reactants:
         for r in reactants.select("speciesReference"):
-            stoich = r.attrs["stoichiometry"]
+
+            if "stoichiometry" in r.attrs:
+                stoich = r.attrs["stoichiometry"]
+            else:
+                stoich = ""
+
             reactant_stoichiometries.append(stoich)
 
             species = r.attrs["species"]
@@ -79,7 +84,12 @@ def get_reaction_details(model, reaction_id):
     product_stoichiometries = []
     if products:
         for r in products.select("speciesReference"):
-            stoich = r.attrs["stoichiometry"]
+
+            if "stoichiometry" in r.attrs:
+                stoich = r.attrs["stoichiometry"]
+            else:
+                stoich = ""
+
             product_stoichiometries.append(stoich)
 
             species = r.attrs["species"]
