@@ -7,6 +7,17 @@ class GenerateDot:
     """
 
     def __init__(self, colors, num_models, reaction_label="", selected_model="", show_stoichiometry=False):
+        """
+
+        Parameters
+        ----------
+        colors : list of colors corresponding to each model (see http://graphviz.org/doc/info/colors.html)
+        num_models : number of models being compared
+        reaction_label : option specifying how reaction nodes are labelled ("none"/"name"/"rate"/"name+rate")
+        selected_model : if this is specified, any feature that is not in this model is given style 'invis'
+        show_stoichiometry : if true, arrow between species and reaction nodes are labelled with stoichiometric coefficient
+
+        """
         self.colors = colors
         self.num_models = num_models
 
