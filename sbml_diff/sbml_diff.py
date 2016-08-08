@@ -97,7 +97,7 @@ def diff_rules(models, generate_dot):
 
     for rule_target in rule_status:
         model_set = list(rule_status[rule])
-        inputs, output, compartment, rate_law = get_rule_details(models[model_set[0]], rule_target)
+        inputs, compartment, rate_law = get_rule_details(models[model_set[0]], rule_target)
 
         if compartment not in rule_strings.keys():
             rule_strings[compartment] = []
@@ -119,9 +119,9 @@ def diff_rule(models, rule_id, generate_dot):
     rate_laws = ""
 
     for model_num, model in enumerate(models):
-        modifiers, target, compartment, rate_law = get_rule_details(model, rule_id)
+        modifiers, compartment, rate_law = get_rule_details(model, rule_id)
 
-        if not target:
+        if not rate_law:
             return ""
 
         if rate_law and not rate_laws:
@@ -145,16 +145,14 @@ def diff_rule(models, rule_id, generate_dot):
     # target arrows
     # for product in product_status:
     model_set = list(target_status)
-    generate_dot.print_rule_target_arrow(model_set, rule_id, target)
+    generate_dot.print_rule_target_arrow(model_set, rule_id)
 
     # rate law
-    reaction_name = rule_id  # rules don't have name attributes
-
     converted_rate_law = ""
     if rate_laws and rate_laws != "different":
         converted_rate_law = convert_rate_law(rate_laws)
 
-    return generate_dot.print_rule_node(model_set, rule_id, rate_laws, reaction_name, converted_rate_law)
+    return generate_dot.print_rule_node(model_set, rule_id, rate_laws, converted_rate_law)
 
 
 def diff_reactions(models, generate_dot):

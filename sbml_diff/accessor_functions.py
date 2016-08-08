@@ -261,7 +261,7 @@ def get_rule_details(model, target_id):
 
     rate_law = rule.select_one("math")
 
-    return modifiers, target, compartment, rate_law
+    return modifiers, compartment, rate_law
 
 
 def get_species_set_by_rules(model):

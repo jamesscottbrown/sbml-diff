@@ -266,7 +266,7 @@ class GenerateDot:
         style = self.check_style(model_set)
         print '%s -> rule_%s [color="%s", style="dotted" %s];' % (modifier, rule_id, color, style)
 
-    def print_rule_target_arrow(self, model_set, rule_id, target):
+    def print_rule_target_arrow(self, model_set, target):
         """
         Draw arrow from rule to species
 
@@ -280,9 +280,9 @@ class GenerateDot:
         """
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
-        print 'rule_%s -> %s [color="%s", style="dotted" %s];' % (rule_id, target, color, style)
+        print 'rule_%s -> %s [color="%s", style="dotted" %s];' % (target, target, color, style)
 
-    def print_rule_node(self, model_set, rule_id, rate_law, reaction_name, converted_rate_law):
+    def print_rule_node(self, model_set, rule_id, rate_law, converted_rate_law):
         """
         Draw node corresponding to rule.
 
