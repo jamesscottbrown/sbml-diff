@@ -264,7 +264,7 @@ def get_rule_details(model, target_id):
     return modifiers, target, compartment, rate_law
 
 
-def get_rules(model):
+def get_species_set_by_rules(model):
     """
     Find list of species affected by a rule of type assignmentRule or rateRule.
 

@@ -85,7 +85,7 @@ def compare_params(models):
 def diff_rules(models, generate_dot):
     rule_status = {}
     for model_num, model in enumerate(models):
-        rules = get_rules(model)
+        rules = get_species_set_by_rules(model)
 
         for rule in rules:
             if rule not in rule_status.keys():
