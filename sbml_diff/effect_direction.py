@@ -64,7 +64,7 @@ def check_sign_numerically(expr, param_names, species_id):
 
     replacement = {'^': '**', 'exp': 'math.exp', 'ln': 'math.log', 'log': 'math.log10', 'ceiling': 'math.ceil',
                    'floor': 'math.floor', 'factorial': 'math.factorial', 'delay': '', 'pi': 'math.pi',
-                   'exponentiale': 'math.e', 'infinity': 'float("Inf")'}
+                    'e': 'math.e', 'infinity': 'float("Inf")'}
 
     for old in replacement:
         expr = expr.replace(old, replacement[old])

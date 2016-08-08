@@ -41,6 +41,7 @@ def add_parens(term_elementary, terms):
 def convert_rate_law_inner(expression, variables_not_to_substitute=False):
     """
     Recursively convert a MathML expression to a string.
+    Limitations: we do not handle piecewise functions or user-defined functions.
 
     Parameters
     ----------
@@ -55,10 +56,6 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False):
 
     """
 
-    # Stuff we still need to handle:
-    # pi, infinity, exponential2
-    # piecewise functions
-
     elementary = False
     if expression.name in ["cn", "ci"]:
         elementary = True
@@ -68,6 +65,11 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False):
             term = '1.0'
 
         return elementary, term
+
+    if expression.name in ["pi", "infinity"]:
+        return True, expression.name
+    if expression.name == "exponentiale":
+        return True, "e"
 
     # math may contain either an <apply> or a <cn>
     if expression.name == "math":
