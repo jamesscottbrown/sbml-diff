@@ -1,6 +1,10 @@
 class GenerateDot:
-    # This function has no dependency on BS4
-    # It deals only with strings
+    """This class actually generates the DOT output.
+    
+    It has no dependency on BeautifulSoup, and works with strings, rather than BeautifulSoup objects.
+
+    The print_ functions accept an argument model_set, which specifies which models contain the corresponding feature.
+    """
 
     def __init__(self, colors, num_models, reaction_label="", selected_model="", show_stoichiometry=False):
         self.colors = colors
@@ -19,6 +23,21 @@ class GenerateDot:
         self.reaction_label = reaction_label
 
     def assign_color(self, model_set):
+        """
+        Given a list of models containing some feature, determine what color that feature should be drawn (black if only
+        one model is being considered, otherwise grey if present in all models, colored if in a single model, and black
+        if in multiple models).
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+
+        Returns
+        -------
+        string specifying color
+
+        """
         if self.num_models == 1:
             return "black"
         # one
@@ -33,6 +52,22 @@ class GenerateDot:
             return "black"
 
     def check_style(self, model_set, base_style=''):
+        """
+        Determine whether a feature should be drawn in bold (because it is not in all models), or invisible (because the
+        selected model(s) do not contain it), and add these details to the 'style' string.
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        base_style : other style attributes that must be applied (e.g. dashed, or a fillcolor)
+             (Default value = '')
+
+        Returns
+        -------
+        a string of the form ', style="something"'
+
+        """
         style = ', style="%s"' % base_style
 
         base_style = "," + base_style
@@ -43,8 +78,26 @@ class GenerateDot:
             style = ', style="invis%s"' % base_style
         return style
 
-    # Used by diff_reaction()
     def print_reactant_arrow(self, model_set, reaction_id, reactant, stoich):
+        """
+        Draw arrow from reactant to reaction.
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        reaction_id : id of the reaction
+            
+        reactant : id of the reactant
+            
+        stoich : stoichiometry of this reactant for this reaction
+
+
+        Returns
+        -------
+        string representing this arrow
+
+        """
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
 
@@ -55,6 +108,25 @@ class GenerateDot:
         print '%s -> %s [color="%s"%s%s];' % (reactant, reaction_id, color, stoich_string, style)
 
     def print_product_arrow(self, model_set, reaction_id, product, stoich):
+        """
+        Draw arrow from reaction to product.
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        reaction_id : id of the reaction
+            
+        product : id of the product
+            
+        stoich : stoichiometry of this product for this reaction
+
+
+        Returns
+        -------
+        string representing this arrow
+
+        """
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
 
@@ -65,6 +137,27 @@ class GenerateDot:
         print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
 
     def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law):
+        """
+        Draw square node representing a reaction.
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        reaction_id : id of the reaction
+            
+        rate_law : bs4.element.Tag specifying the kineticLaw
+            
+        reaction_name : name of the reaction
+            
+        converted_law : human-readable string representation of the kineticLaw
+
+
+        Returns
+        -------
+        string representing this node
+
+        """
         fill = ''
         base_style = ''
         if rate_law == "different":
@@ -87,29 +180,61 @@ class GenerateDot:
 
     # Used by diff_models()
     def print_header(self):
+        """ Print header needed for valid DOT file"""
         print "\n\n"
         print "digraph comparison {"
 
     def print_footer(self):
+        """ Print footer needed for valid DOT file  """
         print "}"
 
-    # Used by diff_compartment():
     def print_compartment_header(self, compartment_id):
+        """
+        Print DOT code to create a new subgraph representing a compartment.
+
+        Parameters
+        ----------
+        compartment_id : id of a compartment
+        """
         print "\n"
         print "subgraph cluster_%s {" % compartment_id
         print "graph[style=dotted];"
         print 'label="%s";' % compartment_id
 
     def print_compartment_footer(self):
+        """ Print DOT code to end the subgraph representing a compartment """
         print "\n"
         print "}"
 
     def print_species_node(self, model_set, species_id, species_name):
+        """
+        Draw node representing a species.
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        species_id : id of a species
+            
+        species_name : name of a species
+        """
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
         print '"%s" [color="%s",label="%s" %s];' % (species_id, color, species_name, style)
 
     def print_regulatory_arrow(self, model_set, arrow_main, arrow_direction):
+        """
+        Draw arrow corresponding to regulatory interaction affecting reaction
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        arrow_main : the DOT edge_stmt for the edge (eg. 'A -> B')
+            
+        arrow_direction : string representing kind of interaction - 'monotonic_increasing' (activation) or
+        'monotonic_decreasing' (repression)
+        """
         color = self.assign_color(model_set)
         style = self.check_style(model_set, 'dashed')
 
@@ -122,16 +247,59 @@ class GenerateDot:
         print '%s [color="%s", arrowhead="%s" %s];' % (arrow_main, color, arrowhead, style)
 
     def print_rule_modifier_arrow(self, model_set, rule_id, modifier):
+        """
+        Draw arrow from species to rule
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        rule_id : id of the rule
+            
+        modifier : id of the species affecting the rule
+        """
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
         print '%s -> rule_%s [color="%s", style="dotted" %s];' % (modifier, rule_id, color, style)
 
     def print_rule_target_arrow(self, model_set, rule_id, target):
+        """
+        Draw arrow from rule to species
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        rule_id : id of the rule
+            
+        target : id of the species affected by the rule
+        """
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
         print 'rule_%s -> %s [color="%s", style="dotted" %s];' % (rule_id, target, color, style)
 
     def print_rule_node(self, model_set, rule_id, rate_law, reaction_name, converted_rate_law):
+        """
+        Draw node corresponding to rule.
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        rule_id : id of the rule
+            
+        rate_law :
+            
+        reaction_name :
+            
+        converted_rate_law :
+
+
+        Returns
+        -------
+        string representing the node
+
+        """
         fill = ''
         base_style = ''
         if rate_law == "different":
@@ -148,6 +316,21 @@ class GenerateDot:
         return 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style)
 
     def print_abstracted_arrow(self, model_set, modifier, target, effect_type):
+        """
+        Draw an arrow between two species, indicating an interaction.
+        Used to produce an abstract diagram.
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+            
+        modifier : id of species affecting the target
+            
+        target : id of species affected by this interaction
+            
+        effect_type : type of interaction ("increase-degredation", "decrease-degredation",
+        "decrease-degredation", "increase-production")
+        """
 
         if len(model_set) == 0:
             return

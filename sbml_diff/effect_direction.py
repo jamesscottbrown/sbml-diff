@@ -4,26 +4,61 @@ import math  # needed for check_sign_numerically()
 
 
 def categorise_interaction(kinetic_law, species_id):
+    """
+    Given a kineticLaw and the name of a species, determine whether the expression is a monotonic_increasing,
+    monotonic_decreasing, or constant with respect to the concentration of that species.
+
+    Parameters
+    ----------
+    kinetic_law : bs4.element.Tag corresponding to a kineticLaw
+        
+    species_id : the species id
+        
+
+    Returns
+    -------
+    string representing the sign of the interaction
+
+    """
     for math_expr in kinetic_law.select_one("math"):
         if isinstance(math_expr, NavigableString):
             continue
-        return categorise_interaction_inner_numerically(math_expr, species_id)
 
+        # identify all parameters and concentrations in the rate law
+        symbols = []
+        for ci in math_expr.findAll("ci"):
+            symbols.append(ci.text.strip())
+        symbols = set(symbols)
 
-def categorise_interaction_inner_numerically(expression, species_id):
-    # identify all parameters and concentrations in the rate law
-    symbols = []
-    for ci in expression.findAll("ci"):
-        symbols.append(ci.text.strip())
-    symbols = set(symbols)
-
-    return check_sign_numerically(expression, symbols, species_id)
+        return check_sign_numerically(math_expr, symbols, species_id)
 
 
 def check_sign_numerically(expr, param_names, species_id):
-    # This function will fail to report that a kineticLaw is mixed (rather than monotonic) if:
-    # - the sign of its gradient depends on value of one of the parameters (eg x^a/x^b)
-    # - the sign of its gradient depends on the concentration of the corresponding species
+    """
+    Given a MathML expression, list of all parameter/species names, and the name of a species, determine whether the
+    expression is a monotonic_increasing, monotonic_decreasing, or constant with respect to the concentration of that
+    species.
+
+    This is done by setting all parameters and the concentrations of other species to 1, then comparing the value of the
+    expression when the concentration of interest is 1 or 0.
+    This approach will fail to report that a kineticLaw is mixed (rather than monotonic) if:
+    - the sign of its gradient depends on value of one of the parameters (eg x^a/x^b)
+    - the sign of its gradient depends on the concentration of the corresponding species
+
+
+    Parameters
+    ----------
+    expr : bs4.element.Tag object corresponding to the contents of a math element
+        
+    param_names : list of the names of all parameters
+        
+    species_id : list of the species we are interested in
+        
+
+    Returns
+    -------
+
+    """
 
     expr = convert_rate_law(expr, variables_not_to_substitute=[species_id])
 

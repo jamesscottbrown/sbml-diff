@@ -2,10 +2,35 @@ from bs4 import BeautifulSoup, NavigableString
 
 
 def convert_rate_law(math, variables_not_to_substitute=False):
+    """
+    A wrapper for convert_rate_law_inner that returns only the converted expression.
+
+    Parameters
+    ----------
+    math : BeautifulSoup object representing a rateLaw (a bs4.element.Tag)
+
+    variables_not_to_substitute : if specified, the name of any species whose id is not in this list is replaced by 1.0
+         (Default value = False)
+
+    Returns
+    -------
+    string representation of the kineticLaw
+
+    """
     return convert_rate_law_inner(math, variables_not_to_substitute)[1]
 
 
 def add_parens(term_elementary, terms):
+    """
+    If the first argument is false, wrap the second argument in parentheses.
+
+    Parameters
+    ----------
+    term_elementary : boolean - if this is false, wrap terms in parentheses
+        
+    terms : string
+
+    """
     if not term_elementary[0]:
         terms[0] = "(%s)" % terms[0]
     if not term_elementary[1]:
@@ -14,6 +39,21 @@ def add_parens(term_elementary, terms):
 
 
 def convert_rate_law_inner(expression, variables_not_to_substitute=False):
+    """
+    Recursively convert a MathML expression to a string.
+
+    Parameters
+    ----------
+    expression :
+        
+    variables_not_to_substitute : if specified, the name of any species whose id is not in this list is replaced by 1.0
+         (Default value = False)
+
+    Returns
+    -------
+    string representation of the kineticLaw
+
+    """
 
     # Stuff we still need to handle:
     # pi, infinity, exponential2
