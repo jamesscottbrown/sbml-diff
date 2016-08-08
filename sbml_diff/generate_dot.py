@@ -10,10 +10,14 @@ class GenerateDot:
         self.colors = colors
         self.num_models = num_models
 
-        # Categorical 12-step scheme from
+        # If too few colors specified, extend using categorical 12-step scheme from
         # http://geog.uoregon.edu/datagraphics/color_scales.htm#Categorical%20Color%20Schemes
-        # self.colors = ["#FFBF7F", "#FF7F00", "#FFFF99", "#FFFF32", "#B2FF8C", "#32FF00",
-        #               "#A5EDFF", "#19B2FF", "#CCBFFF", "#654CFF", "#FF99BF", "#E51932"]
+        default_colors = ["#FFBF7F", "#FF7F00", "#FFFF99", "#FFFF32", "#B2FF8C", "#32FF00",
+                       "#A5EDFF", "#19B2FF", "#CCBFFF", "#654CFF", "#FF99BF", "#E51932"]
+        if len(self.colors) < self.num_models:
+            spare_colors = set(default_colors).difference(self.colors)
+            extra_colors = self.num_models - len(self.colors)
+            self.colors.extend(spare_colors[1:extra_colors])
 
         self.selected_model = ""
         if selected_model != "":
