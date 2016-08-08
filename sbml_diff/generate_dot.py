@@ -1,4 +1,4 @@
-class GenerateDot():
+class GenerateDot:
     # This function has no dependency on BS4
     # It deals only with strings
 
@@ -8,7 +8,7 @@ class GenerateDot():
 
         # Categorical 12-step scheme from
         # http://geog.uoregon.edu/datagraphics/color_scales.htm#Categorical%20Color%20Schemes
-        #self.colors = ["#FFBF7F", "#FF7F00", "#FFFF99", "#FFFF32", "#B2FF8C", "#32FF00",
+        # self.colors = ["#FFBF7F", "#FF7F00", "#FFFF99", "#FFFF32", "#B2FF8C", "#32FF00",
         #               "#A5EDFF", "#19B2FF", "#CCBFFF", "#654CFF", "#FF99BF", "#E51932"]
 
         self.selected_model = ""
@@ -121,7 +121,6 @@ class GenerateDot():
             arrowhead = "dot"
         print '%s [color="%s", arrowhead="%s" %s];' % (arrow_main, color, arrowhead, style)
 
-    #
     def print_rule_modifier_arrow(self, model_set, rule_id, modifier):
         color = self.assign_color(model_set)
         style = self.check_style(model_set)

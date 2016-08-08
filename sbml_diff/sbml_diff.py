@@ -3,6 +3,7 @@ from accessor_functions import *
 from generate_dot import *
 from rate_laws import *
 
+
 def print_rate_law_table(models, model_names):
     print "<table>"
 
@@ -154,7 +155,6 @@ def diff_rule(models, rule_id, generate_dot):
         converted_rate_law = convert_rate_law(rate_laws)
 
     return generate_dot.print_rule_node(model_set, rule_id, rate_laws, reaction_name, converted_rate_law)
-
 
 
 def diff_reactions(models, generate_dot):
@@ -328,16 +328,16 @@ def diff_models(models_strings, generate_dot, print_param_comparison=False):
 def abstract_model(model):
 
     # Get list of species
-    listOfSpecies = set()
+    species = set()
     for compartment in model.select('compartment'):
         compartment_id = compartment.attrs["id"]
-        listOfSpecies = listOfSpecies.union(get_species(model, compartment_id))
+        species = species.union(get_species(model, compartment_id))
 
     # interaction[modifier][species]
     interactions = {}
-    for s1 in listOfSpecies:
+    for s1 in species:
         interactions[s1] = {}
-        for s2 in listOfSpecies:
+        for s2 in species:
             interactions[s1][s2] = set()
 
     # Loop over reactions, categorising each
@@ -349,7 +349,7 @@ def abstract_model(model):
         modifiers = []
         for ci in rate_law.findAll("ci"):
             name = ci.text.strip()
-            if name in listOfSpecies:
+            if name in species:
                 modifiers.append(name)
         modifiers = set(modifiers)
 
@@ -371,7 +371,7 @@ def abstract_model(model):
                 elif effect == "monotonic_decreasing":
                     interactions[modifier][product].add("decrease-production")
 
-    return interactions, listOfSpecies
+    return interactions, species
 
 
 # TODO: compartments!
@@ -445,6 +445,7 @@ def diff_abstract_models(model_strings, generate_dot, ignored_species=False, eli
 
     print "}"
 
+
 def elide(interactions, elided_species, species_list, models, effect_types):
     elided_species = set(elided_species).intersection(species_list)
     for model_num, model in enumerate(models):
@@ -468,7 +469,7 @@ def elide(interactions, elided_species, species_list, models, effect_types):
                         # add direct interaction
                         interactions[regulator][downstream][effect_type].add(model_num)
 
-
+    # Then remove the elided species
     for s in elided_species:
         interactions.pop(s)
 
@@ -476,6 +477,4 @@ def elide(interactions, elided_species, species_list, models, effect_types):
             if s2 in interactions.keys():
                 interactions[s2].pop(s)
 
-
-    # Then remove the elided species
     return interactions

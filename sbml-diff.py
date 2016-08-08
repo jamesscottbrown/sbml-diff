@@ -1,6 +1,8 @@
 import sbml_diff
 from sbml_diff import *
-import os, sys, argparse
+import os
+import sys
+import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Produce graphical representation of one or more SBML models.')

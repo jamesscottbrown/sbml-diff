@@ -1,6 +1,6 @@
 from bs4 import NavigableString
 from rate_laws import convert_rate_law
-import math # needed for check_sign_numerically()
+import math  # needed for check_sign_numerically()
 
 
 def collate_interactions(child_classifications):
@@ -69,15 +69,15 @@ def classify_basic_interaction_symbolically(operator, child_classifications):
 def categorise_interaction(kinetic_law, species_id, categorise_symbolically=False):
 
     if categorise_symbolically:
-        for math in kinetic_law.select_one("math"):
-            if isinstance(math, NavigableString):
+        for math_expr in kinetic_law.select_one("math"):
+            if isinstance(math_expr, NavigableString):
                 continue
-            return categorise_interaction_inner(math, species_id)
+            return categorise_interaction_inner(math_expr, species_id)
     else:
-        for math in kinetic_law.select_one("math"):
-            if isinstance(math, NavigableString):
+        for math_expr in kinetic_law.select_one("math"):
+            if isinstance(math_expr, NavigableString):
                 continue
-            return categorise_interaction_inner_numerically(math, species_id)
+            return categorise_interaction_inner_numerically(math_expr, species_id)
 
 
 def categorise_interaction_inner(expression, species_id):

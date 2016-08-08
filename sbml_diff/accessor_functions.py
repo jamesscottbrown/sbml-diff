@@ -1,5 +1,6 @@
 from effect_direction import categorise_interaction
 
+
 def get_params(model):
     param_ids = []
     param_values = {}
@@ -111,6 +112,7 @@ def get_reactions(model):
         reactions.append(r.attrs["id"])
     return reactions
 
+
 def get_rule_details(model, target_id):
     rule = model.select_one("listOfRules").find(variable=target_id)
 
@@ -142,6 +144,7 @@ def get_rule_details(model, target_id):
     rate_law = rule.select_one("math")
 
     return modifiers, target, compartment, rate_law
+
 
 def get_rules(model):
     reactions = []
