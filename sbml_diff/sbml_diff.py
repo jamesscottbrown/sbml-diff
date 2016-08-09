@@ -203,21 +203,17 @@ def diff_reaction(models, reaction_id, generate_dot):
         reaction_model_set.add(model_num)
 
         # check if any stoichiometry values change between models
-        if not reactant_stoichiometries:
-            for ind, stoich in enumerate(rs):
-                reactant_stoichiometries[reactants[ind]] = rs[ind]
-            for ind, stoich in enumerate(ps):
-                product_stoichiometries[products[ind]] = ps[ind]
+        for ind, stoich in enumerate(rs):
+            if reactants[ind] not in reactant_stoichiometries.keys():
+               reactant_stoichiometries[reactants[ind]] = stoich
+            elif stoich != reactant_stoichiometries[reactants[ind]]:
+                reactant_stoichiometries[reactants[ind]] = '?'
 
-        else:
-
-            for ind, stoich in enumerate(rs):
-                if stoich != reactant_stoichiometries[reactants[ind]]:
-                    reactant_stoichiometries[reactants[ind]] = '?'
-
-            for ind, stoich in enumerate(ps):
-                if stoich != product_stoichiometries[products[ind]]:
-                    product_stoichiometries[products[ind]] = '?'
+        for ind, stoich in enumerate(ps):
+            if products[ind] not in product_stoichiometries.keys():
+                product_stoichiometries[products[ind]] = stoich
+            elif stoich != product_stoichiometries[products[ind]]:
+                product_stoichiometries[products[ind]] = '?'
 
         if rate_law and not rate_laws:
             rate_laws = rate_law
