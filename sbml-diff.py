@@ -59,6 +59,8 @@ if __name__ == '__main__':
 
     if args.kineticstable:
         sbml_diff.print_rate_law_table(all_models, all_model_names)
+    elif args.params:
+        sbml_diff.compare_params(all_models, all_model_names)
     elif args.abstract:
         ignored = []
         if args.ignore:

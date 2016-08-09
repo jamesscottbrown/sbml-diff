@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from accessor_functions import *
 from generate_dot import *
 from rate_laws import *
+from tabulate import tabulate
 
 
 def print_rate_law_table(models, model_names):
@@ -32,55 +33,32 @@ def print_rate_law_table(models, model_names):
     print "</tbody></table>"
 
 
-def compare_params(models):
-    # For each param, find set of models containing it, and determine whether its value is the same across all models
+def compare_params(model_strings, model_names):
 
-    param_status = {}
+    models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
+
     param_value = {}
     for model_num, model in enumerate(models):
         param_ids, param_values = get_params(model)
 
         for param_id in param_ids:
 
-            if param_id not in param_status.keys():
-                param_status[param_id] = set()
-                param_value[param_id] = param_values[param_id]
+            if param_id not in param_value.keys():
+                param_value[param_id] = {}
+            param_value[param_id][model_num] = param_values[param_id]
 
-            if param_value[param_id] != param_values[param_id]:
-                param_value[param_id] = "different"
+    rows = []
+    for param_id in param_ids:
+        row = [param_id]
+        for model_num, model in enumerate(models):
+            if model_num in param_value[param_id].keys():
+                row.append( param_value[param_id][model_num] )    # if
+            else:
+                row.append("-")
+        rows.append(row)
 
-            param_status[param_id].add(model_num)
 
-    # one
-    print "\nParameters in a single model only:"
-
-    for model_num, model in enumerate(models):
-        for param_id in param_status:
-            model_list = list(param_status[param_id])
-            if len(model_list) == 1 and model_list[0] == model_num and len(models) > 1:
-                print "Only in model %s: %s" % (model_num, param_id)
-
-    # all
-    print "\nParameters in all models:"
-
-    for param_id in param_status:
-        model_list = list(param_status[param_id])
-        value = param_value[param_id]
-        if value != "different":
-            value = "same"
-        if len(model_list) == len(models):
-            print "In all models (with %s values): %s" % (value, param_id)
-
-    # some
-    print "\nParameters in some models:"
-    for param_id in param_status:
-        model_list = list(param_status[param_id])
-        if value != "different":
-            value = "same"
-
-        if 1 < len(model_list) < len(models):
-            print "In some models (with %s values): %s (in %s)" % (value, param_id, ', '.join(model_list))
-
+    print tabulate(rows, ["Parameter"] + model_names)
 
 def diff_rules(models, generate_dot):
     rule_status = {}
@@ -203,6 +181,8 @@ def diff_reaction(models, reaction_id, generate_dot):
         reaction_model_set.add(model_num)
 
         # check if any stoichiometry values change between models
+        # record the stoichiometry of every reactant or product associated with this reaction in any model
+        # if a reactant/product has 2 or more storichiometries between the models, record it as '?'
         for ind, stoich in enumerate(rs):
             if reactants[ind] not in reactant_stoichiometries.keys():
                reactant_stoichiometries[reactants[ind]] = stoich
@@ -299,8 +279,6 @@ def diff_compartment(compartment_id, models, reaction_strings, rule_strings, gen
 
 def diff_models(models_strings, generate_dot, print_param_comparison=False):
     models = map(lambda x: BeautifulSoup(x, 'xml'), models_strings)
-    if print_param_comparison:
-        compare_params(models)
 
     generate_dot.print_header()
 
