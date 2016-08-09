@@ -185,6 +185,7 @@ def diff_reactions(models, generate_dot):
 def diff_reaction(models, reaction_id, generate_dot):
     # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
 
+    reaction_model_set = set()
     reactant_status = {}
     product_status = {}
     rate_laws = ""
@@ -198,6 +199,8 @@ def diff_reaction(models, reaction_id, generate_dot):
         # only perform comparison between models in which this reaction actually occurs
         if not reactants and not products and not compartment and not rate_law and not rs and not ps:
             continue
+
+        reaction_model_set.add(model_num)
 
         # check if any stoichiometry values change between models
         if not reactant_stoichiometries:
@@ -249,7 +252,7 @@ def diff_reaction(models, reaction_id, generate_dot):
     if rate_laws and rate_laws != "different":
         converted_rate_law = convert_rate_law(rate_laws)
 
-    return generate_dot.print_reaction_node(model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
+    return generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
 
 def diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot):
