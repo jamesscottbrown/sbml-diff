@@ -5,18 +5,28 @@ import sys
 import argparse
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Produce graphical representation of one or more SBML models.')
+    parser = argparse.ArgumentParser(description="""
+    Summarise one, or compare two or more, SBML models as a network or table.
+    Supports four distinct kinds of output:
+
+    * DOT representation of reaction network (circles representing species, squares representing reactions)
+    * DOT representation of an abstraction of reaction network, showing only species (--abstract)
+    * a table of parameters (--params)
+    * a table of kinetic laws for each reaction (--kineticstable)
+    """, formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument('--params', '-p', help='Print textual comparison of params', action='store_true')
+    parser.add_argument('--kineticstable', help='Print textual comparison of kineticLaws', action='store_true')
 
     parser.add_argument('--abstract', '-a', help='Rather than comparing all reactions, compare abstract regulatory network', action='store_true')
     parser.add_argument('--ignore', '-i', help="List of species to ignore (comma-separated). Works with -a only")
     parser.add_argument('--elide', '-e', help="List of species to elide (comma-separated). Works with -a only")
 
-    parser.add_argument('--stoich', '-s', help='Also label edges with stoichiometry', action='store_true')
-    parser.add_argument('--params', '-p', help='Also print textual comparison of params', action='store_true')
-    parser.add_argument('--kineticstable', help='Print textual comparison of params', action='store_true')
-    parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
     parser.add_argument('--colors', help="List of colors (comma-separated)")
     parser.add_argument('--reaction_labels', help="Style for reaction labels (none, name, name+rate, rate)")
+    parser.add_argument('--stoich', '-s', help='Also label edges with stoichiometry', action='store_true')
+
+    parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
     parser.add_argument('--model', help="Make visual elements not corresponding to the n'th model invisible")
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
     args = parser.parse_args()
