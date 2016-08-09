@@ -10,5 +10,5 @@ setup(name='sbml-diff',
       url='',
       packages=['sbml_diff'],
       scripts=['sbml-diff.py'],
-      install_requires=['BeautifulSoup']
+      install_requires=['BeautifulSoup', 'tabulate']
       )
