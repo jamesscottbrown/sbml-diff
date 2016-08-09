@@ -5,33 +5,29 @@ from rate_laws import *
 from tabulate import tabulate
 
 
-def print_rate_law_table(models, model_names):
-    print "<table>"
-
-    print "<thead><tr><th></th><th> %s </th></tr></thead>" % ("</th><th>".join(model_names))
+def print_rate_law_table(model_strings, model_names):
 
     # get list of all reactions in all models
     reactions = []
+    models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
     for model in models:
         reactions.extend(get_reactions(model))
     reactions = list(set(reactions))
     reactions.sort()
 
-    print "<tbody>"
+    rows = []
     for reaction_id in reactions:
-        rates = []
+        rates = [reaction_id]
         for model_num, model in enumerate(models):
             r = model.select_one("listOfReactions").find(id=reaction_id)
             if r:
                 math_tag = r.select_one("kineticLaw").select_one("math")
-                rates.append(unicode(math_tag))
+                rates.append(convert_rate_law(math_tag))
             else:
                 rates.append("-")
+        rows.append(rates)
 
-        print "<tr> <td>%s</td> <td>%s</td></tr>" % (reaction_id, "</td><td>".join(rates))
-
-    print "</tbody></table>"
-
+    print tabulate(rows, ["Reaction"] + model_names)
 
 def compare_params(model_strings, model_names):
 
