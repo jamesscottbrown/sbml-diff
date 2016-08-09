@@ -189,25 +189,32 @@ def diff_reaction(models, reaction_id, generate_dot):
     product_status = {}
     rate_laws = ""
 
-    reactant_stoichiometries = []
-    product_stoichiometries = []
+    reactant_stoichiometries = {}
+    product_stoichiometries = {}
 
     for model_num, model in enumerate(models):
         reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction_id)
 
+        # only perform comparison between models in which this reaction actually occurs
+        if not reactants and not products and not compartment and not rate_law and not rs and not ps:
+            continue
+
         # check if any stoichiometry values change between models
         if not reactant_stoichiometries:
-            reactant_stoichiometries = rs
-            product_stoichiometries = ps
+            for ind, stoich in enumerate(rs):
+                reactant_stoichiometries[reactants[ind]] = rs[ind]
+            for ind, stoich in enumerate(ps):
+                product_stoichiometries[products[ind]] = ps[ind]
+
         else:
 
             for ind, stoich in enumerate(rs):
-                if stoich != reactant_stoichiometries[ind]:
-                    reactant_stoichiometries[ind] = '?'
+                if stoich != reactant_stoichiometries[reactants[ind]]:
+                    reactant_stoichiometries[reactants[ind]] = '?'
 
             for ind, stoich in enumerate(ps):
-                if stoich != product_stoichiometries[ind]:
-                    product_stoichiometries[ind] = '?'
+                if stoich != product_stoichiometries[products[ind]]:
+                    product_stoichiometries[products[ind]] = '?'
 
         if rate_law and not rate_laws:
             rate_laws = rate_law
@@ -227,12 +234,12 @@ def diff_reaction(models, reaction_id, generate_dot):
     # reactant arrows
     for reactant_num, reactant in enumerate(reactant_status):
         model_set = list(reactant_status[reactant])
-        generate_dot.print_reactant_arrow(model_set, reaction_id, reactant, reactant_stoichiometries[reactant_num])
+        generate_dot.print_reactant_arrow(model_set, reaction_id, reactant, reactant_stoichiometries[reactant])
 
     # product arrows
     for product_num, product in enumerate(product_status):
         model_set = list(product_status[product])
-        generate_dot.print_product_arrow(model_set, reaction_id, product, product_stoichiometries[product_num])
+        generate_dot.print_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
 
     # rate law
     parent_model = models[model_set[0]]
