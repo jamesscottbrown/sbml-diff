@@ -331,11 +331,13 @@ def abstract_model(model):
                 modifiers.append(name)
         modifiers = set(modifiers)
 
-        # Consider only species that affect reaction rate without being reactants
-        modifiers = modifiers.difference(reactant_list)
-
         for modifier in modifiers:
             for reactant in reactant_list:
+
+                # Any species increases the rate of its own degredation, so ignore this
+                if reactant == modifier:
+                    continue
+
                 effect = categorise_interaction(rate_law.parent, modifier)
                 if effect == "monotonic_increasing":
                     interactions[modifier][reactant].add("increase-degredation")
