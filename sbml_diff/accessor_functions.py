@@ -239,12 +239,12 @@ def get_rule_details(model, target_id):
         species_ids.append(s.attrs["id"])
 
     if not rule:
-        return [], [], False, False
+        return [], False, False
 
     # skip rules that set parameters rather than species concentrations
     target = rule.attrs["variable"]
     if not target or target not in species_ids:
-        return [], [], False, False
+        return [], False, False
 
     # get modifier details
     modifiers = []
