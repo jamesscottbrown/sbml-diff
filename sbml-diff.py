@@ -82,4 +82,4 @@ if __name__ == '__main__':
 
         sbml_diff.diff_abstract_models(all_models, output_formatter, ignored_species=ignored, elided_species=elided)
     else:
-        sbml_diff.diff_models(all_models, output_formatter, print_param_comparison=args.params)
+        sbml_diff.diff_models(all_models, output_formatter)
