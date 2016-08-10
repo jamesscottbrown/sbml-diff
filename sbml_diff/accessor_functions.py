@@ -115,6 +115,8 @@ def get_reaction_details(model, reaction_id):
     """
     Get details of a single reaction.
 
+    Note that reactions have no compartment, but we try to identify it based on the reactants.
+
     Parameters
     ----------
     model : bs4.BeautifulSoup object produced by parsing an SBML model

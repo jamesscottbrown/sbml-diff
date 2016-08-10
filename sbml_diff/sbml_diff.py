@@ -74,20 +74,34 @@ def compare_params(model_strings, model_names):
 
 
 def diff_rules(models, generate_dot):
+    """
+    Compare all rules between models. Returns a list of the DOT statements to draw each rule node, but directly
+    prints the DOT statements for the corresponding arrows.
+
+    Parameters
+    ----------
+    models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
+    generate_dot : instance of the GenerateDot class
+
+    Returns
+    -------
+    a list of the DOT statements to draw each rule node
+
+    """
     rule_status = {}
     for model_num, model in enumerate(models):
-        rules = get_species_set_by_rules(model)
+        rule_targets = get_species_set_by_rules(model)
 
-        for rule in rules:
-            if rule not in rule_status.keys():
-                rule_status[rule] = set()
+        for rule_target in rule_targets:
+            if rule_target not in rule_status.keys():
+                rule_status[rule_target] = set()
 
-            rule_status[rule].add(model_num)
+            rule_status[rule_target].add(model_num)
 
     rule_strings = {}
 
     for rule_target in rule_status:
-        model_set = list(rule_status[rule])
+        model_set = list(rule_status[rule_target])
         inputs, compartment, rate_law = get_rule_details(models[model_set[0]], rule_target)
 
         if compartment not in rule_strings.keys():
@@ -99,7 +113,22 @@ def diff_rules(models, generate_dot):
     return rule_strings
 
 
-def diff_rule(models, rule_id, generate_dot):
+def diff_rule(models, target_id, generate_dot):
+    """
+    Compare a single rule between models. Returns the DOT statement to draw the node for the rule, but directly
+    prints the DOT statements for the corresponding arrows. This is to allow the rule node to be drawn in the correct
+    compartment.
+
+    Parameters
+    ----------
+    models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
+    target_id : id of the species affected by this rule
+    generate_dot : instance of the GenerateDot class
+
+    Returns
+    -------
+    a DOT statement describing the nodes representing this rule
+    """
     # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
 
     # 'modifiers' appear in the math expression of a rule that sets 'target'
@@ -110,7 +139,7 @@ def diff_rule(models, rule_id, generate_dot):
     rate_laws = ""
 
     for model_num, model in enumerate(models):
-        modifiers, compartment, rate_law = get_rule_details(model, rule_id)
+        modifiers, compartment, rate_law = get_rule_details(model, target_id)
 
         if not rate_law:
             return ""
@@ -131,19 +160,18 @@ def diff_rule(models, rule_id, generate_dot):
     # modifier arrows
     for modifier in modifier_status:
         model_set = list(modifier_status[modifier])
-        generate_dot.print_rule_modifier_arrow(model_set, rule_id, modifier)
+        generate_dot.print_rule_modifier_arrow(model_set, target_id, modifier)
 
     # target arrows
-    # for product in product_status:
     model_set = list(target_status)
-    generate_dot.print_rule_target_arrow(model_set, rule_id)
+    generate_dot.print_rule_target_arrow(model_set, target_id)
 
     # rate law
     converted_rate_law = ""
     if rate_laws and rate_laws != "different":
         converted_rate_law = convert_rate_law(rate_laws)
 
-    return generate_dot.print_rule_node(model_set, rule_id, rate_laws, converted_rate_law)
+    return generate_dot.print_rule_node(model_set, target_id, rate_laws, converted_rate_law)
 
 
 def diff_reactions(models, generate_dot):
@@ -160,7 +188,7 @@ def diff_reactions(models, generate_dot):
     -------
      a list of the DOT statements to draw each reaction node
     """
-    # NB. reactions do not have an associated compartment!
+
     reaction_status = {}
     for model_num, model in enumerate(models):
         reactions = get_reactions(model)
@@ -200,7 +228,7 @@ def diff_reaction(models, reaction_id, generate_dot):
 
     Returns
     -------
-     a DOT statement describing the nodes representing this reaction
+     a DOT statement describing the node representing this reaction
     """
 
     # We need to consider whether the reaction's products, reactants and rate law are shared
