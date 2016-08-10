@@ -6,6 +6,14 @@ from tabulate import tabulate
 
 
 def print_rate_law_table(model_strings, model_names):
+    """
+    Print a table of kineticLaws, in which rows correspond to reactions and columns to models.
+
+    Parameters
+    ----------
+    model_strings : a list, in which each element is an SBML model as a string
+    model_names : headings for the columns
+    """
 
     # get list of all reactions in all models
     reactions = []
@@ -29,7 +37,16 @@ def print_rate_law_table(model_strings, model_names):
 
     print tabulate(rows, ["Reaction"] + model_names)
 
+
 def compare_params(model_strings, model_names):
+    """
+    Print a table of parameter values, in which rows correspond to reactions and columns to models.
+
+    Parameters
+    ----------
+    model_strings : a list, in which each element is an SBML model as a string
+    model_names : headings for the columns
+    """
 
     models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
 
@@ -44,17 +61,17 @@ def compare_params(model_strings, model_names):
             param_value[param_id][model_num] = param_values[param_id]
 
     rows = []
-    for param_id in param_ids:
+    for param_id in param_value.keys():
         row = [param_id]
         for model_num, model in enumerate(models):
             if model_num in param_value[param_id].keys():
-                row.append( param_value[param_id][model_num] )    # if
+                row.append(param_value[param_id][model_num])
             else:
                 row.append("-")
         rows.append(row)
 
-
     print tabulate(rows, ["Parameter"] + model_names)
+
 
 def diff_rules(models, generate_dot):
     rule_status = {}
@@ -130,6 +147,19 @@ def diff_rule(models, rule_id, generate_dot):
 
 
 def diff_reactions(models, generate_dot):
+    """
+    Compare all reactions between models. Returns a list of the DOT statements to draw each reaction node, but directly
+    prints the DOT statements for the corresponding arrows.
+
+    Parameters
+    ----------
+    models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
+    generate_dot : instance of the GenerateDot class
+
+    Returns
+    -------
+     a list of the DOT statements to draw each reaction node
+    """
     # NB. reactions do not have an associated compartment!
     reaction_status = {}
     for model_num, model in enumerate(models):
@@ -157,7 +187,23 @@ def diff_reactions(models, generate_dot):
 
 
 def diff_reaction(models, reaction_id, generate_dot):
-    # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
+    """
+    Compare a single reaction between models. Returns the DOT statement to draw the node for the reaction, but directly
+    prints the DOT statements for the corresponding arrows. This is to allow the reaction node to be drawn in the correct
+    compartment.
+
+    Parameters
+    ----------
+    models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
+    reaction_id : id of the reaction
+    generate_dot : instance of the GenerateDot class
+
+    Returns
+    -------
+     a DOT statement describing the nodes representing this reaction
+    """
+
+    # We need to consider whether the reaction's products, reactants and rate law are shared
 
     reaction_model_set = set()
     reactant_status = {}
@@ -181,7 +227,7 @@ def diff_reaction(models, reaction_id, generate_dot):
         # if a reactant/product has 2 or more storichiometries between the models, record it as '?'
         for ind, stoich in enumerate(rs):
             if reactants[ind] not in reactant_stoichiometries.keys():
-               reactant_stoichiometries[reactants[ind]] = stoich
+                reactant_stoichiometries[reactants[ind]] = stoich
             elif stoich != reactant_stoichiometries[reactants[ind]]:
                 reactant_stoichiometries[reactants[ind]] = '?'
 
@@ -228,7 +274,17 @@ def diff_reaction(models, reaction_id, generate_dot):
 
 
 def diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot):
-    # add extra flag specifying status, to set color
+    """
+    Print DOT output comparing a single compartment between models
+
+    Parameters
+    ----------
+    compartment_id : the id of a compartment
+    models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
+    reaction_strings : list of strings, each a DOT statement describing the nodes representing reaction
+    rule_strings : list of strings, each a DOT statement describing the nodes representing rules
+    generate_dot : instance of the GenerateDot class
+    """
     generate_dot.print_compartment_header(compartment_id)
 
     # print the reaction squares that belong in this compartment
@@ -273,8 +329,18 @@ def diff_compartment(compartment_id, models, reaction_strings, rule_strings, gen
     generate_dot.print_compartment_footer()
 
 
-def diff_models(models_strings, generate_dot, print_param_comparison=False):
-    models = map(lambda x: BeautifulSoup(x, 'xml'), models_strings)
+def diff_models(model_strings, generate_dot):
+    """
+    Print DOT output comparing SBML models
+
+    Parameters
+    ----------
+    model_strings : a list, in which each element is an SBML model as a string
+
+    generate_dot : instance of the GenerateDot class
+
+    """
+    models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
 
     generate_dot.print_header()
 
@@ -286,44 +352,52 @@ def diff_models(models_strings, generate_dot, print_param_comparison=False):
     if "NONE" in rule_strings.keys():
         print "\n".join(rule_strings["NONE"])
 
-    # For every compartment in any model, record which models contain it
-    compartment_status = {}
+    compartment_ids = set()
     for model_num, model in enumerate(models):
         for compartment in model.select('compartment'):
-            compartment_id = compartment.attrs["id"]
+            compartment_ids.add(compartment.attrs["id"])
 
-            if compartment_id not in compartment_status.keys():
-                compartment_status[compartment_id] = set()
-
-            compartment_status[compartment_id].add(model_num)
-
-    for compartment_id in compartment_status:
+    for compartment_id in compartment_ids:
         diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot)
 
     generate_dot.print_footer()
 
 
 def abstract_model(model):
+    """
+    For each pair of species in a model, determine if there is an interaction, and if so classify it.
+    If a species is a reactant, it is not considered to interact with itself through that reaction, since any species
+    increases the rate of its own degredation
 
+    Parameters
+    ----------
+    model : bs4.BeautifulSoup object produced by parsing an SBML model
+
+    Returns
+    -------
+    interactions : a 2D list, in which entries interactions[modifier][product] indicate the effect of the species with
+        id modifier on the species with id product - one of "increase-degredation", "decrease-degredation",
+        "increase-production", or "decrease-production"
+
+    species : id of each species in the model
+    """
     # Get list of species
     species = set()
     for compartment in model.select('compartment'):
         compartment_id = compartment.attrs["id"]
         species = species.union(get_species(model, compartment_id))
 
-    # interaction[modifier][species]
     interactions = {}
-    for s1 in species:
-        interactions[s1] = {}
-        for s2 in species:
-            interactions[s1][s2] = set()
+    for modifier in species:
+        interactions[modifier] = {}
+        for target in species:
+            interactions[modifier][target] = set()
 
-    # Loop over reactions, categorising each
     reactions = get_reactions(model)
     for reaction in reactions:
         reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(model, reaction)
 
-        # Identify which of these affect reaction rate
+        # Identify all species that appear in kineticLaw
         modifiers = []
         for ci in rate_law.findAll("ci"):
             name = ci.text.strip()
@@ -356,6 +430,16 @@ def abstract_model(model):
 
 # TODO: compartments!
 def diff_abstract_models(model_strings, generate_dot, ignored_species=False, elided_species=False):
+    """
+    Print DOT output comparing SBML models after abstraction (by abstract_model(model))
+
+    Parameters
+    ----------
+    model_strings : a list, in which each element is an SBML model as a string
+    generate_dot : instance of the GenerateDot class
+    ignored_species : list of species to be simply removed
+    elided_species : list of species to be removed, with interactions targeting them appropriately moved downstream
+    """
 
     if not ignored_species:
         ignored_species = []
@@ -427,13 +511,32 @@ def diff_abstract_models(model_strings, generate_dot, ignored_species=False, eli
 
 
 def elide(interactions, elided_species, species_list, models, effect_types):
+    """
+    Removes certain species from a model, transfering interactions that target them onto the species that they produce.
+    Intended for case of an intermediate that causes production of a downstream species (e.g. mRNA, which causes
+    production of a protein)
+
+    Parameters
+    ----------
+    interactions : interactions[modifier][target][effect_type] is set of model numbers for which species with id
+                    modifier has effect effect_type on species with id target
+    elided_species : list containing the ide of each species to elide
+    species_list : list containing id of every species
+    models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
+    effect_types : list of the possible effect types
+
+    Returns
+    -------
+     a modified interactions structure
+    """
     elided_species = set(elided_species).intersection(species_list)
     for model_num, model in enumerate(models):
 
         # For each elided species,
         for s in elided_species:
-            downstream = False
+
             # find the 'downstream' species (eg. the protein produced from mRNA)
+            downstream = False
             for s2 in species_list:
                 if model_num in interactions[s][s2]["increase-production"]:
                     downstream = s2
@@ -441,12 +544,10 @@ def elide(interactions, elided_species, species_list, models, effect_types):
             if not downstream:
                 continue
 
-            # If an interaction targets the elided species, add the corresponding interaction directly to the elided species
+            # Transfer interactions targeting the elided species to the downstream species
             for regulator in species_list:
                 for effect_type in effect_types:
                     if model_num in interactions[regulator][s][effect_type]:
-
-                        # add direct interaction
                         interactions[regulator][downstream][effect_type].add(model_num)
 
     # Then remove the elided species
