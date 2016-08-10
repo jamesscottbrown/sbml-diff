@@ -375,6 +375,8 @@ def diff_models(model_strings, generate_dot):
     reaction_strings = diff_reactions(models, generate_dot)
     rule_strings = diff_rules(models, generate_dot)
 
+    # Reactions and rules do not have compartments. We try to assign them based on compartment of reactants/products,
+    # but some may have been given the sentinel value "NONE". Print them here, before the contents of compartments.
     if "NONE" in reaction_strings.keys():
         print "\n".join(reaction_strings["NONE"])
     if "NONE" in rule_strings.keys():
