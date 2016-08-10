@@ -284,9 +284,7 @@ class GenerateDot:
         Parameters
         ----------
         model_set : list of model numbers containing the feature
-            
-        rule_id : id of the rule
-            
+
         target : id of the species affected by the rule
         """
         color = self.assign_color(model_set)
@@ -304,9 +302,7 @@ class GenerateDot:
         rule_id : id of the rule
             
         rate_law :
-            
-        reaction_name :
-            
+
         converted_rate_law :
 
 
