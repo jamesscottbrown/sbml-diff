@@ -1,4 +1,4 @@
-from bs4 import NavigableString
+from bs4 import NavigableString, Tag
 from rate_laws import convert_rate_law
 import math  # needed for check_sign_numerically()
 
@@ -26,8 +26,12 @@ def categorise_interaction(kinetic_law, species_id):
 
         # identify all parameters and concentrations in the rate law
         symbols = []
-        for ci in math_expr.findAll("ci"):
-            symbols.append(ci.text.strip())
+
+        if isinstance(math_expr, Tag) and math_expr.name == "ci":
+            symbols.append(math_expr.text.strip())
+        else:
+            for ci in math_expr.findAll("ci"):
+                symbols.append(ci.text.strip())
         symbols = set(symbols)
 
         return check_sign_numerically(math_expr, symbols, species_id)
