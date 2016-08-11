@@ -57,7 +57,31 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False):
     """
 
     elementary = False
-    if expression.name in ["cn", "ci"]:
+
+    if expression.name == "cn":
+
+        if "type" in expression.attrs.keys():
+            children = []
+            for child in expression.children:
+                children.append(child)
+
+            if expression.attrs["type"] == "e-notation":
+                term = "%s * 10^(%s)" % (children[0], children[2])
+            elif expression.attrs["type"] in ["real", "integer"]:
+                term = children[0]
+            elif expression.attrs["type"] == "rational":
+                term = "%s/%s" % (children[0], children[2])
+        else:
+            term = expression.string.strip()
+
+        elementary = True
+
+        if variables_not_to_substitute and term not in variables_not_to_substitute:
+            term = '1.0'
+
+        return elementary, term
+
+    elif expression.name == "ci":
         elementary = True
         term = expression.string.strip()
 
