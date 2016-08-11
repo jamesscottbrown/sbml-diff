@@ -49,7 +49,12 @@ def get_regulatory_arrow(model, compartment):
     species_ids = get_species(model, compartment)
 
     arrows = []
-    for reaction in model.select_one("listOfReactions").select("reaction"):
+
+    reaction_list = model.select_one("listOfReactions")
+    if not reaction_list:
+        return arrows
+
+    for reaction in reaction_list.select("reaction"):
         reaction_id = reaction.attrs["id"]
         for ci in reaction.select_one("kineticLaw").select("ci"):
 
@@ -207,7 +212,12 @@ def get_reactions(model):
 
     """
     reactions = []
-    for r in model.select_one("listOfReactions").select("reaction"):
+
+    reaction_list = model.select_one("listOfReactions")
+    if not reaction_list:
+        return reactions
+
+    for r in reaction_list.select("reaction"):
         reactions.append(r.attrs["id"])
     return reactions
 
