@@ -16,14 +16,14 @@ if __name__ == '__main__':
     """, formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('--params', '-p', help='Print textual comparison of params', action='store_true')
-    parser.add_argument('--kineticstable', help='Print textual comparison of kineticLaws', action='store_true')
+    parser.add_argument('--kinetics', '-k', help='Print textual comparison of kineticLaws', action='store_true')
 
     parser.add_argument('--abstract', '-a', help='Rather than comparing all reactions, compare abstract regulatory network', action='store_true')
     parser.add_argument('--ignore', '-i', help="List of species to ignore (comma-separated). Works with -a only")
     parser.add_argument('--elide', '-e', help="List of species to elide (comma-separated). Works with -a only")
 
-    parser.add_argument('--colors', help="List of colors (comma-separated)")
-    parser.add_argument('--reaction_labels', help="Style for reaction labels (none, name, name+rate, rate)")
+    parser.add_argument('--colors', '-c', help="List of colors (comma-separated)")
+    parser.add_argument('--labels', '-l', help="Style for reaction labels (none, name, name+rate, rate)")
     parser.add_argument('--stoich', '-s', help='Also label edges with stoichiometry', action='store_true')
 
     parser.add_argument('--outfile', type=argparse.FileType('w'), help="Output file")
@@ -44,8 +44,8 @@ if __name__ == '__main__':
         all_colors = ["#FF7F00",  "#32FF00", "#19B2FF", "#654CFF",  "#E51932", "#FFFF32"]
 
     reaction_labels = ""
-    if args.reaction_labels:
-        reaction_labels = args.reaction_labels
+    if args.labels:
+        reaction_labels = args.labels
 
     selected_model = ""
     if args.model:
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     output_formatter = sbml_diff.GenerateDot(all_colors, num_files, reaction_label=reaction_labels,
                                              selected_model=selected_model, show_stoichiometry=args.stoich)
 
-    if args.kineticstable:
+    if args.kinetics:
         sbml_diff.print_rate_law_table(all_models, all_model_names)
     elif args.params:
         sbml_diff.compare_params(all_models, all_model_names)
