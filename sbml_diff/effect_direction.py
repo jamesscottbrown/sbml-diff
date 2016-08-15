@@ -64,14 +64,7 @@ def check_sign_numerically(expr, param_names, species_id):
 
     """
 
-    expr = convert_rate_law(expr, variables_not_to_substitute=[species_id])
-
-    replacement = {'^': '**', 'exp': 'math.exp', 'ln': 'math.log', 'log': 'math.log10', 'ceiling': 'math.ceil',
-                   'floor': 'math.floor', 'factorial': 'math.factorial', 'delay': '', 'pi': 'math.pi',
-                    'e': 'math.e', 'infinity': 'float("Inf")'}
-
-    for old in replacement:
-        expr = expr.replace(old, replacement[old])
+    expr = convert_rate_law(expr, variables_not_to_substitute=[species_id], executable=True)
 
     param_names.remove(species_id)
 
