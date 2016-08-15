@@ -116,6 +116,16 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
             if not isinstance(child, NavigableString):
                 return convert_rate_law_inner(child, variables_not_to_substitute, executable)
 
+    if expression.name == "csymbol":
+        if "time" in expression.attrs['definitionURL']:
+            if executable:
+                return True, '1'
+            return True, "t"
+        if "avogadro" in expression.attrs['definitionURL']:
+            if executable:
+                return True, '1'
+            return True, "N_A"
+
     # First child is operator; next are arguments
     if expression.name == "apply":
         operator = None
