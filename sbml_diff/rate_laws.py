@@ -25,7 +25,7 @@ def convert_rate_law(math, variables_not_to_substitute=False, executable=False):
 
 def add_parens(term_elementary, terms):
     """
-    If the first argument is false, wrap the second argument in parentheses.
+    If any elements in the first argument is false, wrap the corresponding elements of the second argument in parentheses.
 
     Parameters
     ----------
@@ -34,10 +34,9 @@ def add_parens(term_elementary, terms):
     terms : string
 
     """
-    if not term_elementary[0]:
-        terms[0] = "(%s)" % terms[0]
-    if not term_elementary[1]:
-        terms[1] = "(%s)" % terms[1]
+    for ind, is_elementary in enumerate(term_elementary):
+        if not is_elementary:
+            terms[ind] = "(%s)" % terms[ind]
     return terms
 
 
