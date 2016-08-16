@@ -9,7 +9,7 @@ def check_model_supported(models):
     """
     Print an error message and quit if the file cannot be processed (because it contains user-defined functions, or is
     missing a list of species), rather than dumping a stack trace.
-    
+
     Parameters
     ----------
     models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
@@ -20,10 +20,21 @@ def check_model_supported(models):
             print "User-defined functions are not supported."
             sys.exit()
 
+        if model.select_one('piecewise'):
+            print "Piecewise functions are not supported."
+            sys.exit()
+
         if not model.select_one('listOfSpecies'):
             print "Every model must include a listOfSpecies."
             sys.exit()
 
+        if not model.select_one('sbml') or 'xmlns' not in model.select_one('sbml').attrs.keys():
+            print "Every file must be an sbml model"
+            sys.exit()
+
+        if "level1" in model.select_one('sbml').attrs['xmlns']:
+            print "Every model must be in SBML level 2 or higher, since sbml-diff relies on id attributes"
+            sys.exit()
 
 def print_rate_law_table(model_strings, model_names):
     """
