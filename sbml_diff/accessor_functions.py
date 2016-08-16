@@ -20,6 +20,9 @@ def get_params(model):
     param_ids = []
     param_values = {}
 
+    if not model.select_one("listOfParameters"):
+        return set(), param_values
+
     for param in model.select_one("listOfParameters").select("parameter"):
         param_id = param.attrs["id"]
         param_ids.append(param_id)
