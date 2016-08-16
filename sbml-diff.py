@@ -67,19 +67,23 @@ if __name__ == '__main__':
     output_formatter = sbml_diff.GenerateDot(all_colors, num_files, reaction_label=reaction_labels,
                                              selected_model=selected_model, show_stoichiometry=args.stoich)
 
-    if args.kinetics:
-        sbml_diff.print_rate_law_table(all_models, all_model_names)
-    elif args.params:
-        sbml_diff.compare_params(all_models, all_model_names)
-    elif args.abstract:
-        ignored = []
-        if args.ignore:
-            ignored = args.ignore.split(',')
+    try:
+        if args.kinetics:
+            sbml_diff.print_rate_law_table(all_models, all_model_names)
+        elif args.params:
+            sbml_diff.compare_params(all_models, all_model_names)
+        elif args.abstract:
+            ignored = []
+            if args.ignore:
+                ignored = args.ignore.split(',')
 
-        elided = []
-        if args.elide:
-            elided = args.elide.split(',')
+            elided = []
+            if args.elide:
+                elided = args.elide.split(',')
 
-        sbml_diff.diff_abstract_models(all_models, output_formatter, ignored_species=ignored, elided_species=elided)
-    else:
-        sbml_diff.diff_models(all_models, output_formatter)
+            sbml_diff.diff_abstract_models(all_models, output_formatter, ignored_species=ignored, elided_species=elided)
+        else:
+            sbml_diff.diff_models(all_models, output_formatter)
+
+    except RuntimeError, e:
+        sys.exit(e.args[0])

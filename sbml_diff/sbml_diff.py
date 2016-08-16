@@ -17,24 +17,20 @@ def check_model_supported(models):
     for model in models:
 
         if model.select_one('functionDefinition'):
-            print "User-defined functions are not supported."
-            sys.exit()
+            raise RuntimeError("User-defined functions are not supported.")
 
         if model.select_one('piecewise'):
-            print "Piecewise functions are not supported."
-            sys.exit()
+            raise RuntimeError("Piecewise functions are not supported.")
 
         if not model.select_one('listOfSpecies'):
-            print "Every model must include a listOfSpecies."
-            sys.exit()
+            raise RuntimeError("Every model must include a listOfSpecies.")
 
         if not model.select_one('sbml') or 'xmlns' not in model.select_one('sbml').attrs.keys():
-            print "Every file must be an sbml model"
-            sys.exit()
+            raise RuntimeError("Every file must be an sbml model")
 
         if "level1" in model.select_one('sbml').attrs['xmlns']:
-            print "Every model must be in SBML level 2 or higher, since sbml-diff relies on id attributes"
-            sys.exit()
+            raise RuntimeError("Every model must be in SBML level 2 or higher, since sbml-diff relies on id attributes")
+
 
 def print_rate_law_table(model_strings, model_names):
     """
