@@ -32,14 +32,17 @@ def check_model_supported(models):
             raise RuntimeError("Every model must be in SBML level 2 or higher, since sbml-diff relies on id attributes")
 
 
-def print_rate_law_table(model_strings, model_names):
+def print_rate_law_table(model_strings, model_names, format="simple"):
     """
     Print a table of kineticLaws, in which rows correspond to reactions and columns to models.
 
     Parameters
     ----------
     model_strings : a list, in which each element is an SBML model as a string
+
     model_names : headings for the columns
+
+    format : a table format supported by tabulate (e.g. simple, html)
     """
 
     # get list of all reactions in all models
@@ -62,17 +65,20 @@ def print_rate_law_table(model_strings, model_names):
                 rates.append("-")
         rows.append(rates)
 
-    print tabulate(rows, ["Reaction"] + model_names)
+    print tabulate(rows, ["Reaction"] + model_names, tablefmt=format)
 
 
-def compare_params(model_strings, model_names):
+def compare_params(model_strings, model_names, format="simple"):
     """
     Print a table of parameter values, in which rows correspond to reactions and columns to models.
 
     Parameters
     ----------
     model_strings : a list, in which each element is an SBML model as a string
+
     model_names : headings for the columns
+
+    format : a table format supported by tabulate (e.g. simple, html)
     """
 
     models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
@@ -97,7 +103,7 @@ def compare_params(model_strings, model_names):
                 row.append("-")
         rows.append(row)
 
-    print tabulate(rows, ["Parameter"] + model_names)
+    print tabulate(rows, ["Parameter"] + model_names, tablefmt=format)
 
 
 def diff_rules(models, generate_dot):
