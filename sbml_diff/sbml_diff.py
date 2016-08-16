@@ -31,6 +31,11 @@ def check_model_supported(models):
         if "level1" in model.select_one('sbml').attrs['xmlns']:
             raise RuntimeError("Every model must be in SBML level 2 or higher, since sbml-diff relies on id attributes")
 
+        reaction_list = model.select_one("listOfReactions")
+        if reaction_list:
+            for reaction in reaction_list.select("reaction"):
+                if not reaction.select_one("kineticLaw"):
+                    raise RuntimeError("Every reaction must have a kineticLaw. Note that submodels are not supported.")
 
 def print_rate_law_table(model_strings, model_names, format="simple"):
     """
