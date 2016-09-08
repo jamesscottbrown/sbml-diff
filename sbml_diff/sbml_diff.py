@@ -2,8 +2,10 @@ from bs4 import BeautifulSoup
 from accessor_functions import *
 from generate_dot import *
 from rate_laws import *
+from miriam import align_models
 from tabulate import tabulate
 import sys
+
 
 def check_model_supported(models):
     """
@@ -36,6 +38,7 @@ def check_model_supported(models):
             for reaction in reaction_list.select("reaction"):
                 if not reaction.select_one("kineticLaw"):
                     raise RuntimeError("Every reaction must have a kineticLaw. Note that submodels are not supported.")
+
 
 def print_rate_law_table(model_strings, model_names, format="simple"):
     """
@@ -395,7 +398,7 @@ def diff_compartment(compartment_id, models, reaction_strings, rule_strings, gen
     generate_dot.print_compartment_footer()
 
 
-def diff_models(model_strings, generate_dot):
+def diff_models(model_strings, generate_dot, align=False):
     """
     Print DOT output comparing SBML models
 
@@ -409,6 +412,9 @@ def diff_models(model_strings, generate_dot):
     models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
 
     check_model_supported(models)
+
+    if align:
+        align_models(models)
 
     generate_dot.print_header()
 
@@ -499,7 +505,7 @@ def abstract_model(model):
 
 
 # TODO: compartments!
-def diff_abstract_models(model_strings, generate_dot, ignored_species=False, elided_species=False):
+def diff_abstract_models(model_strings, generate_dot, ignored_species=False, elided_species=False, align=False):
     """
     Print DOT output comparing SBML models after abstraction (by abstract_model(model))
 
@@ -517,6 +523,9 @@ def diff_abstract_models(model_strings, generate_dot, ignored_species=False, eli
         elided_species = []
 
     models = map(lambda x: BeautifulSoup(x, 'xml'), model_strings)
+
+    if align:
+        align_models(models)
 
     effect_types = ["increase-degredation", "decrease-degredation", "increase-production", "decrease-production"]
 
