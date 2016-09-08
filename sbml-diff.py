@@ -86,11 +86,14 @@ if __name__ == '__main__':
                                              selected_model=selected_model, show_stoichiometry=args.stoich,
                                              rankdir=rankdir)
 
+    sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon, elided_list=[])
+    # cartoon=False, elided_list=False
+
     try:
         if args.kinetics:
-            sbml_diff.print_rate_law_table(all_models, all_model_names)
+            sd.print_rate_law_table()
         elif args.params:
-            sbml_diff.compare_params(all_models, all_model_names)
+            sd.compare_params()
         elif args.abstract:
             ignored = []
             if args.ignore:
@@ -100,9 +103,9 @@ if __name__ == '__main__':
             if args.elide:
                 elided = args.elide.split(',')
 
-            sbml_diff.diff_abstract_models(all_models, output_formatter, ignored_species=ignored, elided_species=elided, align=align)
+            sd.diff_abstract_models(ignored_species=ignored, elided_species=elided)
         else:
-            sbml_diff.diff_models(all_models, output_formatter, align=align, cartoon=cartoon, elided_species=[])
+            sd.diff_models()
 
     except RuntimeError, e:
         sys.exit(e.args[0])
