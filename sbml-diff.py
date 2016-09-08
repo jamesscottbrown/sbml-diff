@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
             sbml_diff.diff_abstract_models(all_models, output_formatter, ignored_species=ignored, elided_species=elided, align=align)
         else:
-            sbml_diff.diff_models(all_models, output_formatter, align=align, cartoon=cartoon)
+            sbml_diff.diff_models(all_models, output_formatter, align=align, cartoon=cartoon, elided_species=[])
 
     except RuntimeError, e:
         sys.exit(e.args[0])

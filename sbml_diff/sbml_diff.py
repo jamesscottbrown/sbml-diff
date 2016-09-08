@@ -215,7 +215,7 @@ def diff_rule(models, target_id, generate_dot):
     return generate_dot.print_rule_node(model_set, target_id, rate_laws, converted_rate_law)
 
 
-def diff_reactions(models, generate_dot, cartoon):
+def diff_reactions(models, generate_dot, cartoon=False, elided_list=False):
     """
     Compare all reactions between models. Returns a list of the DOT statements to draw each reaction node, but directly
     prints the DOT statements for the corresponding arrows.
@@ -230,6 +230,8 @@ def diff_reactions(models, generate_dot, cartoon):
     -------
      a list of the DOT statements to draw each reaction node
     """
+    if not elided_list:
+        elided_list = []
 
     reaction_status = {}
     for model_num, model in enumerate(models):
@@ -256,7 +258,7 @@ def diff_reactions(models, generate_dot, cartoon):
     return reaction_strings
 
 
-def diff_reaction(models, reaction_id, generate_dot, cartoon):
+def diff_reaction(models, reaction_id, generate_dot, cartoon=False, elided_list=False):
     """
     Compare a single reaction between models. Returns the DOT statement to draw the node for the reaction, but directly
     prints the DOT statements for the corresponding arrows. This is to allow the reaction node to be drawn in the correct
@@ -275,6 +277,8 @@ def diff_reaction(models, reaction_id, generate_dot, cartoon):
     """
 
     # We need to consider whether the reaction's products, reactants and rate law are shared
+    if not elided_list:
+        elided_list = []
 
     reaction_model_set = set()
     reactant_status = {}
@@ -298,6 +302,15 @@ def diff_reaction(models, reaction_id, generate_dot, cartoon):
             continue
 
         reaction_model_set.add(model_num)
+
+        # Find the reaction that elides each species
+        if cartoon:
+            elided_reactions = []
+            downstream_species = {}
+            for s in elided_list:
+                new_product, elided_reaction = find_downstream_species(model, s)
+                elided_reactions.append(elided_reaction)
+                downstream_species[s] = new_product
 
         # check if any stoichiometry values change between models
         # record the stoichiometry of every reactant or product associated with this reaction in any model
@@ -325,9 +338,28 @@ def diff_reaction(models, reaction_id, generate_dot, cartoon):
             reactant_status[reactant].add(model_num)
 
         for product in products:
+            # if producing something that's been elided, adjust arrows to point ot downstream species
+            if cartoon and product in elided_list:
+                new_product = downstream_species[product]
+                product_stoichiometries[new_product] = product_stoichiometries[product]
+                product = new_product
+
             if product not in product_status.keys():
                 product_status[product] = set()
             product_status[product].add(model_num)
+
+    if cartoon:
+        if reaction in elided_reactions:
+            return ""
+
+        # If a reaction has only one reaction, and it is an elided species (e.g. translation, mRNA degredation), do not print anything
+        if len(reactants) == 1 and reactants[0] in elided_list:
+            return ""
+        # TODO: what if only a modifier
+
+        # Hide all degredaion
+        if len(reactants) == 1 and len(products) == 0:
+            return ""
 
     # reactant arrows
     for reactant_num, reactant in enumerate(reactant_status):
@@ -351,14 +383,49 @@ def diff_reaction(models, reaction_id, generate_dot, cartoon):
         converted_rate_law = convert_rate_law(rate_laws)
 
     if transcription_reaction:
-
         return generate_dot.print_transcription_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name,
                                                               converted_rate_law, product_status)
     else:
         return generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
 
-def diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot):
+def find_downstream_species(model, species):
+    for reaction in model.select('reaction'):
+
+        # check is reactant or modifier species
+        is_reactant_or_modifier = False
+        reactant_list = reaction.select_one("listOfReactants")
+        if reactant_list:
+            for r in reactant_list.select("speciesReference"):
+                if r["species"] == species:
+                    is_reactant_or_modifier = True
+                    break
+
+        modifier_list = reaction.select_one("listOfModifiers")
+        if modifier_list:
+            for r in modifier_list.select("modifierSpeciesReference"):
+                if r["species"] == species:
+                    is_reactant_or_modifier = True
+                    break
+
+        if not is_reactant_or_modifier:
+            continue
+
+        # check has single product
+        product_list = reaction.select_one("listOfProducts")
+        if not product_list:
+            continue
+        p = product_list.select("speciesReference")
+        if len(p) != 1:
+            continue
+
+        return p[0]["species"], reaction
+
+    # TODO: throw exception instead of this
+    return "", ""
+
+
+def diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot, cartoon=False, elided_list=False):
     """
     Print DOT output comparing a single compartment between models
 
@@ -371,6 +438,9 @@ def diff_compartment(compartment_id, models, reaction_strings, rule_strings, gen
     generate_dot : instance of the GenerateDot class
     """
     generate_dot.print_compartment_header(compartment_id)
+
+    if not elided_list:
+        elided_list = []
 
     # print the reaction squares that belong in this compartment
     if compartment_id in reaction_strings.keys():
@@ -393,12 +463,21 @@ def diff_compartment(compartment_id, models, reaction_strings, rule_strings, gen
         parent_model_index = list(species_status[species])[0]
         parent_model = models[parent_model_index]
         species_name = get_species_name(parent_model, species)
+        if cartoon and species in elided_list:
+            continue
         generate_dot.print_species_node(species_status[species], species, species_name)
 
     # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
     arrow_status = {}
     for model_num, model in enumerate(models):
-        arrows = get_regulatory_arrow(model, compartment_id)
+        if cartoon:
+            elided_reactions = []
+            for s in elided_list:
+                _, elided_reaction = find_downstream_species(model, s)
+                elided_reactions.append(elided_reaction)
+            arrows = get_regulatory_arrow(model, compartment_id, elided_reactions=elided_reactions)
+        else:
+            arrows = get_regulatory_arrow(model, compartment_id)
 
         for ind, arrow in enumerate(arrows):
             if arrow not in arrow_status.keys():
@@ -414,7 +493,7 @@ def diff_compartment(compartment_id, models, reaction_strings, rule_strings, gen
     generate_dot.print_compartment_footer()
 
 
-def diff_models(model_strings, generate_dot, align=False, cartoon=False):
+def diff_models(model_strings, generate_dot, align=False, cartoon=False, elided_list=False):
     """
     Print DOT output comparing SBML models
 
@@ -434,7 +513,10 @@ def diff_models(model_strings, generate_dot, align=False, cartoon=False):
 
     generate_dot.print_header()
 
-    reaction_strings = diff_reactions(models, generate_dot, cartoon=cartoon)
+    if not elided_list:
+        elided_list = []
+
+    reaction_strings = diff_reactions(models, generate_dot, cartoon=cartoon, elided_list=elided_list)
     rule_strings = diff_rules(models, generate_dot)
 
     # Reactions and rules do not have compartments. We try to assign them based on compartment of reactants/products,
@@ -450,7 +532,7 @@ def diff_models(model_strings, generate_dot, align=False, cartoon=False):
             compartment_ids.add(compartment.attrs["id"])
 
     for compartment_id in compartment_ids:
-        diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot)
+        diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot, cartoon, elided_list)
 
     generate_dot.print_footer()
 

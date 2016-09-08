@@ -31,7 +31,7 @@ def get_params(model):
     return set(param_ids), param_values
 
 
-def get_regulatory_arrow(model, compartment):
+def get_regulatory_arrow(model, compartment, elided_reactions=False):
     """
     Find all regulatory interactions in a particular compartment of a model, and construct an array of strings
     representing these.
@@ -42,6 +42,8 @@ def get_regulatory_arrow(model, compartment):
     model : bs4.BeautifulSoup object produced by parsing an SBML model
         
     compartment : the id of a compartment
+
+    elided_reactions : a list of reactions, for which the corresponding reactions are not drawn
         
 
     Returns
@@ -49,6 +51,9 @@ def get_regulatory_arrow(model, compartment):
     arrows : an array, each element of which is a string representing a regulatory interaction
 
     """
+    if not elided_reactions:
+        elided_reactions = []
+
     species_ids = get_species(model, compartment)
 
     arrows = []
@@ -58,6 +63,8 @@ def get_regulatory_arrow(model, compartment):
         return arrows
 
     for reaction in reaction_list.select("reaction"):
+        if reaction in elided_reactions:
+            continue
         reaction_id = reaction.attrs["id"]
         for ci in reaction.select_one("kineticLaw").select("ci"):
 
