@@ -152,7 +152,7 @@ class GenerateDot:
 
         print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
 
-    def print_transcription_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law, product_status, product_names):
+    def print_transcription_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law, product_status):
         base_style = ''
         if rate_law == "different":
             fill = 'fillcolor="grey",'
@@ -177,7 +177,7 @@ class GenerateDot:
 
         for product in product_status:
             color = self.assign_color(product_status[product])
-            result += 'cds_%s_%s [color="%s", shape="cds", label="%s"];\n' % (reaction_id, product, color, product_names[product])
+            result += 'cds_%s_%s [color="%s", shape="cds", label=""];\n' % (reaction_id, product, color)
 
         result += '%s [shape=promoter, label=""];\n' % reaction_id
         result += '%s -> cds_%s_%s [arrowhead="none"];\n' % (reaction_id, reaction_id, products[0])

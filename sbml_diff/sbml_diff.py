@@ -285,7 +285,6 @@ def diff_reaction(models, reaction_id, generate_dot, cartoon):
     product_stoichiometries = {}
 
     transcription_reaction = False
-    product_names = {}
 
     for model_num, model in enumerate(models):
         reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction_id)
@@ -314,8 +313,6 @@ def diff_reaction(models, reaction_id, generate_dot, cartoon):
                 product_stoichiometries[products[ind]] = stoich
             elif stoich != product_stoichiometries[products[ind]]:
                 product_stoichiometries[products[ind]] = '?'
-
-            product_names[products[ind]] = get_species_name(model, products[ind])
 
         if rate_law and not rate_laws:
             rate_laws = rate_law
@@ -356,7 +353,7 @@ def diff_reaction(models, reaction_id, generate_dot, cartoon):
     if transcription_reaction:
 
         return generate_dot.print_transcription_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name,
-                                                              converted_rate_law, product_status, product_names)
+                                                              converted_rate_law, product_status)
     else:
         return generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
