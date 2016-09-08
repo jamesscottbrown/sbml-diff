@@ -215,13 +215,14 @@ def diff_rule(models, target_id, generate_dot):
     return generate_dot.print_rule_node(model_set, target_id, rate_laws, converted_rate_law)
 
 
-def diff_reactions(models, generate_dot):
+def diff_reactions(models, generate_dot, cartoon):
     """
     Compare all reactions between models. Returns a list of the DOT statements to draw each reaction node, but directly
     prints the DOT statements for the corresponding arrows.
 
     Parameters
     ----------
+    cartoon
     models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
     generate_dot : instance of the GenerateDot class
 
@@ -249,13 +250,13 @@ def diff_reactions(models, generate_dot):
         if compartment not in reaction_strings.keys():
             reaction_strings[compartment] = []
 
-        reaction_string = diff_reaction(models, reaction_id, generate_dot)
+        reaction_string = diff_reaction(models, reaction_id, generate_dot, cartoon=cartoon)
         reaction_strings[compartment].append(reaction_string)
 
     return reaction_strings
 
 
-def diff_reaction(models, reaction_id, generate_dot):
+def diff_reaction(models, reaction_id, generate_dot, cartoon):
     """
     Compare a single reaction between models. Returns the DOT statement to draw the node for the reaction, but directly
     prints the DOT statements for the corresponding arrows. This is to allow the reaction node to be drawn in the correct
@@ -263,6 +264,7 @@ def diff_reaction(models, reaction_id, generate_dot):
 
     Parameters
     ----------
+    cartoon
     models : list of models (each a bs4.BeautifulSoup object produced by parsing an SBML model)
     reaction_id : id of the reaction
     generate_dot : instance of the GenerateDot class
@@ -282,8 +284,15 @@ def diff_reaction(models, reaction_id, generate_dot):
     reactant_stoichiometries = {}
     product_stoichiometries = {}
 
+    transcription_reaction = False
+    product_names = {}
+
     for model_num, model in enumerate(models):
         reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction_id)
+
+        reaction = model.select_one("listOfReactions").find(id=reaction_id)
+        if cartoon and "sboTerm" in reaction.attrs.keys() and reaction.attrs['sboTerm'] == "SBO:0000183":
+            transcription_reaction = True
 
         # only perform comparison between models in which this reaction actually occurs
         if not reactants and not products and not compartment and not rate_law and not rs and not ps:
@@ -305,6 +314,8 @@ def diff_reaction(models, reaction_id, generate_dot):
                 product_stoichiometries[products[ind]] = stoich
             elif stoich != product_stoichiometries[products[ind]]:
                 product_stoichiometries[products[ind]] = '?'
+
+            product_names[products[ind]] = get_species_name(model, products[ind])
 
         if rate_law and not rate_laws:
             rate_laws = rate_law
@@ -329,7 +340,10 @@ def diff_reaction(models, reaction_id, generate_dot):
     # product arrows
     for product_num, product in enumerate(product_status):
         model_set = list(product_status[product])
-        generate_dot.print_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
+        if transcription_reaction:
+            generate_dot.print_transcription_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
+        else:
+            generate_dot.print_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
 
     # rate law
     parent_model = models[model_set[0]]
@@ -339,7 +353,12 @@ def diff_reaction(models, reaction_id, generate_dot):
     if rate_laws and rate_laws != "different":
         converted_rate_law = convert_rate_law(rate_laws)
 
-    return generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
+    if transcription_reaction:
+
+        return generate_dot.print_transcription_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name,
+                                                              converted_rate_law, product_status, product_names)
+    else:
+        return generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
 
 def diff_compartment(compartment_id, models, reaction_strings, rule_strings, generate_dot):
@@ -398,7 +417,7 @@ def diff_compartment(compartment_id, models, reaction_strings, rule_strings, gen
     generate_dot.print_compartment_footer()
 
 
-def diff_models(model_strings, generate_dot, align=False):
+def diff_models(model_strings, generate_dot, align=False, cartoon=False):
     """
     Print DOT output comparing SBML models
 
@@ -418,7 +437,7 @@ def diff_models(model_strings, generate_dot, align=False):
 
     generate_dot.print_header()
 
-    reaction_strings = diff_reactions(models, generate_dot)
+    reaction_strings = diff_reactions(models, generate_dot, cartoon=cartoon)
     rule_strings = diff_rules(models, generate_dot)
 
     # Reactions and rules do not have compartments. We try to assign them based on compartment of reactants/products,

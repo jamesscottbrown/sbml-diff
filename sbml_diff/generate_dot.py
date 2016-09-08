@@ -6,7 +6,7 @@ class GenerateDot:
     The print_ functions accept an argument model_set, which specifies which models contain the corresponding feature.
     """
 
-    def __init__(self, colors, num_models, reaction_label="", selected_model="", show_stoichiometry=False):
+    def __init__(self, colors, num_models, reaction_label="", selected_model="", show_stoichiometry=False, rankdir="TB"):
         """
 
         Parameters
@@ -36,6 +36,7 @@ class GenerateDot:
 
         self.show_stoichiometry = show_stoichiometry
         self.reaction_label = reaction_label
+        self.rankdir = rankdir
 
     def assign_color(self, model_set):
         """
@@ -151,6 +152,71 @@ class GenerateDot:
 
         print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
 
+    def print_transcription_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law, product_status, product_names):
+        base_style = ''
+        if rate_law == "different":
+            fill = 'fillcolor="grey",'
+            base_style = 'filled'
+
+        style = self.check_style(model_set, base_style)
+
+        if self.reaction_label == "none":
+            reaction_name = ""
+        elif self.reaction_label == "name" or self.reaction_label == "":
+            reaction_name = reaction_name
+        elif self.reaction_label == "name+rate":
+            reaction_name = reaction_name + "\n" + converted_law
+        elif self.reaction_label == "rate":
+            reaction_name = converted_law
+
+        products = product_status.keys()
+        result = ""
+        result += "subgraph cluster_%s {\n" % reaction_id
+        result += 'label="%s";\n' % reaction_name
+        result += style[1:]
+
+        for product in product_status:
+            color = self.assign_color(product_status[product])
+            result += 'cds_%s_%s [color="%s", shape="cds", label="%s"];\n' % (reaction_id, product, color, product_names[product])
+
+        result += '%s [shape=promoter, label=""];\n' % reaction_id
+        result += '%s -> cds_%s_%s [arrowhead="none"];\n' % (reaction_id, reaction_id, products[0])
+        for i in range(len(products)-1):
+            result += "cds_%s_%s -> cds_%s_%s;\n" % (reaction_id, products[i], reaction_id, products[i-1])
+
+        result += "}\n\n"
+        return result
+
+    def print_transcription_product_arrow(self, model_set, reaction_id, product, stoich):
+        """
+        Draw arrow from reaction to product.
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+
+        reaction_id : id of the reaction
+
+        product : id of the product
+
+        stoich : stoichiometry of this product for this reaction
+
+
+        Returns
+        -------
+        string representing this arrow
+
+        """
+        color = self.assign_color(model_set)
+        style = self.check_style(model_set)
+
+        stoich_string = ''
+        if self.show_stoichiometry:
+            stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
+
+        print 'cds_%s_%s -> %s [color="%s"%s%s];' % (reaction_id, product, product, color, stoich_string, style)
+
+
     def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law):
         """
         Draw square node representing a reaction.
@@ -198,6 +264,7 @@ class GenerateDot:
         """ Print header needed for valid DOT file"""
         print "\n\n"
         print "digraph comparison {"
+        print "rankdir = %s;" % self.rankdir
 
     def print_footer(self):
         """ Print footer needed for valid DOT file  """
