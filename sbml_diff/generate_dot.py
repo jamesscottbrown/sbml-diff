@@ -173,11 +173,13 @@ class GenerateDot:
         result = ""
         result += "subgraph cluster_%s {\n" % reaction_id
         result += 'label="%s";\n' % reaction_name
-        result += style[1:]
+        result += style[1:] + ";\n"
+
+        result += 'color="%s";\n' % self.assign_color(model_set)
 
         for product in product_status:
             color = self.assign_color(product_status[product])
-            result += 'cds_%s_%s [color="%s", shape="cds", label=""];\n' % (reaction_id, product, color)
+            result += 'cds_%s_%s [fillcolor="%s", style=filled, color="black", shape="cds", label=""];\n' % (reaction_id, product, color)
 
         result += '%s [shape=promoter, label=""];\n' % reaction_id
         result += '%s -> cds_%s_%s [arrowhead="none"];\n' % (reaction_id, reaction_id, products[0])
