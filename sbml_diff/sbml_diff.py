@@ -287,6 +287,8 @@ class SBMLDiff:
             reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction_id)
 
             reaction = model.select_one("listOfReactions").find(id=reaction_id)
+            if not reaction:
+                continue
 
             # Skip processing reaction if it should not be drawn for this model
             show_reaction = True
@@ -469,9 +471,16 @@ class SBMLDiff:
             parent_model_index = list(species_status[species])[0]
             parent_model = self.models[parent_model_index]
             species_name = get_species_name(parent_model, species)
-            if self.cartoon and species in self.elided_list[model_num]:
-                continue
-            self.generate_dot.print_species_node(species_status[species], species, species_name)
+
+            # In cartoon mode, don't draw species node unless there is >=1 model in which it is present and not elided
+            draw = True
+            if self.cartoon:
+                draw = False
+                for model_num in species_status[species]:
+                    if species not in self.elided_list[model_num]:
+                        draw = True
+            if draw:
+                self.generate_dot.print_species_node(species_status[species], species, species_name)
 
         # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
         arrow_status = {}
