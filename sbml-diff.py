@@ -86,7 +86,7 @@ if __name__ == '__main__':
                                              selected_model=selected_model, show_stoichiometry=args.stoich,
                                              rankdir=rankdir)
 
-    sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon, elided_list=[])
+    sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon)
     # cartoon=False, elided_list=False
 
     try:

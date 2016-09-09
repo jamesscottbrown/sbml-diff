@@ -9,7 +9,7 @@ import sys
 
 class SBMLDiff:
 
-    def __init__(self, model_strings, model_names, generate_dot, align=False, cartoon=False, elided_list=False):
+    def __init__(self, model_strings, model_names, generate_dot, align=False, cartoon=False):
         """
 
         Parameters
@@ -19,9 +19,6 @@ class SBMLDiff:
         generate_dot : instance of the GenerateDot class
         align : Boolean indicating whether to try to match using MIRIAM annotations as well as reaction/species id
         cartoon : Boolean indicating whether to draw transcription as a SBOLv promoter/CSD glyph, and hide degredation
-
-
-        elided_list
 
         Returns
         -------
@@ -34,8 +31,13 @@ class SBMLDiff:
         self.generate_dot = generate_dot
         self.align = align
         self.cartoon = cartoon
-        self.elided_list = elided_list
         self.models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
+
+        if self.cartoon:
+            self.elided_list = []
+            self.elided_reactions = []
+            self.downstream_species = []
+            self.find_downstream_species()
 
     def check_model_supported(self):
         """
@@ -270,9 +272,6 @@ class SBMLDiff:
         """
 
         # We need to consider whether the reaction's products, reactants and rate law are shared
-        if not self.elided_list:
-            elided_list = []
-
         reaction_model_set = set()
         reactant_status = {}
         product_status = {}
@@ -295,15 +294,6 @@ class SBMLDiff:
                 continue
 
             reaction_model_set.add(model_num)
-
-            # Find the reaction that elides each species
-            if self.cartoon:
-                elided_reactions = []
-                downstream_species = {}
-                for s in elided_list:
-                    new_product, elided_reaction = self.find_downstream_species(model, s)
-                    elided_reactions.append(elided_reaction)
-                    downstream_species[s] = new_product
 
             # check if any stoichiometry values change between models
             # record the stoichiometry of every reactant or product associated with this reaction in any model
@@ -332,8 +322,8 @@ class SBMLDiff:
 
             for product in products:
                 # if producing something that's been elided, adjust arrows to point ot downstream species
-                if self.cartoon and product in elided_list:
-                    new_product = self.downstream_species[product]
+                if self.cartoon and product in self.elided_list[model_num]:
+                    new_product = self.downstream_species[model_num][product]
                     product_stoichiometries[new_product] = product_stoichiometries[product]
                     product = new_product
 
@@ -342,11 +332,11 @@ class SBMLDiff:
                 product_status[product].add(model_num)
 
         if self.cartoon:
-            if reaction in elided_reactions:
+            if reaction in self.elided_reactions[model_num]:
                 return ""
 
             # If a reaction has only one reaction, and it is an elided species (e.g. translation, mRNA degredation), do not print anything
-            if len(reactants) == 1 and reactants[0] in elided_list:
+            if len(reactants) == 1 and reactants[0] in self.elided_list[model_num]:
                 return ""
             # TODO: what if only a modifier
 
@@ -381,40 +371,56 @@ class SBMLDiff:
         else:
             return self.generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
-    def find_downstream_species(self, model, species):
-        for reaction in model.select('reaction'):
+    def find_downstream_species(self):
 
-            # check is reactant or modifier species
-            is_reactant_or_modifier = False
-            reactant_list = reaction.select_one("listOfReactants")
-            if reactant_list:
-                for r in reactant_list.select("speciesReference"):
-                    if r["species"] == species:
-                        is_reactant_or_modifier = True
-                        break
+        # TODO: don't elide if mRNA involved in other reactions
 
-            modifier_list = reaction.select_one("listOfModifiers")
-            if modifier_list:
-                for r in modifier_list.select("modifierSpeciesReference"):
-                    if r["species"] == species:
-                        is_reactant_or_modifier = True
-                        break
+        for model_num, model in enumerate(self.models):
+            # Only elide reactions with sboTerm corresponding to translation, and only one reactnat/modifier species
 
-            if not is_reactant_or_modifier:
-                continue
+            self.elided_list.append([])
+            self.elided_reactions.append([])
+            self.downstream_species.append({})
 
-            # check has single product
-            product_list = reaction.select_one("listOfProducts")
-            if not product_list:
-                continue
-            p = product_list.select("speciesReference")
-            if len(p) != 1:
-                continue
+            for reaction in model.select('reaction'):
 
-            return p[0]["species"], reaction
+                product_ids = []
+                if "sboTerm" not in reaction.attrs.keys() or reaction.attrs["sboTerm"] != "SBO:0000184":
+                    continue
 
-        # TODO: throw exception instead of this
-        return "", ""
+                reactants_and_modifier_species = []
+
+                # Check exactly one modifier/reactant
+                modifier_list = reaction.select_one("listOfModifiers")
+                if modifier_list:
+                    for r in modifier_list.select("modifierSpeciesReference"):
+                        reactants_and_modifier_species.append(r["species"])
+
+                reactant_list = reaction.select_one("listOfReactants")
+                if reactant_list:
+                    for r in reactant_list.select("speciesReference"):
+                        reactants_and_modifier_species.append(r["species"])
+
+                if len(reactants_and_modifier_species) != 1:
+                    continue
+
+                species_to_elide = reactants_and_modifier_species[0]
+
+                # check exactly one product (other than reactant, in case reaction is modelled as mRNA -> mRNA + protein)
+                product_species = []
+                product_list = reaction.select_one("listOfProducts")
+                if product_list:
+                    for p in product_list.select("speciesReference"):
+                        product_id = p["species"]
+                        if product_id != species_to_elide:
+                            product_species.append(product_id)
+
+                if len(product_species) != 1:
+                    continue
+
+                self.elided_list[model_num].append(species_to_elide)
+                self.elided_reactions[model_num].append(reaction)
+                self.downstream_species[model_num][species_to_elide] = product_species[0]
 
     def diff_compartment(self, compartment_id, reaction_strings, rule_strings):
         """
@@ -427,9 +433,6 @@ class SBMLDiff:
         rule_strings : list of strings, each a DOT statement describing the nodes representing rules
         """
         self.generate_dot.print_compartment_header(compartment_id)
-
-        if not self.elided_list:
-            elided_list = []
 
         # print the reaction squares that belong in this compartment
         if compartment_id in reaction_strings.keys():
@@ -452,7 +455,7 @@ class SBMLDiff:
             parent_model_index = list(species_status[species])[0]
             parent_model = self.models[parent_model_index]
             species_name = get_species_name(parent_model, species)
-            if self.cartoon and species in elided_list:
+            if self.cartoon and species in self.elided_list[model_num]:
                 continue
             self.generate_dot.print_species_node(species_status[species], species, species_name)
 
@@ -460,11 +463,7 @@ class SBMLDiff:
         arrow_status = {}
         for model_num, model in enumerate(self.models):
             if self.cartoon:
-                elided_reactions = []
-                for s in elided_list:
-                    _, elided_reaction = self.find_downstream_species(model, s)
-                    elided_reactions.append(elided_reaction)
-                arrows = get_regulatory_arrow(model, compartment_id, elided_reactions=elided_reactions)
+                arrows = get_regulatory_arrow(model, compartment_id, elided_reactions=self.elided_reactions[model_num])
             else:
                 arrows = get_regulatory_arrow(model, compartment_id)
 
