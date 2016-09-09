@@ -389,18 +389,35 @@ class SBMLDiff:
 
     def find_downstream_species(self):
 
-        # TODO: don't elide if mRNA involved in other reactions
-
         for model_num, model in enumerate(self.models):
-            # Only elide reactions with sboTerm corresponding to translation, and only one reactnat/modifier species
+            # Only elide reactions with sboTerm corresponding to translation, and only one reactant/modifier species
 
             self.elided_list.append([])
             self.elided_reactions.append([])
             self.downstream_species.append({})
 
+
+            # first, form a list of species that cannot safely be elided, because they are a reactant or modifier in a
+            # reaction other than degredation or translation
+            non_intermediates = []
             for reaction in model.select('reaction'):
 
-                product_ids = []
+                # skip degredation or translation reactions
+                if "sboTerm" in reaction.attrs.keys() and reaction.attrs["sboTerm"] in ["SBO:0000184", "SBO:0000179"]:
+                    continue
+
+                reactant_list = reaction.select_one("listOfReactants")
+                if reactant_list :
+                    for reactant in reactant_list.select("speciesReference"):
+                        non_intermediates.append(reactant["id"])
+
+                modifier_list = reaction.select_one("listOfModifiers")
+                if modifier_list:
+                    for r in modifier_list.select("modifierSpeciesReference"):
+                        non_intermediates.append(r["species"])
+
+            for reaction in model.select('reaction'):
+
                 if "sboTerm" not in reaction.attrs.keys() or reaction.attrs["sboTerm"] != "SBO:0000184":
                     continue
 
@@ -421,6 +438,9 @@ class SBMLDiff:
                     continue
 
                 species_to_elide = reactants_and_modifier_species[0]
+
+                if species_to_elide in non_intermediates:
+                    continue
 
                 # check exactly one product (other than reactant, in case reaction is modelled as mRNA -> mRNA + protein)
                 product_species = []
