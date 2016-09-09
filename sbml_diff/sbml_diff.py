@@ -281,11 +281,30 @@ class SBMLDiff:
         product_stoichiometries = {}
 
         transcription_reaction = False
+        ever_drawn = False
 
         for model_num, model in enumerate(self.models):
             reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction_id)
 
             reaction = model.select_one("listOfReactions").find(id=reaction_id)
+
+            # Skip processing reaction if it should not be drawn for this model
+            show_reaction = True
+            if self.cartoon:
+                if reaction in self.elided_reactions[model_num]:
+                    show_reaction = False
+
+                # If a reaction has only one reaction, and it is an elided species (e.g. translation, mRNA degredation), do not print anything
+                if len(reactants) == 1 and reactants[0] in self.elided_list[model_num]:
+                    show_reaction = False
+                # TODO: what if only a modifier
+
+                # Hide all degredaion
+                if len(reactants) == 1 and len(products) == 0:
+                    show_reaction = False
+
+            if not show_reaction:
+                continue
 
             if self.cartoon and "sboTerm" in reaction.attrs.keys() and \
                     reaction.attrs['sboTerm'] in ["SBO:0000183", "SBO:0000589"]:
@@ -333,18 +352,12 @@ class SBMLDiff:
                     product_status[product] = set()
                 product_status[product].add(model_num)
 
-        if self.cartoon:
-            if reaction in self.elided_reactions[model_num]:
-                return ""
+            parent_model = model
+            ever_drawn = True
 
-            # If a reaction has only one reaction, and it is an elided species (e.g. translation, mRNA degredation), do not print anything
-            if len(reactants) == 1 and reactants[0] in self.elided_list[model_num]:
-                return ""
-            # TODO: what if only a modifier
-
-            # Hide all degredaion
-            if len(reactants) == 1 and len(products) == 0:
-                return ""
+        # If reaction should not be drawn for any models, return now
+        if not ever_drawn:
+            return ""
 
         # reactant arrows
         for reactant_num, reactant in enumerate(reactant_status):
@@ -360,7 +373,6 @@ class SBMLDiff:
                 self.generate_dot.print_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
 
         # rate law
-        parent_model = self.models[model_set[0]]
         reaction_name = get_reaction_name(parent_model, reaction_id)
 
         converted_rate_law = ""
