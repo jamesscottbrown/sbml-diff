@@ -286,7 +286,9 @@ class SBMLDiff:
             reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction_id)
 
             reaction = model.select_one("listOfReactions").find(id=reaction_id)
-            if self.cartoon and "sboTerm" in reaction.attrs.keys() and reaction.attrs['sboTerm'] == "SBO:0000183":
+
+            if self.cartoon and "sboTerm" in reaction.attrs.keys() and \
+                    reaction.attrs['sboTerm'] in ["SBO:0000183", "SBO:0000589"]:
                 transcription_reaction = True
 
             # only perform comparison between models in which this reaction actually occurs
