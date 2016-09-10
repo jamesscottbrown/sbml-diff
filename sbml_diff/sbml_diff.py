@@ -388,6 +388,15 @@ class SBMLDiff:
             return self.generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
 
     def find_downstream_species(self):
+        """
+        Identifies reactions which should be elided in cartoon mode. A reaction should be elided if:
+        - it has sboTerm SBO:0000184 (translation)
+        - it has exactly one modifier or reactant species, and this species does not feature as a reactant or modifier
+        species of any reaction that is not translation or degredation
+        - it has exactly one product
+        - it does not appear in more than one model, unless it has the same kineticLaw in each (as eliding the reaction
+        would hide this difference)
+        """
 
         for model_num, model in enumerate(self.models):
             # Only elide reactions with sboTerm corresponding to translation, and only one reactant/modifier species
@@ -407,7 +416,7 @@ class SBMLDiff:
                     continue
 
                 reactant_list = reaction.select_one("listOfReactants")
-                if reactant_list :
+                if reactant_list:
                     for reactant in reactant_list.select("speciesReference"):
                         non_intermediates.append(reactant["id"])
 
@@ -416,9 +425,27 @@ class SBMLDiff:
                     for r in modifier_list.select("modifierSpeciesReference"):
                         non_intermediates.append(r["species"])
 
+            # Now loop through reactions, identifying those that should be elided
             for reaction in model.select('reaction'):
 
                 if "sboTerm" not in reaction.attrs.keys() or reaction.attrs["sboTerm"] != "SBO:0000184":
+                    continue
+
+                # if reaction has different kineticLaw in different models, don't elide it
+                rate_laws = ""
+                for m in self.models:
+                    r = m.select_one("listOfReactions").find(id=reaction["id"])
+                    if not r:
+                        continue
+
+                    rate_law = r.select_one("kineticLaw").select_one("math")
+                    if rate_law and not rate_laws:
+                        rate_laws = rate_law
+                    elif rate_laws and rate_law and rate_laws != rate_law:
+                        rate_laws = "different"
+                        break
+
+                if rate_laws == "different":
                     continue
 
                 reactants_and_modifier_species = []
