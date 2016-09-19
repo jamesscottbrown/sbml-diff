@@ -34,7 +34,9 @@ if __name__ == '__main__':
     parser.add_argument('--align', help="Treat species/reactions with different ids in different models as the "
                         "same if they have the same set of MIRIAM annnotations", action='store_true')
 
-    parser.add_argument('--cartoon', help="DRaw transcription using SBOL glyphs", action="store_true")
+    parser.add_argument('--cartoon', help="Draw transcription using SBOL glyphs", action="store_true")
+
+    parser.add_argument('--force', '-f', help="Draw comparison even if files are identical", action="store_true")
 
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
 
@@ -117,7 +119,7 @@ if __name__ == '__main__':
     else:
         sys.stdout = old_stdout
 
-    if output_formatter.differences_found:
+    if output_formatter.differences_found or args.force:
         print f.getvalue()
     else:
         print "No structural differences found"
