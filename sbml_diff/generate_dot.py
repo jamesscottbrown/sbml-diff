@@ -122,10 +122,10 @@ class GenerateDot:
         style = self.check_style(model_set)
 
         stoich_string = ''
-        if self.show_stoichiometry or stoich_string == '?':
+        if self.show_stoichiometry or stoich == '?':
             stoich_string = ', headlabel="%s", labelfontcolor=red' % stoich
 
-        if stoich_string == '?':
+        if stoich == '?':
             self.differences_found = True
 
         print '%s -> %s [color="%s"%s%s];' % (reactant, reaction_id, color, stoich_string, style)
@@ -154,10 +154,10 @@ class GenerateDot:
         style = self.check_style(model_set)
 
         stoich_string = ''
-        if self.show_stoichiometry or stoich_string == '?':
+        if self.show_stoichiometry or stoich == '?':
             stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
 
-        if stoich_string == '?':
+        if stoich == '?':
             self.differences_found = True
 
         print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
@@ -224,10 +224,10 @@ class GenerateDot:
         style = self.check_style(model_set)
 
         stoich_string = ''
-        if self.show_stoichiometry or stoich_string == '?':
+        if self.show_stoichiometry or stoich == '?':
             stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
 
-        if stoich_string == '?':
+        if stoich == '?':
             self.differences_found = True
 
         print 'cds_%s_%s -> %s [color="%s"%s%s];' % (reaction_id, product, product, color, stoich_string, style)
