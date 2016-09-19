@@ -125,6 +125,9 @@ class GenerateDot:
         if self.show_stoichiometry:
             stoich_string = ', headlabel="%s", labelfontcolor=red' % stoich
 
+        if stoich_string == '?':
+            self.differences_found = True
+
         print '%s -> %s [color="%s"%s%s];' % (reactant, reaction_id, color, stoich_string, style)
 
     def print_product_arrow(self, model_set, reaction_id, product, stoich):
