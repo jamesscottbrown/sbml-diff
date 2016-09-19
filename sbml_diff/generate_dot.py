@@ -126,6 +126,7 @@ class GenerateDot:
             stoich_string = ', headlabel="%s", labelfontcolor=red' % stoich
 
         if stoich == '?':
+            color = "black"
             self.differences_found = True
 
         print '%s -> %s [color="%s"%s%s];' % (reactant, reaction_id, color, stoich_string, style)
@@ -158,6 +159,7 @@ class GenerateDot:
             stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
 
         if stoich == '?':
+            color = "black"
             self.differences_found = True
 
         print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
@@ -228,6 +230,7 @@ class GenerateDot:
             stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
 
         if stoich == '?':
+            color = "black"
             self.differences_found = True
 
         print 'cds_%s_%s -> %s [color="%s"%s%s];' % (reaction_id, product, product, color, stoich_string, style)
