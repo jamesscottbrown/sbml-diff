@@ -36,8 +36,8 @@ def align_element(models, element_type):
                 continue
 
             if id in all_identifiers.keys() and all_identifiers[id] != identifiers:
-                print "Cannot match using MIRIAM identifiers: %s id %s has two or more sets of annotations"\
-                      % (element_type, id)
+                sys.stderr.write("Cannot match using MIRIAM identifiers: %s id %s has two or more sets of annotations\n"\
+                      % (element_type, id))
                 print "Set one: \n", get_identifiers(all_identifiers[id])
                 print "Set two: \n", identifiers
                 sys.exit()
@@ -51,7 +51,7 @@ def align_element(models, element_type):
             all_identifiers[id] = identifiers
 
     if len(all_identifiers.keys()) == 0:
-        print("Cannot match using MIRIAM identifiers: no %s in any model has any identifier" % element_type)
+        sys.stderr.write("Cannot fully match using MIRIAM identifiers: no %s in any model has any identifier\n" % element_type)
 
     return elements
 
