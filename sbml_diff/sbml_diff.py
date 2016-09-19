@@ -5,6 +5,7 @@ from rate_laws import *
 from miriam import align_models
 from tabulate import tabulate
 import sys
+import re
 
 
 class SBMLDiff:
@@ -335,7 +336,7 @@ class SBMLDiff:
 
             if rate_law and not rate_laws:
                 rate_laws = rate_law
-            if rate_laws and rate_law and rate_laws != rate_law:
+            if rate_laws and rate_law and re.sub('\s', '', str(rate_law)) != re.sub('\s', '', str(rate_laws)):
                 rate_laws = "different"
 
             for reactant in reactants:
