@@ -122,7 +122,7 @@ class GenerateDot:
         style = self.check_style(model_set)
 
         stoich_string = ''
-        if self.show_stoichiometry:
+        if self.show_stoichiometry or stoich_string == '?':
             stoich_string = ', headlabel="%s", labelfontcolor=red' % stoich
 
         if stoich_string == '?':
@@ -154,7 +154,7 @@ class GenerateDot:
         style = self.check_style(model_set)
 
         stoich_string = ''
-        if self.show_stoichiometry:
+        if self.show_stoichiometry or stoich_string == '?':
             stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
 
         if stoich_string == '?':
@@ -224,7 +224,7 @@ class GenerateDot:
         style = self.check_style(model_set)
 
         stoich_string = ''
-        if self.show_stoichiometry:
+        if self.show_stoichiometry or stoich_string == '?':
             stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
 
         if stoich_string == '?':
