@@ -3,6 +3,7 @@ from sbml_diff import *
 import os
 import sys
 import argparse
+from cStringIO import StringIO
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""
@@ -64,8 +65,9 @@ if __name__ == '__main__':
         align = True
 
     # redirect STDOUT to specified file
-    if args.outfile:
-        sys.stdout = args.outfile
+    old_stdout = sys.stdout
+    f = StringIO()
+    sys.stdout = f
 
     rankdir = "TB"
     cartoon = False
@@ -87,7 +89,6 @@ if __name__ == '__main__':
                                              rankdir=rankdir)
 
     sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon)
-    # cartoon=False, elided_list=False
 
     try:
         if args.kinetics:
@@ -109,3 +110,14 @@ if __name__ == '__main__':
 
     except RuntimeError, e:
         sys.exit(e.args[0])
+
+    # Print results
+    if args.outfile:
+        sys.stdout = args.outfile
+    else:
+        sys.stdout = old_stdout
+
+    if output_formatter.differences_found:
+        print f.getvalue()
+    else:
+        print "No structural differences found"

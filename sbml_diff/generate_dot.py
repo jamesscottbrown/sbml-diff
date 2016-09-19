@@ -37,6 +37,7 @@ class GenerateDot:
         self.show_stoichiometry = show_stoichiometry
         self.reaction_label = reaction_label
         self.rankdir = rankdir
+        self.differences_found = False
 
     def assign_color(self, model_set):
         """
@@ -54,6 +55,9 @@ class GenerateDot:
         string specifying color
 
         """
+        if self.num_models != len(model_set):
+            self.differences_found = True
+
         if self.num_models == 1:
             return "black"
         # one
@@ -155,6 +159,7 @@ class GenerateDot:
     def print_transcription_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law, product_status):
         base_style = ''
         if rate_law == "different":
+            self.differences_found = True
             fill = 'fillcolor="grey",'
             base_style = 'filled'
 
@@ -244,6 +249,7 @@ class GenerateDot:
         fill = ''
         base_style = ''
         if rate_law == "different":
+            self.differences_found = True
             fill = 'fillcolor="grey",'
             base_style = 'filled'
 
@@ -383,6 +389,7 @@ class GenerateDot:
         fill = ''
         base_style = ''
         if rate_law == "different":
+            self.differences_found = True
             fill = 'fillcolor="grey",'
             base_style = 'filled'
 
