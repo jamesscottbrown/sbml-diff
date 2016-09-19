@@ -157,6 +157,9 @@ class GenerateDot:
         if self.show_stoichiometry:
             stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
 
+        if stoich_string == '?':
+            self.differences_found = True
+
         print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
 
     def print_transcription_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law, product_status):
@@ -223,6 +226,9 @@ class GenerateDot:
         stoich_string = ''
         if self.show_stoichiometry:
             stoich_string = ', taillabel="%s", labelfontcolor=red' % stoich
+
+        if stoich_string == '?':
+            self.differences_found = True
 
         print 'cds_%s_%s -> %s [color="%s"%s%s];' % (reaction_id, product, product, color, stoich_string, style)
 
