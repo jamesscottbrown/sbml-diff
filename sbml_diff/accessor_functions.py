@@ -169,7 +169,7 @@ def get_reaction_details(model, reaction_id):
             if "stoichiometry" in r.attrs:
                 stoich = r.attrs["stoichiometry"]
             else:
-                stoich = ""
+                stoich = "1"
 
             reactant_stoichiometries.append(stoich)
 
@@ -190,7 +190,7 @@ def get_reaction_details(model, reaction_id):
             if "stoichiometry" in r.attrs:
                 stoich = r.attrs["stoichiometry"]
             else:
-                stoich = ""
+                stoich = "1"
 
             product_stoichiometries.append(stoich)
 
