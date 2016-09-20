@@ -32,7 +32,9 @@ class SBMLDiff:
         self.generate_dot = generate_dot
         self.align = align
         self.cartoon = cartoon
+
         self.models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
+        self.models = map(lambda x: inline_all_functions(x), self.models)
 
         if self.cartoon:
             self.elided_list = []
@@ -46,9 +48,6 @@ class SBMLDiff:
         missing a list of species), rather than dumping a stack trace.
         """
         for model in self.models:
-
-            if model.select_one('functionDefinition'):
-                raise RuntimeError("User-defined functions are not supported.")
 
             if model.select_one('piecewise'):
                 raise RuntimeError("Piecewise functions are not supported.")

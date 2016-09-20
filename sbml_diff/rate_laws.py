@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup, NavigableString
-
+import copy
 
 def convert_rate_law(math, variables_not_to_substitute=False, executable=False):
     """
@@ -183,3 +183,93 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
                 if executable:
                     return elementary, "pow(%s, 1/%s)" % (children_converted[1], children_converted[0])
                 return elementary, "%s(%s, %s)" % ("root", children_converted[0], child_converted[1])
+
+
+def inline_all_functions(model):
+    """
+    Replace all uses of user-defined functions in a model with an inline use of the corresponding definition.
+
+    This is a safe to perform: the SBML L3V1 Core Specification states:
+    "With the restrictions as they are, function definitions could, if desired, be implemented as textual substitutions"
+
+    Parameters
+    ----------
+    model : bs4.BeautifulSoup object produced by parsing an SBML model
+
+    Returns
+    -------
+    model with uses of user-defined functions replaced
+    """
+
+    # Get function definitions
+    function_definition = {}
+    for function in model.select_one('listOfFunctionDefinitions').select("functionDefinition"):
+
+        function_id = function.attrs["id"]
+        math = copy.copy(function.select_one("math").select_one("lambda"))
+
+        # get list of arguments to this function
+        args = []
+        for bvar in math.select('bvar'):
+            args.append(bvar.select_one('ci').text.strip())
+
+        # now remove the bvars the get the body of the function
+        for bvar in math.select("bvar"):
+            bvar.replace_with('')
+
+        inner = ""
+        for child in math.contents:
+            if not isinstance(child, NavigableString):
+                inner = child
+                break
+
+        function_definition[function_id] = {"math": inner, "arguments": args}
+
+    # Replace function calls with inlined definitions
+    replaced = True
+    while replaced:
+        replaced = False
+
+        for math in model.select("math"):
+            for apply in math.select('apply'):
+                # get list of tag children
+                children = []
+                for child in apply.contents:
+                    if not isinstance(child, NavigableString):
+                        children.append(child)
+
+                name = children[0].text.strip()
+                if name in function_definition.keys():
+                    inlined = inline_function_call(function_definition[name], children[1:])
+                    apply.replace_with(inlined)
+                    replaced = True
+                    break
+    return model
+
+
+def inline_function_call(func, arguments):
+    """
+
+    Parameters
+    ----------
+    func : dict representing user defined function
+    arguments : BeautifulSoup object representing the expressions used as arguments to the function
+
+    Returns
+    -------
+    BeautifulSoup object representing the supplied expressions substituted into the function definition
+    """
+    math = func["math"]
+    args = func["arguments"]
+
+    print args
+
+    math = copy.copy(math)
+    for ci in math.select("ci"):
+        variable_name = ci.text.strip()
+
+        if variable_name in args:
+            new_name = arguments[args.index(variable_name)]
+            ci.replace_with(new_name)
+
+    return math
