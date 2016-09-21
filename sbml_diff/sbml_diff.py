@@ -34,7 +34,6 @@ class SBMLDiff:
         self.cartoon = cartoon
 
         self.models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
-        self.models = map(lambda x: inline_all_functions(x), self.models)
 
         if self.cartoon:
             self.elided_list = []
@@ -556,6 +555,7 @@ class SBMLDiff:
         """
 
         self.check_model_supported()
+        self.models = map(lambda x: inline_all_functions(x), self.models)
 
         if self.align:
             align_models(self.models)
