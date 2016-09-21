@@ -208,7 +208,7 @@ def inline_all_functions(model):
 
     if not listOfFunctionDefinitions:
         return model
-    
+
     for function in listOfFunctionDefinitions.select("functionDefinition"):
 
         function_id = function.attrs["id"]

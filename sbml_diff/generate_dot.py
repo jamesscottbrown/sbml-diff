@@ -6,7 +6,8 @@ class GenerateDot:
     The print_ functions accept an argument model_set, which specifies which models contain the corresponding feature.
     """
 
-    def __init__(self, colors, num_models, reaction_label="", selected_model="", show_stoichiometry=False, rankdir="TB"):
+    def __init__(self, colors, num_models, reaction_label="", selected_model="", show_stoichiometry=False, rankdir="TB",
+                 model_names=False):
         """
 
         Parameters
@@ -33,6 +34,10 @@ class GenerateDot:
         self.selected_model = ""
         if selected_model != "":
             self.selected_model = int(selected_model) - 1
+
+        if not model_names:
+            model_names = [""] * num_models
+        self.model_names = model_names
 
         self.show_stoichiometry = show_stoichiometry
         self.reaction_label = reaction_label
@@ -288,6 +293,7 @@ class GenerateDot:
 
     def print_footer(self):
         """ Print footer needed for valid DOT file  """
+        print 'label="Files: %s";' % ', '.join(self.model_names)
         print "}"
 
     def print_compartment_header(self, compartment_id):

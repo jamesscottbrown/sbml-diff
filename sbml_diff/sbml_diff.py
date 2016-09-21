@@ -687,7 +687,7 @@ class SBMLDiff:
         species_list = species_list.difference(ignored_species)
         retained_species = species_list.difference(elided_species)
 
-        print "digraph comparison {"
+        self.generate_dot.print_header()
 
         for s in retained_species:
             model_num = list(models_containing_species[s])[0]
@@ -725,7 +725,7 @@ class SBMLDiff:
                     model_list = interactions[modifier][species][effect_type]
                     self.generate_dot.print_abstracted_arrow(model_list, modifier, species, effect_type)
 
-        print "}"
+        self.generate_dot.print_footer()
 
     def elide(self, species_list, effect_types, interactions, elided_species):
         """

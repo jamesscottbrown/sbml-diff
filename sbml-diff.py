@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
     output_formatter = sbml_diff.GenerateDot(all_colors, num_files, reaction_label=reaction_labels,
                                              selected_model=selected_model, show_stoichiometry=args.stoich,
-                                             rankdir=rankdir)
+                                             rankdir=rankdir, model_names=all_model_names)
 
     sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon)
 
