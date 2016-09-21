@@ -203,7 +203,13 @@ def inline_all_functions(model):
 
     # Get function definitions
     function_definition = {}
-    for function in model.select_one('listOfFunctionDefinitions').select("functionDefinition"):
+
+    listOfFunctionDefinitions = model.select_one('listOfFunctionDefinitions')
+
+    if not listOfFunctionDefinitions:
+        return model
+    
+    for function in listOfFunctionDefinitions.select("functionDefinition"):
 
         function_id = function.attrs["id"]
         math = copy.copy(function.select_one("math").select_one("lambda"))
