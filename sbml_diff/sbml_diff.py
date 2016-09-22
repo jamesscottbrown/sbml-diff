@@ -10,7 +10,7 @@ import re
 
 class SBMLDiff:
 
-    def __init__(self, model_strings, model_names, generate_dot, align=False, cartoon=False):
+    def __init__(self, model_strings, model_names, generate_dot, align=False, cartoon=False, show_params=False):
         """
 
         Parameters
@@ -32,6 +32,7 @@ class SBMLDiff:
         self.generate_dot = generate_dot
         self.align = align
         self.cartoon = cartoon
+        self.show_params = show_params
 
         self.models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
 
@@ -40,6 +41,8 @@ class SBMLDiff:
             self.elided_reactions = []
             self.downstream_species = []
             self.find_downstream_species()
+
+        self.modified_params = {}
 
     def check_model_supported(self):
         """
@@ -197,9 +200,14 @@ class SBMLDiff:
                     continue
 
                 # arrow to species set
-                variable_set = event.attrs["variable"]
-                if variable_set in species_ids:
-                    self.generate_dot.print_event_set_species_arrow(variable_set, event_hash, model_set)
+                variable_id = event.attrs["variable"]
+                if variable_id in species_ids:
+                    self.generate_dot.print_event_set_species_arrow(variable_id, event_hash, model_set)
+                elif self.show_params:
+                    self.generate_dot.print_event_set_species_arrow(variable_id, event_hash, model_set)
+                    if variable_id not in self.modified_params.keys():
+                        self.modified_params[variable_id] = set()
+                    self.modified_params[variable_id] = self.modified_params[variable_id].union(model_set)
 
                 # arrow from species affecting expression
                 math = event.select_one("math")
@@ -220,9 +228,14 @@ class SBMLDiff:
         """
         rule_status = {}
         for model_num, model in enumerate(self.models):
-            rule_targets = get_species_set_by_rules(model)
+            rule_targets = get_variables_set_by_rules(model)
 
             for rule_target in rule_targets:
+                if not model.select_one('listOfSpecies').find(id=rule_target):
+                    if rule_target not in self.modified_params.keys():
+                        self.modified_params[rule_target] = set()
+                    self.modified_params[rule_target].add(model_num)
+
                 if rule_target not in rule_status.keys():
                     rule_status[rule_target] = set()
 
@@ -232,7 +245,8 @@ class SBMLDiff:
 
         for rule_target in rule_status:
             model_set = list(rule_status[rule_target])
-            inputs, compartment, rate_law = get_rule_details(self.models[model_set[0]], rule_target)
+            inputs, compartment, rate_law = get_rule_details(self.models[model_set[0]], rule_target,
+                                                             draw_modifier_params=self.show_params)
 
             if compartment not in rule_strings.keys():
                 rule_strings[compartment] = []
@@ -290,8 +304,10 @@ class SBMLDiff:
             self.generate_dot.print_rule_modifier_arrow(model_set, target_id, modifier)
 
         # target arrows
-        model_set = list(target_status)
-        self.generate_dot.print_rule_target_arrow(model_set, target_id)
+        species_list = self.models[model_set[0]].select_one('listOfSpecies')
+        if self.show_params or (species_list and species_list.find(id=target_id)):
+            model_set = list(target_status)
+            self.generate_dot.print_rule_target_arrow(model_set, target_id)
 
         # rate law
         converted_rate_law = ""
@@ -671,6 +687,8 @@ class SBMLDiff:
             self.diff_compartment(compartment_id, reaction_strings, rule_strings)
 
         self.diff_events()
+        if self.show_params:
+            self.draw_modified_params()
         self.generate_dot.print_footer()
 
     def abstract_model(self, model):
@@ -866,3 +884,12 @@ class SBMLDiff:
                     interactions[s2].pop(s)
 
         return interactions
+
+    def draw_modified_params(self):
+        for param_id in self.modified_params.keys():
+            model_set = list(self.modified_params[param_id])
+            name = param_id
+            param = self.models[model_set[0]].find(id=param_id)
+            if "name" in param.attrs.keys():
+                name = param.attrs["name"]
+            self.generate_dot.print_param_node(param_id, name, model_set)

@@ -126,6 +126,11 @@ def get_species_compartment(model, species_id):
     """
     species_list = model.select_one("listOfSpecies")
     species = species_list.find(id=species_id)
+
+    # report params as in compartment NONE
+    if not species:
+        return "NONE"
+
     return species.attrs["compartment"]
 
 
@@ -235,7 +240,7 @@ def get_reactions(model):
     return reactions
 
 
-def get_rule_details(model, target_id):
+def get_rule_details(model, target_id, draw_modifier_params=True):
     """
     Given the id of a species affected by a rule, find details of that rule.
 
@@ -270,7 +275,7 @@ def get_rule_details(model, target_id):
 
     # skip rules that set parameters rather than species concentrations
     target = rule.attrs["variable"]
-    if not target or target not in species_ids:
+    if not target or (target not in species_ids and not draw_modifier_params):
         return [], False, False
 
     # get modifier details
@@ -291,7 +296,7 @@ def get_rule_details(model, target_id):
     return modifiers, compartment, rate_law
 
 
-def get_species_set_by_rules(model):
+def get_variables_set_by_rules(model):
     """
     Find list of species affected by a rule of type assignmentRule or rateRule.
 

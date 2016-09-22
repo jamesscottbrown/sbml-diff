@@ -38,6 +38,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--force', '-f', help="Draw comparison even if files are identical", action="store_true")
 
+    parser.add_argument('--show-modified', help="Show parameters modified by rules/events", action="store_true")
+
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
 
     args = parser.parse_args()
@@ -66,6 +68,10 @@ if __name__ == '__main__':
     if args.align:
         align = True
 
+    show_params = False
+    if args.show_modified:
+        show_params = args.show_modified
+
     # redirect STDOUT to specified file
     old_stdout = sys.stdout
     f = StringIO()
@@ -90,7 +96,7 @@ if __name__ == '__main__':
                                              selected_model=selected_model, show_stoichiometry=args.stoich,
                                              rankdir=rankdir, model_names=all_model_names)
 
-    sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon)
+    sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon, show_params=show_params)
 
     try:
         if args.kinetics:

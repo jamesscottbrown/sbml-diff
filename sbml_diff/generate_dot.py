@@ -488,3 +488,7 @@ class GenerateDot:
     def print_event_affect_value_arrow(self, species, event_hash, model_set):
         color = self.assign_color(model_set)
         print '%s -> %s [color="%s", style="dashed"];' % (species, event_hash, color)
+
+    def print_param_node(self, variable_id, variable_name, model_set):
+        color = self.assign_color(model_set)
+        print '%s [label="%s", shape=none, color=%s];' % (variable_id, variable_name, color)
