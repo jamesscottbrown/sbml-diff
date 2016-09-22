@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup, NavigableString
 import copy
 import sys
 
+
 def convert_rate_law(math, variables_not_to_substitute=False, executable=False):
     """
     A wrapper for convert_rate_law_inner that returns only the converted expression.
@@ -188,6 +189,12 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
                 if executable:
                     return elementary, "pow(%s, 1/%s)" % (children_converted[1], children_converted[0])
                 return elementary, "%s(%s, %s)" % ("root", children_converted[0], child_converted[1])
+
+    if expression.name == "degree":
+        # degree tag used with root
+        for child in expression.children:
+            if not isinstance(child, NavigableString):
+                return convert_rate_law_inner(child, variables_not_to_substitute, executable)
 
 
 def inline_all_functions(model):
