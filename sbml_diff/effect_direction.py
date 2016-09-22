@@ -71,7 +71,10 @@ def check_sign_numerically(expr, param_names, species_id):
 
     param_names.remove(species_id)
 
-    rate_change = eval(expr.replace(species_id, '1')) - eval(expr.replace(species_id, '0.01'))
+    try:
+        rate_change = eval(expr.replace(species_id, '1')) - eval(expr.replace(species_id, '0.01'))
+    except ZeroDivisionError:
+        return "?"
 
     if rate_change > 0:
         return "monotonic_increasing"
