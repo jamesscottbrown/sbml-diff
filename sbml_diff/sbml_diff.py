@@ -194,6 +194,7 @@ class SBMLDiff:
 
         # process assignment statements
         event_assignments = event.select("eventAssignment")
+        species_affecting_rate = {}
         if event_assignments:
             for event in event_assignments:
                 if isinstance(event, NavigableString):
@@ -214,7 +215,12 @@ class SBMLDiff:
                 for ci in math.select("ci"):
                     species = ci.text.strip()
                     if species in species_ids:
-                        self.generate_dot.print_event_affect_value_arrow(event_hash, species, model_set)
+                        if species not in species_affecting_rate.keys():
+                            species_affecting_rate[species] = set()
+                        species_affecting_rate[species] = species_affecting_rate[species].union(model_set)
+
+            for species in species_affecting_rate.keys():
+                self.generate_dot.print_event_affect_value_arrow(species, event_hash, list(species_affecting_rate[species]))
 
     def diff_rules(self):
         """
