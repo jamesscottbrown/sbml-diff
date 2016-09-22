@@ -101,9 +101,11 @@ def get_species(model, compartment_id):
 
     """
     ids = []
-    for s in model.select_one("listOfSpecies").select("species"):
-        if s.attrs["compartment"] == compartment_id:
-            ids.append(s.attrs["id"])
+    species_list = model.select_one("listOfSpecies")
+    if species_list:
+        for s in species_list.select("species"):
+            if s.attrs["compartment"] == compartment_id:
+                ids.append(s.attrs["id"])
     return ids
 
 
@@ -122,7 +124,8 @@ def get_species_compartment(model, species_id):
     compartment : id of the compartment
 
     """
-    species = model.select_one("listOfSpecies").find(id=species_id)
+    species_list = model.select_one("listOfSpecies")
+    species = species_list.find(id=species_id)
     return species.attrs["compartment"]
 
 
@@ -257,8 +260,10 @@ def get_rule_details(model, target_id):
     rule = model.select_one("listOfRules").find(variable=target_id)
 
     species_ids = []
-    for s in model.select_one("listOfSpecies").select("species"):
-        species_ids.append(s.attrs["id"])
+    species_list = model.select_one("listOfSpecies")
+    if species_list:
+        for s in species_list.select("species"):
+            species_ids.append(s.attrs["id"])
 
     if not rule:
         return [], False, False

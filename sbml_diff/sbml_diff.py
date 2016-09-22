@@ -51,8 +51,8 @@ class SBMLDiff:
             if model.select_one('piecewise'):
                 raise RuntimeError("Piecewise functions are not supported.")
 
-            if not model.select_one('listOfSpecies'):
-                raise RuntimeError("Every model must include a listOfSpecies.")
+            if model.select_one('listOfReactions') and not model.select_one('listOfSpecies'):
+                raise RuntimeError("Every model that includes a listOfReactions must include a listOfSpecies.")
 
             if not model.select_one('sbml') or 'xmlns' not in model.select_one('sbml').attrs.keys():
                 raise RuntimeError("Every file must be an sbml model")
@@ -176,8 +176,10 @@ class SBMLDiff:
         event_hash = hash(event)
 
         species_ids = []
-        for s in self.models[model_set[0]].select_one("listOfSpecies").select("species"):
-            species_ids.append(s.attrs["id"])
+        species_list = self.models[model_set[0]].select_one("listOfSpecies")
+        if species_list:
+            for s in species_list.select("species"):
+                species_ids.append(s.attrs["id"])
 
         # print event node
         self.generate_dot.print_event_node(event_hash, event_name, model_set)
