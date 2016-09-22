@@ -586,12 +586,23 @@ class SBMLDiff:
 
         # For each species, find set of models containing it
         species_status = {}
+        is_boundary_species = {}
         for model_num, model in enumerate(self.models):
             for species in get_species(model, compartment_id):
 
                 if species not in species_status.keys():
                     species_status[species] = set()
                 species_status[species].add(model_num)
+
+                s = model.select_one("listOfSpecies").find(id=species)
+                is_boundary = ""
+                if "boundaryCondition" in s.attrs.keys():
+                    is_boundary = s.attrs["boundaryCondition"]
+
+                if species not in is_boundary_species.keys():
+                    is_boundary_species[species] = is_boundary
+                elif is_boundary_species[species] != is_boundary:
+                    is_boundary_species[species] = '?'
 
         for species in species_status:
             parent_model_index = list(species_status[species])[0]
@@ -606,7 +617,7 @@ class SBMLDiff:
                     if species not in self.elided_list[model_num]:
                         draw = True
             if draw:
-                self.generate_dot.print_species_node(species_status[species], species, species_name)
+                self.generate_dot.print_species_node(species_status[species], is_boundary_species[species], species, species_name)
 
         # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
         arrow_status = {}

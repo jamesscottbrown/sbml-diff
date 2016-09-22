@@ -314,7 +314,7 @@ class GenerateDot:
         print "\n"
         print "}"
 
-    def print_species_node(self, model_set, species_id, species_name):
+    def print_species_node(self, model_set, isBoundary, species_id, species_name):
         """
         Draw node representing a species.
 
@@ -327,8 +327,20 @@ class GenerateDot:
         species_name : name of a species
         """
         color = self.assign_color(model_set)
-        style = self.check_style(model_set)
-        print '"%s" [color="%s",label="%s" %s];' % (species_id, color, species_name, style)
+
+        fill = ""
+        base_style = ""
+        doubled = ""
+
+        if isBoundary == '?':
+            fill = ', fillcolor="grey"'
+            base_style = 'filled'
+        elif isBoundary.lower() == 'true':
+            doubled = 'peripheries=2'
+
+        style = self.check_style(model_set, base_style)
+        print '"%s" [color="%s",label="%s" %s %s %s];' % (species_id, color, species_name, doubled, fill, style)
+
 
     def print_regulatory_arrow(self, model_set, arrow_main, arrow_direction):
         """
