@@ -129,6 +129,86 @@ class SBMLDiff:
 
         print tabulate(rows, ["Parameter"] + self.model_names, tablefmt=format)
 
+    def diff_events(self):
+        """
+        Compare all events between models.
+        The id attribute is optional for event elements. For simplicity, we ignore ids even if they are present, so that
+        two non-identical events between models are treated as entirely separate; it would be nicer if color of only
+        those visual elements corresponding to what actually changed.
+        Also, we do not visually distinguish between species involved in different eventAssignment of one event.
+
+        Returns
+        -------
+        prints a list of the DOT statements to draw each event node
+
+        """
+        # , so use the trigger condition as the id.
+        # This makes matching a pain
+        # Therefore, is there is any change we treat the whole thing as different
+
+        event_status = {}
+        event_objects = {}
+
+        for model_num, model in enumerate(self.models):
+            event_list = model.select_one("listOfEvents")
+            if not event_list:
+                continue
+
+            for event in event_list.select('event'):
+                event_hash = hash(event)
+
+                if event_hash not in event_status.keys():
+                    event_status[event_hash] = []
+
+                event_status[event_hash].append(model_num)
+                event_objects[event_hash] = event
+
+        # return event_strings
+        for event_hash in event_objects.keys():
+            self.diff_event(event_objects[event_hash], event_status[event_hash])
+
+    def diff_event(self, event, model_set):
+
+        event_name = ""
+        if "name" in event.attrs.keys():
+            event_name = event.attrs["name"]
+
+        event_hash = hash(event)
+
+        species_ids = []
+        for s in self.models[model_set[0]].select_one("listOfSpecies").select("species"):
+            species_ids.append(s.attrs["id"])
+
+        # print event node
+        self.generate_dot.print_event_node(event_hash, event_name, model_set)
+
+        # process trigger statement
+        trigger = event.select_one("trigger")
+        if trigger:
+            for ci in trigger.select("ci"):
+                species = ci.text.strip()
+                if species in species_ids:
+                    self.generate_dot.print_event_trigger_species_arrows(species, event_hash, model_set)
+
+        # process assignment statements
+        event_assignments = event.select("eventAssignment")
+        if event_assignments:
+            for event in event_assignments:
+                if isinstance(event, NavigableString):
+                    continue
+
+                # arrow to species set
+                variable_set = event.attrs["variable"]
+                if variable_set in species_ids:
+                    self.generate_dot.print_event_set_species_arrow(variable_set, event_hash, model_set)
+
+                # arrow from species affecting expression
+                math = event.select_one("math")
+                for ci in math.select("ci"):
+                    species = ci.text.strip()
+                    if species in species_ids:
+                        self.generate_dot.print_event_affect_value_arrow(event_hash, species, model_set)
+
     def diff_rules(self):
         """
         Compare all rules between models. Returns a list of the DOT statements to draw each rule node, but directly
@@ -580,6 +660,7 @@ class SBMLDiff:
         for compartment_id in compartment_ids:
             self.diff_compartment(compartment_id, reaction_strings, rule_strings)
 
+        self.diff_events()
         self.generate_dot.print_footer()
 
     def abstract_model(self, model):

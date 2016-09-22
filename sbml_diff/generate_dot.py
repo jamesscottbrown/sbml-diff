@@ -453,3 +453,24 @@ class GenerateDot:
             arrowhead = "tee"
 
         print '%s -> %s [style="dashed", color="%s", arrowhead="%s" %s];' % (modifier, target, color, arrowhead, style)
+
+    def print_event_node(self, event_hash, event_name, model_set):
+        color = self.assign_color(model_set)
+        style = self.check_style(model_set)
+
+        if self.reaction_label == "none":
+            event_name = ""
+
+        print '%s [label="%s", shape="diamond", color="%s" %s];' % (event_hash, event_name, color, style)
+
+    def print_event_trigger_species_arrows(self, species, event_hash, model_set):
+        color = self.assign_color(model_set)
+        print '%s -> %s [arrowhead="diamond", color="%s"];' % (species, event_hash, color)
+
+    def print_event_set_species_arrow(self, species_id, event_hash, model_set):
+        color = self.assign_color(model_set)
+        print '%s -> %s [color="%s"];' % (event_hash, species_id, color)
+
+    def print_event_affect_value_arrow(self, species, event_hash, model_set):
+        color = self.assign_color(model_set)
+        print '%s -> %s [color="%s", style="dashed"];' % (species, event_hash, color)
