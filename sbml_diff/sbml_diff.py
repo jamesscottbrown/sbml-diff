@@ -48,9 +48,6 @@ class SBMLDiff:
         """
         for model in self.models:
 
-            if model.select_one('piecewise'):
-                raise RuntimeError("Piecewise functions are not supported.")
-
             if model.select_one('listOfReactions') and not model.select_one('listOfSpecies'):
                 raise RuntimeError("Every model that includes a listOfReactions must include a listOfSpecies.")
 

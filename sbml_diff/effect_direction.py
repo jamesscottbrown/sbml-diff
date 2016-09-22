@@ -66,6 +66,9 @@ def check_sign_numerically(expr, param_names, species_id):
 
     expr = convert_rate_law(expr, variables_not_to_substitute=[species_id], executable=True)
 
+    if not expr:
+        return '?'
+
     param_names.remove(species_id)
 
     rate_change = eval(expr.replace(species_id, '1')) - eval(expr.replace(species_id, '0.01'))

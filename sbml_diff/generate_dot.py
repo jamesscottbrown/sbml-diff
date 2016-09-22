@@ -362,6 +362,8 @@ class GenerateDot:
             arrowhead = "vee"
         elif arrow_direction == "monotonic_decreasing":
             arrowhead = "tee"
+        elif arrow_direction == "?":
+            arrowhead = "odiamond"
         else:
             arrowhead = "dot"
         print '%s [color="%s", arrowhead="%s" %s];' % (arrow_main, color, arrowhead, style)

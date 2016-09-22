@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup, NavigableString
 import copy
+import sys
 
 def convert_rate_law(math, variables_not_to_substitute=False, executable=False):
     """
@@ -20,6 +21,10 @@ def convert_rate_law(math, variables_not_to_substitute=False, executable=False):
     string representation of the kineticLaw
 
     """
+    if math.select_one('piecewise') or math.name == 'piecewise':
+        sys.stderr.write("Encountered a piecewise function")
+        return ""
+
     return convert_rate_law_inner(math, variables_not_to_substitute, executable)[1]
 
 
