@@ -273,10 +273,7 @@ def get_rule_details(model, target_id, draw_modifier_params=True):
     if not rule:
         return [], False, False
 
-    # skip rules that set parameters rather than species concentrations
     target = rule.attrs["variable"]
-    if not target or (target not in species_ids and not draw_modifier_params):
-        return [], False, False
 
     # get modifier details
     modifiers = []
@@ -290,9 +287,7 @@ def get_rule_details(model, target_id, draw_modifier_params=True):
         modifiers.append(species_id)
 
     compartment = get_species_compartment(model, target).strip()
-
     rate_law = rule.select_one("math")
-
     return modifiers, compartment, rate_law
 
 
