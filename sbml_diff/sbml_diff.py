@@ -310,9 +310,9 @@ class SBMLDiff:
             self.generate_dot.print_rule_modifier_arrow(model_set, target_id, modifier)
 
         # target arrows
+        model_set = list(target_status)
         species_list = self.models[model_set[0]].select_one('listOfSpecies')
         if self.show_params or (species_list and species_list.find(id=target_id)):
-            model_set = list(target_status)
             self.generate_dot.print_rule_target_arrow(model_set, target_id)
 
         # rate law
