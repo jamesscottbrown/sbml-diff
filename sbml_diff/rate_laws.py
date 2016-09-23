@@ -174,14 +174,14 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
             return elementary, "delay(%s, %s)" % (children_converted[0], children_converted[1])
         elif operator in ["exp", "ln", "log", "floor", "ceiling", "factorial", "abs"]:
             if executable:
-                return elementary, "%s(%s)" % (executable_replacement(operator), children_converted[0])
+                return elementary, "%s(%s)" % (executable_replacement[operator], children_converted[0])
             return elementary, "%s(%s)" % (operator, children_converted[0])
         elif operator == "root":
 
             # default to sqrt()
             if len(children_converted) == 1:
                 if executable:
-                    return elementary, "%s(%s)" % (executable_replacement("sqrt"), children_converted[0])
+                    return elementary, "%s(%s)" % (executable_replacement["sqrt"], children_converted[0])
                 return elementary, "%s(%s)" % ("sqrt", children_converted[0])
 
             # otherwise root(n,a) = pow(a, 1/n)
@@ -279,8 +279,6 @@ def inline_function_call(func, arguments):
     """
     math = func["math"]
     args = func["arguments"]
-
-    print args
 
     math = copy.copy(math)
     for ci in math.select("ci"):
