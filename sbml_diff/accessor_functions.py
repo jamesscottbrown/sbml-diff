@@ -112,6 +112,8 @@ def get_species(model, compartment_id):
 def get_species_compartment(model, species_id):
     """
     Get the id of the compartment containing a species.
+    Report params as belonging to compartment 'NONE'
+
     Parameters
     ----------
     model : bs4.BeautifulSoup object produced by parsing an SBML model
@@ -125,9 +127,12 @@ def get_species_compartment(model, species_id):
 
     """
     species_list = model.select_one("listOfSpecies")
+
+    if not species_list:
+        return "NONE"
+
     species = species_list.find(id=species_id)
 
-    # report params as in compartment NONE
     if not species:
         return "NONE"
 
