@@ -282,11 +282,21 @@ def inline_function_call(func, arguments):
     args = func["arguments"]
 
     math = copy.copy(math)
+
+    # for each arg, get list of ci elements
+    cis = {}
     for ci in math.select("ci"):
         variable_name = ci.text.strip()
-
         if variable_name in args:
-            new_name = arguments[args.index(variable_name)]
-            ci.replace_with(new_name)
+            if variable_name not in cis.keys():
+                cis[variable_name] = []
+            cis[variable_name].append(ci)
+
+    # now replace each element in this list
+    for i in range(len(args)):
+        if args[i] in cis.keys():
+            for ci in cis[args[i]]:
+                ci.replace_with(copy.copy(arguments[i]))
+
 
     return math
