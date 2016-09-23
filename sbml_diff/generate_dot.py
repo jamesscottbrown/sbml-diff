@@ -243,7 +243,7 @@ class GenerateDot:
 
     def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law):
         """
-        Draw square node representing a reaction.
+        Draw rectangular node representing a reaction.
 
         Parameters
         ----------
@@ -282,7 +282,7 @@ class GenerateDot:
         elif self.reaction_label == "rate":
             reaction_name = converted_law
 
-        return '%s [shape="square", color="%s", %s label="%s" %s];' % (reaction_id, color, fill, reaction_name, style)
+        return '%s [shape="rectangle", color="%s", %s label="%s" %s];' % (reaction_id, color, fill, reaction_name, style)
 
     # Used by diff_models()
     def print_header(self):
