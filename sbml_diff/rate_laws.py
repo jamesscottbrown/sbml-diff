@@ -23,7 +23,7 @@ def convert_rate_law(math, variables_not_to_substitute=False, executable=False):
 
     """
     if math.select_one('piecewise') or math.name == 'piecewise':
-        sys.stderr.write("Encountered a piecewise function")
+        sys.stderr.write("Encountered a piecewise function\n")
         return ""
 
     return convert_rate_law_inner(math, variables_not_to_substitute, executable)[1]
