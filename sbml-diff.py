@@ -4,6 +4,7 @@ import os
 import sys
 import argparse
 from cStringIO import StringIO
+import codecs
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""
@@ -74,7 +75,8 @@ if __name__ == '__main__':
 
     # redirect STDOUT to specified file
     old_stdout = sys.stdout
-    f = StringIO()
+    buffer = StringIO()
+    f = codecs.getwriter("utf8")(buffer)
     sys.stdout = f
 
     rankdir = "TB"
