@@ -237,7 +237,8 @@ class SBMLDiff:
             rule_targets = get_variables_set_by_rules(model)
 
             for rule_target in rule_targets:
-                if not model.select_one('listOfSpecies').find(id=rule_target):
+                species_list = model.select_one('listOfSpecies')
+                if not species_list or not species_list.find(id=rule_target):
                     if rule_target not in self.modified_params.keys():
                         self.modified_params[rule_target] = set()
                     self.modified_params[rule_target].add(model_num)
