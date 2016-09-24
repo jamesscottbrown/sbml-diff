@@ -70,7 +70,8 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
     executable_replacement = {'exp': 'math.exp', 'ln': 'math.log', 'log': 'math.log10', 'ceiling': 'math.ceil',
                               'floor': 'math.floor', 'factorial': 'math.factorial', 'pi': 'math.pi', 'e': 'math.e',
                               'infinity': 'float("Inf")', "sqrt": "math.sqrt", "abs": "abs", "cos": "math.cos",
-                              "sin": "math.sin", "tan": "math.tan"}
+                              "sin": "math.sin", "tan": "math.tan", "sinh": "math.sinh", "cosh": "math.cosh",
+                              "tanh": "math.tanh"}
 
     elementary = False
 
@@ -173,7 +174,7 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
             if executable:
                 return elementary, children_converted[0]
             return elementary, "delay(%s, %s)" % (children_converted[0], children_converted[1])
-        elif operator in ["exp", "ln", "log", "floor", "ceiling", "factorial", "abs", "cos", "sin", "tan"]:
+        elif operator in ["exp", "ln", "log", "floor", "ceiling", "factorial", "abs", "cos", "sin", "tan", "sinh", "cosh", "tanh"]:
             if executable:
                 return elementary, "%s(%s)" % (executable_replacement[operator], children_converted[0])
             return elementary, "%s(%s)" % (operator, children_converted[0])
