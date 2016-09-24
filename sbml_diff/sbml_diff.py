@@ -688,7 +688,8 @@ class SBMLDiff:
         compartment_ids = set()
         for model_num, model in enumerate(self.models):
             for compartment in model.select('compartment'):
-                compartment_ids.add(compartment.attrs["id"])
+                if "id" in compartment.attrs.keys():
+                    compartment_ids.add(compartment.attrs["id"])
 
         for compartment_id in compartment_ids:
             self.diff_compartment(compartment_id, reaction_strings, rule_strings)
