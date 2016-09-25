@@ -59,6 +59,22 @@ class SBMLDiff:
                     tmp[id] = compartment
             self.species_compartment.append(tmp)
 
+        # avoid need to search for reaction name
+        self.reaction_name = []
+        for model in self.models:
+            tmp = {}
+
+            reaction_list = model.select_one("listOfReactions")
+            if reaction_list:
+                for r in reaction_list.select("reaction"):
+                    reaction_id = r.attrs["id"]
+                    if "name" in r.attrs.keys() and r.attrs["name"]:
+                        tmp[reaction_id] = r.attrs["name"]
+                    else:
+                        tmp[reaction_id] = reaction_id
+
+            self.reaction_name.append(tmp)
+
 
         if self.cartoon:
             self.elided_list = []
@@ -482,7 +498,7 @@ class SBMLDiff:
                     product_status[product] = set()
                 product_status[product].add(model_num)
 
-            parent_model = model
+            parent_model = model_num
             ever_drawn = True
 
         # If reaction should not be drawn for any models, return now
@@ -503,7 +519,7 @@ class SBMLDiff:
                 self.generate_dot.print_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
 
         # rate law
-        reaction_name = get_reaction_name(parent_model, reaction_id)
+        reaction_name = self.reaction_name[parent_model][reaction_id]
 
         converted_rate_law = ""
         if rate_laws and rate_laws != "different":
