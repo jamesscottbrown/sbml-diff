@@ -31,7 +31,7 @@ def get_params(model):
     return set(param_ids), param_values
 
 
-def get_regulatory_arrow(model, compartment, elided_reactions=False):
+def get_regulatory_arrow(model, compartment, reactions, species_compartments, elided_reactions=False):
     """
     Find all regulatory interactions in a particular compartment of a model, and construct an array of strings
     representing these.
@@ -58,14 +58,14 @@ def get_regulatory_arrow(model, compartment, elided_reactions=False):
 
     arrows = []
 
-    reaction_list = model.select_one("listOfReactions")
-    if not reaction_list:
+    if not reactions:
         return arrows
 
-    for reaction in reaction_list.select("reaction"):
+    for reaction_id in reactions:
+        reaction = reactions[reaction_id]
         if reaction in elided_reactions:
             continue
-        reaction_id = reaction.attrs["id"]
+
         for ci in reaction.select_one("kineticLaw").select("ci"):
 
             # Check if this is a species id (it could validly be a species/compartment/parameter/function/reaction id)
@@ -74,7 +74,8 @@ def get_regulatory_arrow(model, compartment, elided_reactions=False):
                 continue
 
             # if not a reactant, add regulatory arrow
-            reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(model, reaction_id)
+
+            reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(model, reaction, species_compartments)
             if species_id in reactant_list:
                 continue
 
@@ -109,7 +110,7 @@ def get_species(model, compartment_id):
     return ids
 
 
-def get_species_compartment(model, species_id):
+def get_species_compartment(model, species_id, species_compartments):
     """
     Get the id of the compartment containing a species.
     Report params as belonging to compartment 'NONE'
@@ -126,20 +127,17 @@ def get_species_compartment(model, species_id):
     compartment : id of the compartment
 
     """
-    species_list = model.select_one("listOfSpecies")
 
-    if not species_list:
+    if not species_compartments:
         return "NONE"
 
-    species = species_list.find(id=species_id)
-
-    if not species:
+    if species_id in species_compartments.keys():
+        return  species_compartments[species_id]
+    else:
         return "NONE"
 
-    return species.attrs["compartment"]
 
-
-def get_reaction_details(model, reaction_id):
+def get_reaction_details(model, reaction, species_compartments):
     """
     Get details of a single reaction.
 
@@ -148,9 +146,9 @@ def get_reaction_details(model, reaction_id):
     Parameters
     ----------
     model : bs4.BeautifulSoup object produced by parsing an SBML model
-        
-    reaction_id : id of the reaction of interest
-        
+
+    reaction : bs4.BeautifulSoup object of the reaction of interest
+
 
     Returns
     -------
@@ -167,7 +165,6 @@ def get_reaction_details(model, reaction_id):
     product_stoichiometries : list of stoichiometries of products
 
     """
-    reaction = model.select_one("listOfReactions").find(id=reaction_id)
 
     if not reaction:
         return [], [], False, False, [], []
@@ -190,8 +187,8 @@ def get_reaction_details(model, reaction_id):
             reactant_list.append(species)
 
             if not compartment:
-                compartment = get_species_compartment(model, species)
-            if compartment != get_species_compartment(model, species):
+                compartment = get_species_compartment(model, species, species_compartments)
+            if compartment != get_species_compartment(model, species, species_compartments):
                 compartment = "NONE"
 
     products = reaction.select_one("listOfProducts")
@@ -212,8 +209,8 @@ def get_reaction_details(model, reaction_id):
 
             # if reaction has no reactants, try to categorise by products instead
             if not compartment:
-                compartment = get_species_compartment(model, species)
-            if compartment != get_species_compartment(model, species):
+                compartment = get_species_compartment(model, species, species_compartments)
+            if compartment != get_species_compartment(model, species, species_compartments):
                 compartment = "NONE"
 
     rate_law = reaction.select_one("kineticLaw").select_one("math")
@@ -245,7 +242,7 @@ def get_reactions(model):
     return reactions
 
 
-def get_rule_details(model, target_id, draw_modifier_params=True):
+def get_rule_details(model, target_id, species_compartments, draw_modifier_params=True):
     """
     Given the id of a species affected by a rule, find details of that rule.
 
@@ -291,7 +288,7 @@ def get_rule_details(model, target_id, draw_modifier_params=True):
 
         modifiers.append(species_id)
 
-    compartment = get_species_compartment(model, target).strip()
+    compartment = get_species_compartment(model, target, species_compartments).strip()
     rate_law = rule.select_one("math")
     return modifiers, compartment, rate_law
 

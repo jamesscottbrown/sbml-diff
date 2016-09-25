@@ -36,6 +36,30 @@ class SBMLDiff:
 
         self.models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
 
+        # Avoid need to search for reactions by id
+        self.reactions = []
+        for model in self.models:
+            mr = {}
+            reaction_list = model.select_one("listOfReactions")
+            if reaction_list:
+                for reaction in reaction_list.select("reaction"):
+                    reaction_id = reaction.attrs["id"]
+                    mr[reaction_id] = reaction
+            self.reactions.append(mr)
+
+        # avoid need to keep finding reactant compartments
+        self.species_compartment = []
+        for model in self.models:
+            tmp = {}
+            species_list = model.select_one("listOfSpecies")
+            if species_list:
+                for species in species_list.select("species"):
+                    id = species.attrs["id"]
+                    compartment = species.attrs["compartment"]
+                    tmp[id] = compartment
+            self.species_compartment.append(tmp)
+
+
         if self.cartoon:
             self.elided_list = []
             self.elided_reactions = []
@@ -252,7 +276,7 @@ class SBMLDiff:
 
         for rule_target in rule_status:
             model_set = list(rule_status[rule_target])
-            inputs, compartment, rate_law = get_rule_details(self.models[model_set[0]], rule_target,
+            inputs, compartment, rate_law = get_rule_details(self.models[model_set[0]], rule_target, self.species_compartment[model_num],
                                                              draw_modifier_params=self.show_params)
 
             if compartment not in rule_strings.keys():
@@ -287,7 +311,7 @@ class SBMLDiff:
         rate_laws = ""
 
         for model_num, model in enumerate(self.models):
-            modifiers, compartment, rate_law = get_rule_details(model, target_id)
+            modifiers, compartment, rate_law = get_rule_details(model, target_id, self.species_compartment[model_num])
 
             if not rate_law:
                 return ""
@@ -347,7 +371,9 @@ class SBMLDiff:
 
         for reaction_id in reaction_status:
             model_set = list(reaction_status[reaction_id])
-            reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(self.models[model_set[0]], reaction_id)
+            model_num = model_set[0]
+            reaction = self.reactions[model_num][reaction_id]
+            reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(self.models[model_num], reaction, self.species_compartment[model_num])
 
             if compartment not in reaction_strings.keys():
                 reaction_strings[compartment] = []
@@ -385,7 +411,8 @@ class SBMLDiff:
         ever_drawn = False
 
         for model_num, model in enumerate(self.models):
-            reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction_id)
+            reaction = self.reactions[model_num][reaction_id]
+            reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction, self.species_compartment[model_num])
 
             reaction = model.select_one("listOfReactions").find(id=reaction_id)
             if not reaction:
@@ -645,9 +672,9 @@ class SBMLDiff:
         arrow_status = {}
         for model_num, model in enumerate(self.models):
             if self.cartoon:
-                arrows = get_regulatory_arrow(model, compartment_id, elided_reactions=self.elided_reactions[model_num])
+                arrows = get_regulatory_arrow(model, compartment_id, self.reactions[model_num], self.species_compartment[model_num], elided_reactions=self.elided_reactions[model_num])
             else:
-                arrows = get_regulatory_arrow(model, compartment_id)
+                arrows = get_regulatory_arrow(model, compartment_id, self.reactions[model_num], self.species_compartment[model_num])
 
             for ind, arrow in enumerate(arrows):
                 if arrow not in arrow_status.keys():
@@ -699,7 +726,7 @@ class SBMLDiff:
             self.draw_modified_params()
         self.generate_dot.print_footer()
 
-    def abstract_model(self, model):
+    def abstract_model(self, model, model_num):
         """
         For each pair of species in a model, determine if there is an interaction, and if so classify it.
         If a species is a reactant, it is not considered to interact with itself through that reaction, since any species
@@ -708,6 +735,8 @@ class SBMLDiff:
         Parameters
         ----------
         model : bs4.BeautifulSoup object produced by parsing an SBML model
+
+        model_num : index of the model being abstracted
 
         Returns
         -------
@@ -731,8 +760,9 @@ class SBMLDiff:
                 interactions[modifier][target] = set()
 
         reactions = get_reactions(model)
-        for reaction in reactions:
-            reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(model, reaction)
+        for reaction_id in reactions:
+            reaction = self.reactions[model_num][reaction_id]
+            reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(model, reaction, self.species_compartment[model_num])
 
             # Identify all species that appear in kineticLaw
             modifiers = []
@@ -791,7 +821,7 @@ class SBMLDiff:
         models_containing_species = {}
 
         for model_num, model in enumerate(self.models):
-            abstract, species = self.abstract_model(model)
+            abstract, species = self.abstract_model(model, model_num)
 
             abstracted_model.append(abstract)
             species_list = species_list.union(species)
