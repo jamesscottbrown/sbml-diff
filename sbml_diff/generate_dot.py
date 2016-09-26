@@ -534,6 +534,6 @@ class GenerateDot:
             format_string = old_label
 
         if not format_string:
-            format_string = ""
+            format_string = '""'
 
         return format_string
