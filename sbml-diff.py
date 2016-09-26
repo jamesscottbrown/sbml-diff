@@ -127,7 +127,8 @@ if __name__ == '__main__':
     else:
         sys.stdout = old_stdout
 
-    if num_files == 1 or output_formatter.differences_found or args.force:
+    explicit_comparison = args.force or args.params or args.kinetics
+    if num_files == 1 or output_formatter.differences_found or explicit_comparison:
         print f.getvalue()
     else:
         print "No structural differences found"
