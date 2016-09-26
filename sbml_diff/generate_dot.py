@@ -514,9 +514,6 @@ class GenerateDot:
 
         """
 
-        if not old_label:
-            old_label = '""'
-
         reversible_string = ''
         if len(reversible_model_set) > 0:
             reversible_color = self.assign_color(reversible_model_set)
@@ -528,12 +525,15 @@ class GenerateDot:
             fast_string = "<font color='%s'>F</font>" % fast_color
 
         if fast_string and reversible_string:
-            format_string = '<%s<br/>%s,%s>' % (old_label, reversible_string, fast_string)
+            format_string = '<%s<br/>(%s,%s)>' % (old_label, reversible_string, fast_string)
         elif fast_string:
-            format_string = '<%s<br/>%s>' % (old_label, fast_string)
+            format_string = '<%s<br/>(%s)>' % (old_label, fast_string)
         elif reversible_string:
-            format_string = '<%s<br/>%s>' % (old_label, reversible_string)
+            format_string = '<%s<br/>(%s)>' % (old_label, reversible_string)
         else:
             format_string = old_label
+
+        if not format_string:
+            format_string = ""
 
         return format_string
