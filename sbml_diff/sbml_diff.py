@@ -10,7 +10,7 @@ import re
 
 class SBMLDiff:
 
-    def __init__(self, model_strings, model_names, generate_dot, align=False, cartoon=False, show_params=False):
+    def __init__(self, model_strings, model_names, generate_dot, align=False, cartoon=False, show_params=True):
         """
 
         Parameters

@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--force', '-f', help="Draw comparison even if files are identical", action="store_true")
 
-    parser.add_argument('--show-modified', help="Show parameters modified by rules/events", action="store_true")
+    parser.add_argument('--hide-params', help="Hide parameters modified by rules/events", action="store_true")
 
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
 
@@ -69,9 +69,9 @@ if __name__ == '__main__':
     if args.align:
         align = True
 
-    show_params = False
-    if args.show_modified:
-        show_params = args.show_modified
+    show_params = True
+    if args.hide_params:
+        show_params = False
 
     # redirect STDOUT to specified file
     old_stdout = sys.stdout
