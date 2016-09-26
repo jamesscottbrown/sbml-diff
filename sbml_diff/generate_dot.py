@@ -514,6 +514,9 @@ class GenerateDot:
 
         """
 
+        if not old_label:
+            old_label = '""'
+
         reversible_string = ''
         if len(reversible_model_set) > 0:
             reversible_color = self.assign_color(reversible_model_set)
