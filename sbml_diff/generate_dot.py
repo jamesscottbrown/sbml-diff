@@ -240,8 +240,8 @@ class GenerateDot:
 
         print 'cds_%s_%s -> %s [color="%s"%s%s];' % (reaction_id, product, product, color, stoich_string, style)
 
-
-    def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law):
+    def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law,
+                            fast_model_set, reversible_model_set):
         """
         Draw rectangular node representing a reaction.
 
@@ -257,6 +257,9 @@ class GenerateDot:
             
         converted_law : human-readable string representation of the kineticLaw
 
+        fast_model_set : list of indexes for models in which this reaction is fast
+
+        reversible_model_set : list of indexes for models in which this reaction is reversible
 
         Returns
         -------
@@ -282,7 +285,9 @@ class GenerateDot:
         elif self.reaction_label == "rate":
             reaction_name = converted_law
 
-        return '%s [shape="rectangle", color="%s", %s label="%s" %s];' % (reaction_id, color, fill, reaction_name, style)
+        reaction_name = self.reaction_details(reaction_name, reversible_model_set, fast_model_set)
+
+        return '%s [shape="rectangle", color="%s", %s label=%s %s];' % (reaction_id, color, fill, reaction_name, style)
 
     # Used by diff_models()
     def print_header(self):
@@ -492,3 +497,40 @@ class GenerateDot:
     def print_param_node(self, variable_id, variable_name, model_set):
         color = self.assign_color(model_set)
         print '%s [label="%s", shape=none, color=%s];' % (variable_id, variable_name, color)
+
+    def reaction_details(self, old_label, reversible_model_set, fast_model_set):
+        """
+        Add 'R' and 'F' to label of reaction node to indicate the reaction is reversible or fast, respectively.
+        This markers are coloured independently of the rest of the node, following the same rules as other elements.
+
+        Parameters
+        ----------
+        old_label : the label for the reaction (name or id, perhaps with rate expression)
+        reversible_model_set : list of indexes for models in which this reaction is reversible
+        fast_model_set : list of indexes for models in which this reaction is fast
+
+        Returns
+        -------
+
+        """
+
+        reversible_string = ''
+        if len(reversible_model_set) > 0:
+            reversible_color = self.assign_color(reversible_model_set)
+            reversible_string = '<<font color="%s">R</font>' % reversible_color
+
+        fast_string = ''
+        if len(fast_model_set) > 0:
+            fast_color = self.assign_color(fast_model_set)
+            fast_string = "<font color='%s'>F</font>" % fast_color
+
+        if fast_string and reversible_string:
+            format_string = '<%s<br/>%s,%s>' % (old_label, reversible_string, fast_string)
+        elif fast_string:
+            format_string = '<%s<br/>%s>' % (old_label, fast_string)
+        elif reversible_string:
+            format_string = '<%s<br/>%s>' % (old_label, reversible_string)
+        else:
+            format_string = old_label
+
+        return format_string

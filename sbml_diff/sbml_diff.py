@@ -416,6 +416,9 @@ class SBMLDiff:
 
         # We need to consider whether the reaction's products, reactants and rate law are shared
         reaction_model_set = set()
+        fast_model_set = set()
+        reversible_model_set = set()
+
         reactant_status = {}
         product_status = {}
         rate_laws = ""
@@ -461,6 +464,11 @@ class SBMLDiff:
                 continue
 
             reaction_model_set.add(model_num)
+
+            if "fast" in reaction.attrs.keys() and reaction.attrs["fast"] in ['1', 'true']:
+                fast_model_set.add(model_num)
+            if "reversible" in reaction.attrs.keys() and reaction.attrs["reversible"] in ['1', 'true']:
+                reversible_model_set.add(model_num)
 
             # check if any stoichiometry values change between models
             # record the stoichiometry of every reactant or product associated with this reaction in any model
@@ -529,7 +537,8 @@ class SBMLDiff:
             return self.generate_dot.print_transcription_reaction_node(reaction_model_set, reaction_id, rate_laws,
                                                                        reaction_name, converted_rate_law, product_status)
         else:
-            return self.generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law)
+            return self.generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name,
+                                                         converted_rate_law, fast_model_set, reversible_model_set)
 
     def find_downstream_species(self):
         """
