@@ -850,11 +850,22 @@ class SBMLDiff:
 
             abstracted_model.append(abstract)
             species_list = species_list.union(species)
+            is_boundary_species = {}
 
             for s in species:
                 if s not in models_containing_species.keys():
                     models_containing_species[s] = set()
                 models_containing_species[s].add(model_num)
+
+                species_object = model.select_one("listOfSpecies").find(id=s)
+                is_boundary = ""
+                if "boundaryCondition" in species_object.attrs.keys():
+                    is_boundary = species_object.attrs["boundaryCondition"]
+
+                if s not in is_boundary_species.keys():
+                    is_boundary_species[s] = is_boundary
+                elif is_boundary_species[s] != is_boundary:
+                    is_boundary_species[s] = '?'
 
         species_list = species_list.difference(ignored_species)
         retained_species = species_list.difference(elided_species)
@@ -864,7 +875,7 @@ class SBMLDiff:
         for s in retained_species:
             model_num = list(models_containing_species[s])[0]
             species_name = get_species_name(self.models[model_num], s)
-            self.generate_dot.print_species_node(models_containing_species[s], s, species_name)
+            self.generate_dot.print_species_node(models_containing_species[s], is_boundary_species[s], s, species_name)
 
         # Construct interactions[modifier][species][type] = set of model_numbers
         interactions = {}
