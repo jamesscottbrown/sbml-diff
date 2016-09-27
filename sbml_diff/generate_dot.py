@@ -241,7 +241,7 @@ class GenerateDot:
         print 'cds_%s_%s -> %s [color="%s"%s%s];' % (reaction_id, product, product, color, stoich_string, style)
 
     def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law,
-                            fast_model_set, reversible_model_set):
+                            fast_model_set, irreversible_model_set):
         """
         Draw rectangular node representing a reaction.
 
@@ -259,7 +259,7 @@ class GenerateDot:
 
         fast_model_set : list of indexes for models in which this reaction is fast
 
-        reversible_model_set : list of indexes for models in which this reaction is reversible
+        irreversible_model_set : list of indexes for models in which this reaction is irreversible
 
         Returns
         -------
@@ -285,7 +285,7 @@ class GenerateDot:
         elif self.reaction_label == "rate":
             reaction_name = converted_law
 
-        reaction_name = self.reaction_details(reaction_name, reversible_model_set, fast_model_set)
+        reaction_name = self.reaction_details(reaction_name, irreversible_model_set, fast_model_set)
 
         return '%s [shape="rectangle", color="%s", %s label=%s %s];' % (reaction_id, color, fill, reaction_name, style)
 
@@ -498,7 +498,7 @@ class GenerateDot:
         color = self.assign_color(model_set)
         print '%s [label="%s", shape=none, color=%s];' % (variable_id, variable_name, color)
 
-    def reaction_details(self, old_label, reversible_model_set, fast_model_set):
+    def reaction_details(self, old_label, irreversible_model_set, fast_model_set):
         """
         Add 'R' and 'F' to label of reaction node to indicate the reaction is reversible or fast, respectively.
         This markers are coloured independently of the rest of the node, following the same rules as other elements.
@@ -506,7 +506,7 @@ class GenerateDot:
         Parameters
         ----------
         old_label : the label for the reaction (name or id, perhaps with rate expression)
-        reversible_model_set : list of indexes for models in which this reaction is reversible
+        irreversible_model_set : list of indexes for models in which this reaction is irreversible
         fast_model_set : list of indexes for models in which this reaction is fast
 
         Returns
@@ -515,9 +515,9 @@ class GenerateDot:
         """
 
         reversible_string = ''
-        if len(reversible_model_set) > 0:
-            reversible_color = self.assign_color(reversible_model_set)
-            reversible_string = "<<font color='%s'>R</font>" % reversible_color
+        if len(irreversible_model_set) > 0:
+            reversible_color = self.assign_color(irreversible_model_set)
+            reversible_string = "<<font color='%s'>I</font>" % reversible_color
 
         fast_string = ''
         if len(fast_model_set) > 0:
