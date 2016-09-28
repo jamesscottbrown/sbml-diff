@@ -521,7 +521,7 @@ class GenerateDot:
         reversible_string = ''
         if len(irreversible_model_set) > 0:
             reversible_color = self.assign_color(irreversible_model_set)
-            reversible_string = "<<font color='%s'>I</font>" % reversible_color
+            reversible_string = "<font color='%s'>I</font>" % reversible_color
 
         fast_string = ''
         if len(fast_model_set) > 0:
