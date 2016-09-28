@@ -500,7 +500,7 @@ class GenerateDot:
 
     def print_param_node(self, variable_id, variable_name, model_set):
         color = self.assign_color(model_set)
-        print '%s [label="%s", shape=none, color=%s];' % (variable_id, variable_name, color)
+        print '%s [label="%s", shape=none, color="%s"];' % (variable_id, variable_name, color)
 
     def reaction_details(self, old_label, irreversible_model_set, fast_model_set):
         """
