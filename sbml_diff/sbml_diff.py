@@ -430,12 +430,11 @@ class SBMLDiff:
         ever_drawn = False
 
         for model_num, model in enumerate(self.models):
-            reaction = self.reactions[model_num][reaction_id]
-            reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction, self.species_compartment[model_num])
-
-            reaction = model.select_one("listOfReactions").find(id=reaction_id)
-            if not reaction:
+            if reaction_id not in self.reactions[model_num].keys():
                 continue
+            reaction = self.reactions[model_num][reaction_id]
+
+            reactants, products, compartment, rate_law, rs, ps = get_reaction_details(model, reaction, self.species_compartment[model_num])
 
             # Skip processing reaction if it should not be drawn for this model
             show_reaction = True
