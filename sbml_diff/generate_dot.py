@@ -298,7 +298,11 @@ class GenerateDot:
 
     def print_footer(self):
         """ Print footer needed for valid DOT file  """
-        print 'label="Files: %s";' % ', '.join(self.model_names)
+        file_strings = []
+        for i in range(0, len(self.model_names)):
+            file_strings.append("<font color='%s'>%s</font>" % (self.assign_color([i]), self.model_names[i]))
+
+        print 'label=<Files: %s>;' % ', '.join(file_strings)
         print "}"
 
     def print_compartment_header(self, compartment_id):
