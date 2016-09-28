@@ -504,7 +504,7 @@ class GenerateDot:
 
     def reaction_details(self, old_label, irreversible_model_set, fast_model_set):
         """
-        Add 'R' and 'F' to label of reaction node to indicate the reaction is reversible or fast, respectively.
+        Add 'IR' and 'F' to label of reaction node to indicate the reaction is irreversible or fast, respectively.
         This markers are coloured independently of the rest of the node, following the same rules as other elements.
 
         Parameters
@@ -521,7 +521,7 @@ class GenerateDot:
         reversible_string = ''
         if len(irreversible_model_set) > 0:
             reversible_color = self.assign_color(irreversible_model_set)
-            reversible_string = "<font color='%s'>I</font>" % reversible_color
+            reversible_string = "<font color='%s'>IR</font>" % reversible_color
 
         fast_string = ''
         if len(fast_model_set) > 0:
