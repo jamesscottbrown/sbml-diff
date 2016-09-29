@@ -339,17 +339,19 @@ class SBMLDiff:
                 rate_laws = "different"
 
             for modifier in modifiers:
+                arrow_direction = categorise_interaction(rate_law.parent, modifier)
+                arrow = (modifier, arrow_direction)
                 if modifier not in modifier_status.keys():
-                    modifier_status[modifier] = set()
-                modifier_status[modifier].add(model_num)
+                    modifier_status[arrow] = set()
+                modifier_status[arrow].add(model_num)
 
             # for target in targets:
             target_status.add(model_num)
 
         # modifier arrows
-        for modifier in modifier_status:
-            model_set = list(modifier_status[modifier])
-            self.generate_dot.print_rule_modifier_arrow(model_set, target_id, modifier)
+        for arrow in modifier_status:
+            model_set = list(modifier_status[arrow])
+            self.generate_dot.print_rule_modifier_arrow(model_set, target_id, arrow[0], arrow[1])
 
         # target arrows
         model_set = list(target_status)

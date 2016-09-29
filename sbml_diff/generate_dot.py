@@ -374,7 +374,7 @@ class GenerateDot:
             arrowhead = "dot"
         print '%s [color="%s", arrowhead="%s" %s];' % (arrow_main, color, arrowhead, style)
 
-    def print_rule_modifier_arrow(self, model_set, rule_id, modifier):
+    def print_rule_modifier_arrow(self, model_set, rule_id, modifier, arrow_direction):
         """
         Draw arrow from species to rule
 
@@ -385,10 +385,23 @@ class GenerateDot:
         rule_id : id of the rule
             
         modifier : id of the species affecting the rule
+
+        arrow_direction : string representing kind of interaction - 'monotonic_increasing' (activation) or
+        'monotonic_decreasing' (repression)
         """
         color = self.assign_color(model_set)
-        style = self.check_style(model_set)
-        print '%s -> rule_%s [color="%s", style="dotted" %s];' % (modifier, rule_id, color, style)
+        style = self.check_style(model_set, 'dashed')
+
+        if arrow_direction == "monotonic_increasing":
+            arrowhead = "vee"
+        elif arrow_direction == "monotonic_decreasing":
+            arrowhead = "tee"
+        elif arrow_direction == "?":
+            arrowhead = "odiamond"
+        else:
+            arrowhead = "dot"
+
+        print '%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (modifier, rule_id, color, arrowhead, style)
 
     def print_rule_target_arrow(self, model_set, target):
         """
