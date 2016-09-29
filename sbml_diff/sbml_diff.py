@@ -10,7 +10,7 @@ import re
 
 class SBMLDiff:
 
-    def __init__(self, model_strings, model_names, generate_dot, align=False, cartoon=False, show_params=True):
+    def __init__(self, model_strings, model_names, generate_dot, align=False, cartoon=False, show_params=True, hide_rules=False):
         """
 
         Parameters
@@ -33,6 +33,7 @@ class SBMLDiff:
         self.align = align
         self.cartoon = cartoon
         self.show_params = show_params
+        self.hide_rules = hide_rules
 
         self.models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
 
@@ -727,7 +728,10 @@ class SBMLDiff:
         self.generate_dot.print_header()
 
         reaction_strings = self.diff_reactions()
-        rule_strings = self.diff_rules()
+
+        rule_strings = {}
+        if not self.hide_rules:
+            rule_strings = self.diff_rules()
 
         # Reactions and rules do not have compartments. We try to assign them based on compartment of reactants/products,
         # but some may have been given the sentinel value "NONE". Print them here, before the contents of compartments.
