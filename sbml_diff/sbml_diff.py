@@ -265,7 +265,7 @@ class SBMLDiff:
                         modifier_arrows[arrow] = modifier_arrows[arrow].union(model_set)
 
             for arrow in modifier_arrows.keys():
-                self.generate_dot.print_event_affect_value_arrow(arrow[0], event_hash, event[1], list(modifier_arrows[arrow]))
+                self.generate_dot.print_event_affect_value_arrow(arrow[0], event_hash, arrow[1], list(modifier_arrows[arrow]))
 
     def diff_rules(self):
         """
