@@ -44,6 +44,17 @@ class GenerateDot:
         self.rankdir = rankdir
         self.differences_found = False
 
+    def assign_arrowhead(self, effect_direction):
+        if effect_direction == "monotonic_increasing":
+            arrowhead = "vee"
+        elif effect_direction == "monotonic_decreasing":
+            arrowhead = "tee"
+        elif effect_direction in ["?", "constant"]:
+            arrowhead = "odiamond"
+        else:
+            arrowhead = "dot"
+        return arrowhead
+
     def assign_color(self, model_set):
         """
         Given a list of models containing some feature, determine what color that feature should be drawn (black if only
@@ -363,15 +374,7 @@ class GenerateDot:
         """
         color = self.assign_color(model_set)
         style = self.check_style(model_set, 'dashed')
-
-        if arrow_direction == "monotonic_increasing":
-            arrowhead = "vee"
-        elif arrow_direction == "monotonic_decreasing":
-            arrowhead = "tee"
-        elif arrow_direction == "?":
-            arrowhead = "odiamond"
-        else:
-            arrowhead = "dot"
+        arrowhead = self.assign_arrowhead(arrow_direction)
         print '"%s" -> "%s" [color="%s", arrowhead="%s" %s];' % (arrow_source, arrow_target, color, arrowhead, style)
 
     def print_rule_modifier_arrow(self, model_set, rule_id, modifier, arrow_direction):
@@ -392,15 +395,7 @@ class GenerateDot:
         color = self.assign_color(model_set)
         style = self.check_style(model_set, 'dashed')
 
-        if arrow_direction == "monotonic_increasing":
-            arrowhead = "vee"
-        elif arrow_direction == "monotonic_decreasing":
-            arrowhead = "tee"
-        elif arrow_direction == "?":
-            arrowhead = "odiamond"
-        else:
-            arrowhead = "dot"
-
+        arrowhead = self.assign_arrowhead(arrow_direction)
         print '%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (modifier, rule_id, color, arrowhead, style)
 
     def print_rule_target_arrow(self, model_set, target):
@@ -504,9 +499,10 @@ class GenerateDot:
         color = self.assign_color(model_set)
         print '%s -> %s [color="%s"];' % (event_hash, species_id, color)
 
-    def print_event_affect_value_arrow(self, species, event_hash, model_set):
+    def print_event_affect_value_arrow(self, species, event_hash, arrow_direction, model_set):
         color = self.assign_color(model_set)
-        print '%s -> %s [color="%s", style="dashed"];' % (species, event_hash, color)
+        arrowhead = self.assign_arrowhead(arrow_direction)
+        print '%s -> %s [color="%s", arrowhead="%s", style="dashed"];' % (species, event_hash, color, arrowhead)
 
     def print_param_node(self, variable_id, variable_name, model_set):
         color = self.assign_color(model_set)

@@ -235,7 +235,7 @@ class SBMLDiff:
 
         # process assignment statements
         event_assignments = event.select("eventAssignment")
-        species_affecting_rate = {}
+        modifier_arrows = {}
         if event_assignments:
             for event in event_assignments:
                 if isinstance(event, NavigableString):
@@ -256,12 +256,16 @@ class SBMLDiff:
                 for ci in math.select("ci"):
                     species = ci.text.strip()
                     if species in species_ids:
-                        if species not in species_affecting_rate.keys():
-                            species_affecting_rate[species] = set()
-                        species_affecting_rate[species] = species_affecting_rate[species].union(model_set)
+                        arrow_direction = categorise_interaction(math.parent, species)
+                        arrow = (species, arrow_direction)
 
-            for species in species_affecting_rate.keys():
-                self.generate_dot.print_event_affect_value_arrow(species, event_hash, list(species_affecting_rate[species]))
+                        if arrow not in modifier_arrows.keys():
+                            modifier_arrows[arrow] = set()
+
+                        modifier_arrows[arrow] = modifier_arrows[arrow].union(model_set)
+
+            for arrow in modifier_arrows.keys():
+                self.generate_dot.print_event_affect_value_arrow(arrow[0], event_hash, event[1], list(modifier_arrows[arrow]))
 
     def diff_rules(self):
         """
@@ -341,7 +345,7 @@ class SBMLDiff:
             for modifier in modifiers:
                 arrow_direction = categorise_interaction(rate_law.parent, modifier)
                 arrow = (modifier, arrow_direction)
-                if modifier not in modifier_status.keys():
+                if arrow not in modifier_status.keys():
                     modifier_status[arrow] = set()
                 modifier_status[arrow].add(model_num)
 
