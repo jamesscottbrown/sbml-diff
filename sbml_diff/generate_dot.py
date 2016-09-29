@@ -49,10 +49,8 @@ class GenerateDot:
             arrowhead = "vee"
         elif effect_direction == "monotonic_decreasing":
             arrowhead = "tee"
-        elif effect_direction in ["?", "constant"]:
-            arrowhead = "odiamond"
         else:
-            arrowhead = "dot"
+            arrowhead = "diamond"
         return arrowhead
 
     def assign_color(self, model_set):
@@ -493,7 +491,7 @@ class GenerateDot:
 
     def print_event_trigger_species_arrows(self, species, event_hash, model_set):
         color = self.assign_color(model_set)
-        print '%s -> %s [arrowhead="diamond", color="%s", style="dashed"];' % (species, event_hash, color)
+        print '%s -> %s [arrowhead="odot", color="%s", style="dashed"];' % (species, event_hash, color)
 
     def print_event_set_species_arrow(self, species_id, event_hash, model_set):
         color = self.assign_color(model_set)
