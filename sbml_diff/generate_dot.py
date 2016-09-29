@@ -348,7 +348,7 @@ class GenerateDot:
         print '"%s" [color="%s",label="%s" %s %s %s];' % (species_id, color, species_name, doubled, fill, style)
 
 
-    def print_regulatory_arrow(self, model_set, arrow_main, arrow_direction):
+    def print_regulatory_arrow(self, model_set, arrow_source, arrow_target, arrow_direction):
         """
         Draw arrow corresponding to regulatory interaction affecting reaction
 
@@ -372,7 +372,7 @@ class GenerateDot:
             arrowhead = "odiamond"
         else:
             arrowhead = "dot"
-        print '%s [color="%s", arrowhead="%s" %s];' % (arrow_main, color, arrowhead, style)
+        print '"%s" -> "%s" [color="%s", arrowhead="%s" %s];' % (arrow_source, arrow_target, color, arrowhead, style)
 
     def print_rule_modifier_arrow(self, model_set, rule_id, modifier, arrow_direction):
         """

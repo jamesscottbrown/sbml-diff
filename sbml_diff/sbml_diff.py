@@ -709,10 +709,7 @@ class SBMLDiff:
                 arrow_status[arrow].add(model_num)
 
         for ind, arrow in enumerate(arrow_status):
-            arrow_parts = arrow.split('-')
-            arrow_main = '-'.join(arrow_parts[:-1])
-            arrow_direction = arrow_parts[-1]
-            self.generate_dot.print_regulatory_arrow(arrow_status[arrow], arrow_main, arrow_direction)
+            self.generate_dot.print_regulatory_arrow(arrow_status[arrow], arrow[0], arrow[1], arrow[2])
 
         self.generate_dot.print_compartment_footer()
 

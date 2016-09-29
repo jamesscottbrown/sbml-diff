@@ -77,13 +77,12 @@ def get_regulatory_arrow(model, compartment, reactions, species_compartments, el
                 continue
 
             # if not a reactant, add regulatory arrow
-
             reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(model, reaction, species_compartments)
             if species_id in reactant_list:
                 continue
 
             arrow_direction = categorise_interaction(reaction.select_one("kineticLaw"), species_id)
-            arrows.append('"%s" -> "%s" -%s' % (species_id, reaction_id, arrow_direction))
+            arrows.append((species_id, reaction_id, arrow_direction))
 
     return arrows
 
