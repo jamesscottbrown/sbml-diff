@@ -173,8 +173,7 @@ class GenerateDot:
         base_style = ''
         if rate_law == "different":
             self.differences_found = True
-            fill = 'fillcolor="grey",'
-            base_style = 'filled'
+            base_style = 'dashed'
 
         style = self.check_style(model_set, base_style)
 
@@ -270,8 +269,7 @@ class GenerateDot:
         base_style = ''
         if rate_law == "different":
             self.differences_found = True
-            fill = 'fillcolor="grey",'
-            base_style = 'filled'
+            base_style = 'dashed'
 
         color = self.assign_color(model_set)
         style = self.check_style(model_set, base_style)
@@ -342,8 +340,7 @@ class GenerateDot:
         doubled = ""
 
         if isBoundary == '?':
-            fill = ', fillcolor="grey"'
-            base_style = 'filled'
+            base_style = 'dashed'
         elif isBoundary.lower() == 'true':
             doubled = 'peripheries=2'
 
