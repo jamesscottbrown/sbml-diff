@@ -1,0 +1,603 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version1/core" level="3" metaid="_153818" version="1">
+  <model name="toggle_model" id="toggle_model" >
+
+      <listOfUnitDefinitions>
+      <unitDefinition name="cubic microns" id="volume" metaid="metaid_0000029">
+        <listOfUnits>
+          <unit scale="-15" metaid="_420934" kind="litre"/>
+        </listOfUnits>
+      </unitDefinition>
+      <unitDefinition name="item" id="substance" metaid="metaid_1000000">
+        <listOfUnits>
+          <unit metaid="_420947" kind="item"/>
+        </listOfUnits>
+      </unitDefinition>
+      <unitDefinition name="minute" id="time" metaid="metaid_0000030">
+        <listOfUnits>
+          <unit metaid="_420960" kind="second" multiplier="60"/>
+        </listOfUnits>
+      </unitDefinition>
+    </listOfUnitDefinitions>
+
+
+    <listOfCompartments>
+      <compartment id="cell" size="1" metaid="_000002" sboTerm="SBO:0000290">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_000002">
+	<bqbiol:is>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0005623"/>
+	</rdf:Bag>
+	</bqbiol:is>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+            </compartment>
+    </listOfCompartments>
+
+
+    <listOfSpecies>
+      <species metaid="PX" hasOnlySubstanceUnits="true" initialAmount="0" sboTerm="SBO:0000252" compartment="cell" name="LacI protein" id="PX">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        lacI inhibitor</p>
+          
+        </notes>
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#PX">
+	<bqbiol:is>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/uniprot/P03023"/>
+	</rdf:Bag>
+	</bqbiol:is>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+            </species>
+      <species metaid="PY" hasOnlySubstanceUnits="true" initialAmount="0" sboTerm="SBO:0000252" compartment="cell" name="TetR protein" id="PY">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Tet repressor protein</p>
+          
+        </notes>
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#PY">
+	<bqbiol:is>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/uniprot/P04483"/>
+	</rdf:Bag>
+	</bqbiol:is>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+
+      <species metaid="_905769" hasOnlySubstanceUnits="true" initialAmount="0" sboTerm="SBO:0000250" compartment="cell" name="LacI mRNA" id="X">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_905769">
+              <bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/chebi/CHEBI:33699"/>
+	<rdf:li rdf:resource="http://identifiers.org/kegg.compound/C00046"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	
+	<bqbiol:encodes>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/uniprot/P03023"/>
+	</rdf:Bag>
+	</bqbiol:encodes>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+            </species>
+      <species metaid="_905781" hasOnlySubstanceUnits="true" initialAmount="20" sboTerm="SBO:0000250" compartment="cell" name="TetR mRNA" id="Y">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_905781">
+              <bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/chebi/CHEBI:33699"/>
+	<rdf:li rdf:resource="http://identifiers.org/kegg.compound/C00046"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	
+	<bqbiol:encodes>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/uniprot/P04483"/>
+	</rdf:Bag>
+	</bqbiol:encodes>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+            </species>
+
+    </listOfSpecies>
+    <listOfParameters>
+      <parameter name="beta" constant="false" id="beta" metaid="metaid_0000022" value="0.2">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        ratio of protein to mRNA decay rates</p>
+          
+        </notes>
+      </parameter>
+      <parameter constant="false" metaid="metaid_0000023" sboTerm="SBO:0000485" name="alpha0" id="alpha0" value="0.2164">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Leakiness in protein copies per promoter and cell</p>
+          
+        </notes>
+      </parameter>
+      <parameter constant="false" metaid="metaid_0000024" sboTerm="SBO:0000186" name="alpha" id="alpha" value="216.404">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Protein copies per promoter and cell</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="translation efficiency" id="eff" metaid="metaid_0000025" value="20">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Average number of proteins per transcript</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="n" id="n" metaid="metaid_0000026" value="2" sboTerm="SBO:0000190">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Hill coefficient</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="KM" id="KM" metaid="metaid_0000027" value="40" sboTerm="SBO:0000288">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Number of repressor molecules per cell giving half maximal repression, in monomers per cell</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="mRNA half life" id="tau_mRNA" metaid="metaid_0000028" value="2" sboTerm="SBO:0000332"/>
+      <parameter name="protein half life" id="tau_prot" metaid="metaid_0000128" value="10" sboTerm="SBO:0000332"/>
+      <parameter name="average mRNA life time" constant="false" id="t_ave" metaid="metaid_0000032" sboTerm="SBO:0000348"/>
+      <parameter name="kd_mRNA" constant="false" id="kd_mRNA" metaid="metaid_0000132" sboTerm="SBO:0000356">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        mRNA decay rate constant</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="kd_prot" constant="false" id="kd_prot" metaid="metaid_0000133" sboTerm="SBO:0000356">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Protein decay rate costant</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="k_tl" constant="false" id="k_tl" metaid="metaid_0000233" sboTerm="SBO:0000016">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Translation rate constant</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="a_tr" constant="false" id="a_tr" metaid="metaid_0900235" sboTerm="SBO:0000186">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Transcription rate from free promotor minus a0_tr</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="tps_active" id="ps_a" metaid="metaid_0800235" value="0.5" sboTerm="SBO:0000186">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Transcrition from free promotor in transcripts per second and promotor</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="tps_repr" id="ps_0" metaid="metaid_0500235" value="0.0005" sboTerm="SBO:0000485">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Transcrition from fully repressed promotor in transcripts per second and promotor</p>
+          
+        </notes>
+      </parameter>
+      <parameter name="a0_tr" constant="false" id="a0_tr" metaid="metaid_0000234" sboTerm="SBO:0000485">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">
+        Transcription rate from fully repressed promotor</p>
+          
+        </notes>
+      </parameter>
+    </listOfParameters>
+    <listOfRules>
+      <assignmentRule variable="t_ave" metaid="metaid_0500035">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <ci> tau_mRNA </ci>
+            <apply>
+              <ln/>
+              <cn> 2 </cn>
+            </apply>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="beta" metaid="metaid_0240045">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <ci> tau_mRNA </ci>
+            <ci> tau_prot </ci>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="k_tl" metaid="metaid_0400235">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <ci> eff </ci>
+            <ci> t_ave </ci>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="a_tr" metaid="metaid_1000237">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <times/>
+            <apply>
+              <minus/>
+              <ci> ps_a </ci>
+              <ci> ps_0 </ci>
+            </apply>
+            <cn> 60 </cn>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="a0_tr" metaid="metaid_0100236">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <times/>
+            <ci> ps_0 </ci>
+            <cn> 60 </cn>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="kd_prot" metaid="metaid_0010335">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <apply>
+              <ln/>
+              <cn> 2 </cn>
+            </apply>
+            <ci> tau_prot </ci>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="kd_mRNA" metaid="metaid_0020435">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <apply>
+              <ln/>
+              <cn> 2 </cn>
+            </apply>
+            <ci> tau_mRNA </ci>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="alpha" metaid="metaid_0230035">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <apply>
+              <times/>
+              <ci> a_tr </ci>
+              <ci> eff </ci>
+              <ci> tau_prot </ci>
+            </apply>
+            <apply>
+              <times/>
+              <apply>
+                <ln/>
+                <cn> 2 </cn>
+              </apply>
+              <ci> KM </ci>
+            </apply>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="alpha0" metaid="metaid_0240035">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <apply>
+              <times/>
+              <ci> a0_tr </ci>
+              <ci> eff </ci>
+              <ci> tau_prot </ci>
+            </apply>
+            <apply>
+              <times/>
+              <apply>
+                <ln/>
+                <cn> 2 </cn>
+              </apply>
+              <ci> KM </ci>
+            </apply>
+          </apply>
+        </math>
+            </assignmentRule>
+    </listOfRules>
+    <listOfReactions>
+      <reaction name="degradation of LacI transcripts" id="Reaction1" metaid="_905823" reversible="false" sboTerm="SBO:0000179">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_905823">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0006402"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+              <listOfReactants>
+          <speciesReference metaid="_420973" species="X"/>
+        </listOfReactants>
+        <kineticLaw metaid="_420986" sboTerm="SBO:0000049">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> kd_mRNA </ci>
+              <ci> X </ci>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+      <reaction name="degradation of TetR transcripts" id="Reaction2" metaid="_905842" reversible="false" sboTerm="SBO:0000179">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_905842">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0006402"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+              <listOfReactants>
+          <speciesReference metaid="_420999" species="Y"/>
+        </listOfReactants>
+        <kineticLaw metaid="_421012" sboTerm="SBO:0000049">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> kd_mRNA </ci>
+              <ci> Y </ci>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+
+      <reaction name="translation of LacI" id="Reaction4" metaid="_905882" reversible="false" sboTerm="SBO:0000184">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_905882">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0006412"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+              <listOfProducts>
+          <speciesReference metaid="_421051" species="PX"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference metaid="_421064" species="X" sboTerm="SBO:0000461"/>
+        </listOfModifiers>
+        <kineticLaw metaid="_421076" sboTerm="SBO:0000049">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> k_tl </ci>
+              <ci> X </ci>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+      <reaction name="translation of TetR" id="Reaction5" metaid="_905903" reversible="false" sboTerm="SBO:0000184">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_905903">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0006412"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+              <listOfProducts>
+          <speciesReference metaid="_421088" species="PY"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference metaid="_421100" species="Y" sboTerm="SBO:0000461"/>
+        </listOfModifiers>
+        <kineticLaw metaid="_421112" sboTerm="SBO:0000049">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> k_tl </ci>
+              <ci> Y </ci>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+
+      <reaction name="degradation of LacI" id="Reaction7" metaid="_905943" reversible="false" sboTerm="SBO:0000179">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_905943">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0030163"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+              <listOfReactants>
+          <speciesReference metaid="_421160" species="PX"/>
+        </listOfReactants>
+        <kineticLaw metaid="_421172" sboTerm="SBO:0000049">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> kd_prot </ci>
+              <ci> PX </ci>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+      <reaction name="degradation of TetR" id="Reaction8" metaid="_905962" reversible="false" sboTerm="SBO:0000179">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_905962">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0030163"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+              <listOfReactants>
+          <speciesReference metaid="_421184" species="PY"/>
+        </listOfReactants>
+        <kineticLaw metaid="_421196" sboTerm="SBO:0000049">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> kd_prot </ci>
+              <ci> PY </ci>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+
+      <reaction name="transcription of LacI" id="Reaction10" metaid="_906002" reversible="false" sboTerm="SBO:0000183">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_906002">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0006351"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+              <listOfProducts>
+          <speciesReference metaid="_421232" species="X"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference metaid="_421244" species="PY" sboTerm="SBO:0000536"/>
+        </listOfModifiers>
+        <kineticLaw metaid="_421256">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <plus/>
+              <ci> a0_tr </ci>
+              <apply>
+                <divide/>
+                <apply>
+                  <times/>
+                  <ci> a_tr </ci>
+                  <apply>
+                    <power/>
+                    <ci> KM </ci>
+                    <ci> n </ci>
+                  </apply>
+                </apply>
+                <apply>
+                  <plus/>
+                  <apply>
+                    <power/>
+                    <ci> KM </ci>
+                    <ci> n </ci>
+                  </apply>
+                  <apply>
+                    <power/>
+                    <ci> PY </ci>
+                    <ci> n </ci>
+                  </apply>
+                </apply>
+              </apply>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+      <reaction name="transcription of TetR" id="Reaction11" metaid="_906022" reversible="false" sboTerm="SBO:0000183">
+        <annotation>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+	<rdf:Description rdf:about="#_906022">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/obo.go/GO:0006351"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	</rdf:RDF>
+	</annotation>
+              <listOfProducts>
+          <speciesReference metaid="_421268" species="Y"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference metaid="_421280" species="PX" sboTerm="SBO:0000536"/>
+        </listOfModifiers>
+        <kineticLaw metaid="_421292">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <plus/>
+              <ci> a0_tr </ci>
+              <apply>
+                <divide/>
+                <apply>
+                  <times/>
+                  <ci> a_tr </ci>
+                  <apply>
+                    <power/>
+                    <ci> KM </ci>
+                    <ci> n </ci>
+                  </apply>
+                </apply>
+                <apply>
+                  <plus/>
+                  <apply>
+                    <power/>
+                    <ci> KM </ci>
+                    <ci> n </ci>
+                  </apply>
+                  <apply>
+                    <power/>
+                    <ci> PX </ci>
+                    <ci> n </ci>
+                  </apply>
+                </apply>
+              </apply>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+
+    </listOfReactions>
+  </model>
+</sbml>
