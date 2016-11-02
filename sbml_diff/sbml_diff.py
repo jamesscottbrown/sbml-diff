@@ -329,7 +329,7 @@ class SBMLDiff:
             modifiers, compartment, rate_law = get_rule_details(model, target_id, self.species_compartment[model_num])
 
             if not rate_law:
-                return ""
+                continue
 
             if rate_law and not rate_laws:
                 rate_laws = rate_law
