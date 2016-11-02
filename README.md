@@ -6,6 +6,7 @@ sbml-diff is a tool for visually representing a single SBML model, or for visual
 * As a python package (see package_demo.py for an example)
 * through our [web interface](http://sysos.eng.ox.ac.uk/tebio/upload)
 
+It relies on elements having `id` attributes, so does not work with [SBML Level](http://sbml.org/Documents/Specifications) 1, but supports files in Level 2 Version 1 - Level 3 Version 1 Core.
 
 ## Installation
 
