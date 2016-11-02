@@ -107,11 +107,16 @@ if __name__ == '__main__':
                             show_params=show_params, hide_rules=hide_rules)
 
     try:
+
         if args.kinetics:
             sd.print_rate_law_table()
-        elif args.params:
+            print ""
+
+        if args.params:
             sd.compare_params()
-        elif args.abstract:
+            print ""
+
+        if args.abstract:
             ignored = []
             if args.ignore:
                 ignored = args.ignore.split(',')
@@ -121,7 +126,8 @@ if __name__ == '__main__':
                 elided = args.elide.split(',')
 
             sd.diff_abstract_models(ignored_species=ignored, elided_species=elided)
-        else:
+
+        if not (args.kinetics or args.params or args.abstract):
             sd.diff_models()
 
     except RuntimeError, e:
