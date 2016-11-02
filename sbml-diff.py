@@ -15,6 +15,8 @@ if __name__ == '__main__':
     * DOT representation of an abstraction of reaction network, showing only species (--abstract)
     * a table of parameters (--params)
     * a table of kinetic laws for each reaction (--kineticstable)
+
+    If one or more kinds of table are requested, DOT output is not produced.
     """, formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('--params', '-p', help='Print textual comparison of params', action='store_true')
