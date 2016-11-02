@@ -127,6 +127,11 @@ class SBMLDiff:
                     rates.append(convert_rate_law(math_tag))
                 else:
                     rates.append("-")
+
+                r = rates[1:]
+                if r.count(r[0]) != len(r):
+                    self.generate_dot.differences_found = True
+
             rows.append(rates)
 
         print tabulate(rows, ["Reaction"] + self.model_names, tablefmt=format)
@@ -160,6 +165,10 @@ class SBMLDiff:
                     row.append(param_value[param_id][model_num])
                 else:
                     row.append("-")
+
+                p = row[1:]
+                if p.count(p[0]) != len(p):
+                    self.generate_dot.differences_found = True
             rows.append(row)
 
         print tabulate(rows, ["Parameter"] + self.model_names, tablefmt=format)

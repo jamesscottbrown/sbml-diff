@@ -44,6 +44,9 @@ if __name__ == '__main__':
     parser.add_argument('--hide-params', help="Hide parameters modified by rules/events", action="store_true")
     parser.add_argument('--hide-rules', help="Do not show rules", action="store_true")
 
+    parser.add_argument('--complete', help="If no changes, exit quietly. Otherwise return param table, kinetic table," +
+                                           " and DOT output", action="store_true")
+
     parser.add_argument('infile', type=argparse.FileType('r'), nargs="+", help="List of input SBML files")
 
     args = parser.parse_args()
@@ -81,7 +84,11 @@ if __name__ == '__main__':
         hide_rules = True
 
     # redirect STDOUT to specified file
-    old_stdout = sys.stdout
+    if args.outfile:
+        old_stdout = args.outfile
+    else:
+        old_stdout = sys.stdout
+
     buffer = StringIO()
     f = codecs.getwriter("utf8")(buffer)
     sys.stdout = f
@@ -107,6 +114,26 @@ if __name__ == '__main__':
 
     sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon,
                             show_params=show_params, hide_rules=hide_rules)
+
+    if args.complete:
+
+        sd.print_rate_law_table()
+        print ""
+        sd.compare_params()
+        print ""
+        sd.diff_models()
+
+        if output_formatter.differences_found:
+            # print results
+            sys.stdout = old_stdout
+            print f.getvalue()
+        else:
+            # discard results
+            f.close()
+            sys.stdout = old_stdout
+
+        sys.exit()
+
 
     try:
 
@@ -137,8 +164,6 @@ if __name__ == '__main__':
 
     # Print results
     if args.outfile:
-        sys.stdout = args.outfile
-    else:
         sys.stdout = old_stdout
 
     explicit_comparison = args.force or args.params or args.kinetics

@@ -53,7 +53,7 @@ class GenerateDot:
             arrowhead = "diamond"
         return arrowhead
 
-    def assign_color(self, model_set):
+    def assign_color(self, model_set, ignore_difference=False):
         """
         Given a list of models containing some feature, determine what color that feature should be drawn (black if only
         one model is being considered, otherwise grey if present in all models, colored if in a single model, and black
@@ -62,14 +62,14 @@ class GenerateDot:
         Parameters
         ----------
         model_set : list of model numbers containing the feature
-            
+        ignore_difference : indicates that this function call does not imply the existence of differences between models
 
         Returns
         -------
         string specifying color
 
         """
-        if self.num_models != len(model_set):
+        if self.num_models != len(model_set) and not ignore_difference:
             self.differences_found = True
 
         if self.num_models == 1:
@@ -307,7 +307,7 @@ class GenerateDot:
         """ Print footer needed for valid DOT file  """
         file_strings = []
         for i in range(0, len(self.model_names)):
-            file_strings.append("<font color='%s'>%s</font>" % (self.assign_color([i]), self.model_names[i]))
+            file_strings.append("<font color='%s'>%s</font>" % (self.assign_color([i], ignore_difference=True), self.model_names[i]))
 
         print 'label=<Files: %s>;' % ', '.join(file_strings)
         print "}"
