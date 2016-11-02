@@ -101,12 +101,6 @@ class SBMLDiff:
             if "level1" in model.select_one('sbml').attrs['xmlns']:
                 raise RuntimeError("Every model must be in SBML level 2 or higher, since sbml-diff relies on id attributes")
 
-            reaction_list = model.select_one("listOfReactions")
-            if reaction_list:
-                for reaction in reaction_list.select("reaction"):
-                    if not reaction.select_one("kineticLaw"):
-                        raise RuntimeError("Every reaction must have a kineticLaw. Note that submodels are not supported.")
-
     def print_rate_law_table(self, format="simple"):
         """
         Print a table of kineticLaws, in which rows correspond to reactions and columns to models.
@@ -429,6 +423,7 @@ class SBMLDiff:
         reactant_status = {}
         product_status = {}
         rate_laws = ""
+        rate_law_found = False
 
         reactant_stoichiometries = {}
         product_stoichiometries = {}
@@ -491,9 +486,10 @@ class SBMLDiff:
                 elif stoich != product_stoichiometries[products[ind]]:
                     product_stoichiometries[products[ind]] = '?'
 
-            if rate_law and not rate_laws:
+            if not rate_law_found:
                 rate_laws = rate_law
-            if rate_laws and rate_law and re.sub('\s', '', str(rate_law)) != re.sub('\s', '', str(rate_laws)):
+                rate_law_found = True
+            if rate_law_found and re.sub('\s', '', str(rate_law)) != re.sub('\s', '', str(rate_laws)):
                 rate_laws = "different"
 
             for reactant in reactants:

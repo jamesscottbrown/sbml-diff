@@ -69,7 +69,11 @@ def get_regulatory_arrow(model, compartment, reactions, species_compartments, el
         if reaction in elided_reactions:
             continue
 
-        for ci in reaction.select_one("kineticLaw").select("ci"):
+        kinetic_law = reaction.select_one("kineticLaw")
+        if not kinetic_law:
+            continue
+
+        for ci in kinetic_law.select("ci"):
 
             # Check if this is a species id (it could validly be a species/compartment/parameter/function/reaction id)
             species_id = ci.string.strip()
@@ -81,7 +85,7 @@ def get_regulatory_arrow(model, compartment, reactions, species_compartments, el
             if species_id in reactant_list:
                 continue
 
-            arrow_direction = categorise_interaction(reaction.select_one("kineticLaw"), species_id)
+            arrow_direction = categorise_interaction(kinetic_law, species_id)
             arrows.append((species_id, reaction_id, arrow_direction))
 
     return arrows
@@ -215,7 +219,13 @@ def get_reaction_details(model, reaction, species_compartments):
             if compartment != get_species_compartment(model, species, species_compartments):
                 compartment = "NONE"
 
-    rate_law = reaction.select_one("kineticLaw").select_one("math")
+    kinetic_law = reaction.select_one("kineticLaw")
+    if kinetic_law:
+        rate_law = kinetic_law.select_one("math")
+    else:
+        rate_law = ""
+
+
     return reactant_list, product_list, compartment, rate_law, reactant_stoichiometries, product_stoichiometries
 
 
