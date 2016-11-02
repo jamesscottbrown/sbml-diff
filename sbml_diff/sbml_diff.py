@@ -121,11 +121,16 @@ class SBMLDiff:
         for reaction_id in reactions:
             rates = [reaction_id]
             for model_num, model in enumerate(self.models):
+                found_kinetic_law = False
                 r = model.select_one("listOfReactions").find(id=reaction_id)
                 if r:
-                    math_tag = r.select_one("kineticLaw").select_one("math")
-                    rates.append(convert_rate_law(math_tag))
-                else:
+                    kinetic_law = r.select_one("kineticLaw")
+                    if kinetic_law:
+                        math_tag = kinetic_law.select_one("math")
+                        rates.append(convert_rate_law(math_tag))
+                        found_kinetic_law = True
+
+                if not found_kinetic_law:
                     rates.append("-")
 
                 r = rates[1:]
