@@ -9,6 +9,8 @@ sbml-diff is a tool for visually representing a single SBML model, or for visual
 
 ## Installation
 
+sbml-diff is written in Python 2 (in the future, it is planned to also become compatible with Python 3), and depends on the [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/) library ([installation instructions](https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-beautiful-soup)).
+
 Download or ``git clone`` the code, ``cd`` into the directory, and install using ``python setup.py install``.
 
 This will install both the package and command-line tool.
