@@ -850,13 +850,13 @@ class SBMLDiff:
         abstracted_model = [] * len(self.models)
         species_list = set()
         models_containing_species = {}
+        is_boundary_species = {}
 
         for model_num, model in enumerate(self.models):
             abstract, species = self.abstract_model(model, model_num)
 
             abstracted_model.append(abstract)
             species_list = species_list.union(species)
-            is_boundary_species = {}
 
             for s in species:
                 if s not in models_containing_species.keys():
