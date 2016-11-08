@@ -163,8 +163,7 @@ if __name__ == '__main__':
         sys.exit(e.args[0])
 
     # Print results
-    if args.outfile:
-        sys.stdout = old_stdout
+    sys.stdout = old_stdout
 
     explicit_comparison = args.force or args.params or args.kinetics
     if num_files == 1 or output_formatter.differences_found or explicit_comparison:
