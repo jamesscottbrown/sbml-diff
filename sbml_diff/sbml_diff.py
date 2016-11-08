@@ -302,13 +302,41 @@ class SBMLDiff:
             # get details of each rule
             for rule in rule_list.select("algebraicRule"):
 
-                rule_id = rule.attrs["metaid"]
+                # find species occurring in this rule
+                species_ids = []
+                species_list = model.select_one("listOfSpecies")
+                species_in_rule = []
+                if species_list:
+                    for s in species_list.select("species"):
+                        species_ids.append(s.attrs["id"])
+
+                for ci in rule.select("ci"):
+                    species_id = ci.string.strip()
+                    if species_id not in species_ids:
+                        continue
+                    species_in_rule.append(species_id)
+
+                # construct an id name
+                if "metaid" in rule.attrs.keys():
+                    rule_id = rule.attrs["metaid"]
+                else:
+                    rule_id = "assignmentRule" + "_".join(species_in_rule)
+
+
 
                 # record that model contained this rule
                 if rule_id not in rule_status.keys():
                     rule_status[rule_id] = []
                     species_status[rule_id] = {}
                 rule_status[rule_id].append(model_num)
+
+                # record species
+                for species_id in species_in_rule:
+                    if species_id not in species_status[rule_id].keys():
+                        species_status[rule_id][species_id] = []
+
+                    species_status[rule_id][species_id].append(model_num)
+
 
                 # record math expression
                 rate_law = rule.select_one("math")
@@ -321,22 +349,6 @@ class SBMLDiff:
                 if rule_id in rate_laws.keys() and rate_law and rate_laws[rule_id] != rate_law:
                     rate_laws[rule_id] = "different"
 
-                # record species occurring in this rule
-                species_ids = []
-                species_list = model.select_one("listOfSpecies")
-                if species_list:
-                    for s in species_list.select("species"):
-                        species_ids.append(s.attrs["id"])
-
-                for ci in rule.select("ci"):
-                    species_id = ci.string.strip()
-                    if species_id not in species_ids:
-                        continue
-
-                    if species_id not in species_status[rule_id].keys():
-                        species_status[rule_id][species_id] = []
-
-                    species_status[rule_id][species_id].append(model_num)
 
         # produce output
         for rule_id in rule_status.keys():
