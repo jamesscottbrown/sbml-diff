@@ -446,6 +446,12 @@ class GenerateDot:
 
         return 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style)
 
+    def print_assignment_rule_arrow(self, model_set, rule_id, species_id):
+        color = self.assign_color(model_set)
+        style = self.check_style(model_set)
+        print 'rule_%s -> %s [color="%s", dir="none" %s];' % (rule_id, species_id, color, style)
+
+
     def print_abstracted_arrow(self, model_set, modifier, target, effect_type):
         """
         Draw an arrow between two species, indicating an interaction.

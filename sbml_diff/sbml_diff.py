@@ -275,9 +275,85 @@ class SBMLDiff:
             for arrow in modifier_arrows.keys():
                 self.generate_dot.print_event_affect_value_arrow(arrow[0], event_hash, arrow[1], list(modifier_arrows[arrow]))
 
+    def diff_algebraic_rules(self):
+        """
+        Compare all algebraic rules between models. Returns a list of the DOT statements to draw each rule node, but directly
+        prints the DOT statements for the corresponding arrows.
+
+        Returns
+        -------
+        a list of the DOT statements to draw each rule node
+
+        """
+
+        rule_status = {}
+        species_status = {}
+        rate_laws = {}
+
+        rule_strings = {}
+        rule_strings["NONE"] = []
+
+        for model_num, model in enumerate(self.models):
+
+            rule_list = model.select_one("listOfRules")
+            if not rule_list:
+                return []
+
+            # get details of each rule
+            for rule in rule_list.select("algebraicRule"):
+
+                rule_id = rule.attrs["metaid"]
+
+                # record that model contained this rule
+                if rule_id not in rule_status.keys():
+                    rule_status[rule_id] = []
+                    species_status[rule_id] = {}
+                rule_status[rule_id].append(model_num)
+
+                # record math expression
+                rate_law = rule.select_one("math")
+
+                if not rate_law:
+                    continue
+
+                if rate_law and not rule_id in rate_laws.keys():
+                    rate_laws[rule_id] = rate_law
+                if rule_id in rate_laws.keys() and rate_law and rate_laws[rule_id] != rate_law:
+                    rate_laws[rule_id] = "different"
+
+                # record species occurring in this rule
+                species_ids = []
+                species_list = model.select_one("listOfSpecies")
+                if species_list:
+                    for s in species_list.select("species"):
+                        species_ids.append(s.attrs["id"])
+
+                for ci in rule.select("ci"):
+                    species_id = ci.string.strip()
+                    if species_id not in species_ids:
+                        continue
+
+                    if species_id not in species_status[rule_id].keys():
+                        species_status[rule_id][species_id] = []
+
+                    species_status[rule_id][species_id].append(model_num)
+
+        # produce output
+        for rule_id in rule_status.keys():
+
+            for species_id in species_status[rule_id]:
+                self.generate_dot.print_assignment_rule_arrow(species_status[rule_id][species_id], rule_id, species_id)
+
+            converted_rate_law = ""
+            if rule_id in rate_laws.keys() and rate_laws[rule_id] != "different":
+                converted_rate_law = convert_rate_law(rate_laws[rule_id])
+
+            rule_strings["NONE"].append(self.generate_dot.print_rule_node(rule_status[rule_id], rule_id, rate_laws, converted_rate_law))
+        return rule_strings
+
     def diff_rules(self):
         """
-        Compare all rules between models. Returns a list of the DOT statements to draw each rule node, but directly
+        Compare all (rate or assignment) rules between models. Returns a list of the DOT statements to draw each rule node, but directly
         prints the DOT statements for the corresponding arrows.
 
         Returns
@@ -654,7 +730,7 @@ class SBMLDiff:
                 self.elided_reactions[model_num].append(reaction)
                 self.downstream_species[model_num][species_to_elide] = product_species[0]
 
-    def diff_compartment(self, compartment_id, reaction_strings, rule_strings):
+    def diff_compartment(self, compartment_id, reaction_strings, rule_strings, algebraic_rule_strings):
         """
         Print DOT output comparing a single compartment between models
 
@@ -662,7 +738,8 @@ class SBMLDiff:
         ----------
         compartment_id : the id of a compartment
         reaction_strings : list of strings, each a DOT statement describing the nodes representing reaction
-        rule_strings : list of strings, each a DOT statement describing the nodes representing rules
+        rule_strings : list of strings, each a DOT statement describing the nodes representing assignmentRules/rateRules
+        algebraic_rule_strings : list of strings, each a DOT statement describing the nodes representing algebraicRules
         """
         self.generate_dot.print_compartment_header(compartment_id)
 
@@ -673,6 +750,8 @@ class SBMLDiff:
         # print the rule nodes that belong in this compartment
         if compartment_id in rule_strings.keys():
             print "\n".join(rule_strings[compartment_id])
+        if compartment_id in algebraic_rule_strings.keys():
+            print "\n".join(algebraic_rule_strings[compartment_id])
 
         # For each species, find set of models containing it
         species_status = {}
@@ -745,6 +824,7 @@ class SBMLDiff:
         rule_strings = {}
         if not self.hide_rules:
             rule_strings = self.diff_rules()
+            algebraic_rule_strings = self.diff_algebraic_rules()
 
         # Reactions and rules do not have compartments. We try to assign them based on compartment of reactants/products,
         # but some may have been given the sentinel value "NONE". Print them here, before the contents of compartments.
@@ -752,6 +832,8 @@ class SBMLDiff:
             print "\n".join(reaction_strings["NONE"])
         if "NONE" in rule_strings.keys():
             print "\n".join(rule_strings["NONE"])
+        if "NONE" in algebraic_rule_strings.keys():
+            print "\n".join(algebraic_rule_strings["NONE"])
 
         compartment_ids = set()
         for model_num, model in enumerate(self.models):
@@ -760,7 +842,7 @@ class SBMLDiff:
                     compartment_ids.add(compartment.attrs["id"])
 
         for compartment_id in compartment_ids:
-            self.diff_compartment(compartment_id, reaction_strings, rule_strings)
+            self.diff_compartment(compartment_id, reaction_strings, rule_strings, algebraic_rule_strings)
 
         self.diff_events()
         if self.show_params:
