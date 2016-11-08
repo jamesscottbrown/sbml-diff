@@ -316,7 +316,7 @@ class SBMLDiff:
                         continue
                     species_in_rule.append(species_id)
 
-                # construct an id name
+                # Choose an id  to represent this rule
                 if "metaid" in rule.attrs.keys():
                     rule_id = rule.attrs["metaid"]
                 else:
