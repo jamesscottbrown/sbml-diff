@@ -297,7 +297,7 @@ class SBMLDiff:
 
             rule_list = model.select_one("listOfRules")
             if not rule_list:
-                return []
+                return rule_strings
 
             # get details of each rule
             for rule in rule_list.select("algebraicRule"):
@@ -834,6 +834,7 @@ class SBMLDiff:
         reaction_strings = self.diff_reactions()
 
         rule_strings = {}
+        algebraic_rule_strings = {}
         if not self.hide_rules:
             rule_strings = self.diff_rules()
             algebraic_rule_strings = self.diff_algebraic_rules()
