@@ -71,7 +71,7 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
                               'floor': 'math.floor', 'factorial': 'math.factorial', 'pi': 'math.pi', 'e': 'math.e',
                               'infinity': 'float("Inf")', "sqrt": "math.sqrt", "abs": "abs", "cos": "math.cos",
                               "sin": "math.sin", "tan": "math.tan", "sinh": "math.sinh", "cosh": "math.cosh",
-                              "tanh": "math.tanh"}
+                              "tanh": "math.tanh", "arcsin": "math.asin", "arccos": "math.acos", "arctan": "math.atan"}
 
     elementary = False
 
@@ -174,10 +174,24 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
             if executable:
                 return elementary, children_converted[0]
             return elementary, "delay(%s, %s)" % (children_converted[0], children_converted[1])
-        elif operator in ["exp", "ln", "log", "floor", "ceiling", "factorial", "abs", "cos", "sin", "tan", "sinh", "cosh", "tanh"]:
+        elif operator in ["exp", "ln", "floor", "ceiling", "factorial", "abs", "cos", "sin", "tan", "sinh", "cosh",
+                          "tanh", "arcsin", "arccos", "arctan"]:
             if executable:
                 return elementary, "%s(%s)" % (executable_replacement[operator], children_converted[0])
             return elementary, "%s(%s)" % (operator, children_converted[0])
+        elif operator == "log":
+
+            if len(children_converted) == 1:
+                if executable:
+                    return elementary, "%s(%s)" % (executable_replacement["log"], children_converted[0])
+                return elementary, "%s(%s)" % ("log", children_converted[0])
+
+            else:
+                if executable:
+                    # NB. second argument to math.log is base [opposite to mathML]
+                    return elementary, "math.log(%s, %s)" % (children_converted[1], children_converted[0])
+                return elementary, "%s_%s(%s)" % ("log", children_converted[0], children_converted[1])
+
         elif operator == "root":
 
             # default to sqrt()
@@ -190,7 +204,16 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
             if len(children_converted) == 2:
                 if executable:
                     return elementary, "pow(%s, 1/%s)" % (children_converted[1], children_converted[0])
-                return elementary, "%s(%s, %s)" % ("root", children_converted[0], child_converted[1])
+                return elementary, "%s(%s, %s)" % ("root", children_converted[0], children_converted[1])
+
+    elif expression.name == "logbase":
+
+        for child in expression.children:
+            if isinstance(child, NavigableString):
+                continue
+
+            child_elementary, child_converted = convert_rate_law_inner(child, variables_not_to_substitute, executable)
+            return child_elementary, child_converted
 
     if expression.name == "degree":
         # degree tag used with root
