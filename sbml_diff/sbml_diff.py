@@ -187,11 +187,7 @@ class SBMLDiff:
         The id attribute is optional for event elements. For simplicity, we ignore ids even if they are present, so that
         two non-identical events between models are treated as entirely separate; it would be nicer if color of only
         those visual elements corresponding to what actually changed.
-        Also, we do not visually distinguish between species involved in different eventAssignment of one event.
         """
-        # so use the trigger condition as the id.
-        # This makes matching a pain
-        # Therefore, is there is any change we treat the whole thing as different
 
         event_status = {}
         event_objects = {}
@@ -219,7 +215,7 @@ class SBMLDiff:
         if "name" in event.attrs.keys():
             event_name = event.attrs["name"]
 
-        event_hash = hash(event)
+        event_hash = str(hash(event)).replace("-", "_")
 
         species_ids = []
         species_list = self.models[model_set[0]].select_one("listOfSpecies")
@@ -228,9 +224,8 @@ class SBMLDiff:
                 species_ids.append(s.attrs["id"])
 
         # record event node
-        event = self.diff_object.add_event()
-        event.set_event(event_hash, event_name, model_set)
-
+        diff_event = self.diff_object.add_event()
+        diff_event.set_event(event_hash, event_name, model_set)
 
         # process trigger statement
         trigger = event.select_one("trigger")
@@ -238,11 +233,10 @@ class SBMLDiff:
             for ci in trigger.select("ci"):
                 species = ci.text.strip()
                 if species in species_ids:
-                    event.add_set_species(species, event_hash, model_set)
+                    diff_event.add_trigger_species(species, event_hash, model_set)
 
         # process assignment statements
         event_assignments = event.select("eventAssignment")
-        modifier_arrows = {}
         if event_assignments:
             for event in event_assignments:
                 if isinstance(event, NavigableString):
@@ -251,15 +245,16 @@ class SBMLDiff:
                 # arrow to species set
                 variable_id = event.attrs["variable"]
                 if variable_id in species_ids:
-                    event.add_set_species(variable_id, event_hash, model_set)
+                    diff_event.add_set_species(variable_id, event_hash, model_set)
 
                 elif self.show_params:
-                    event.add_set_species(variable_id, event_hash, model_set)
+                    diff_event.add_set_species(variable_id, event_hash, model_set)
                     if variable_id not in self.modified_params.keys():
                         self.modified_params[variable_id] = set()
                     self.modified_params[variable_id] = self.modified_params[variable_id].union(model_set)
 
                 # arrow from species affecting expression
+                modifier_arrows = {}
                 math = event.select_one("math")
                 for ci in math.select("ci"):
                     species = ci.text.strip()
@@ -272,8 +267,8 @@ class SBMLDiff:
 
                         modifier_arrows[arrow] = modifier_arrows[arrow].union(model_set)
 
-            for arrow in modifier_arrows.keys():
-                event.add_event_affect_value_arrow(arrow[0], event_hash, arrow[1], list(modifier_arrows[arrow]))
+                for arrow in modifier_arrows.keys():
+                    diff_event.add_event_affect_value_arrow(variable_id, arrow[0], event_hash, arrow[1], list(modifier_arrows[arrow]))
 
     def diff_algebraic_rules(self):
         """
@@ -345,7 +340,7 @@ class SBMLDiff:
             rule = self.diff_object.add_rule()
 
             for species_id in species_status[rule_id]:
-                rule.add_assignment_rule_arrow(species_status[rule_id][species_id], rule_id, species_id)
+                rule.add_assignment_arrow(species_status[rule_id][species_id], rule_id, species_id)
 
             converted_rate_law = ""
             if rule_id in rate_laws.keys() and rate_laws[rule_id] != "different":

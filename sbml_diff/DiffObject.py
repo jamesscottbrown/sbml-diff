@@ -58,12 +58,19 @@ class DiffObject:
         self.param_nodes.append({"variable_id": variable_id, "variable_name": variable_name, "model_set": model_set})
 
 
+class DiffEventAssignment:
+    def __init__(self):
+        self.affect_value_arrows = []
+
 class DiffEvent:
     def __init__(self):
         self.event = {}
         self.trigger_arrows = []
-        self.set_species_arrows = []
-        self.affect_value_arrows = []
+        self.assignments = {}
+
+    def check_target_exists(self, target):
+        if target not in self.assignments.keys():
+            self.assignments[target] = DiffEventAssignment()
 
     def set_event(self, event_hash, event_name, model_set):
         self.event = {"event_hash": event_hash, "event_name": event_name, "model_set": model_set}
@@ -72,10 +79,11 @@ class DiffEvent:
         self.trigger_arrows.append({"species": species, "event_hash": event_hash, "model_set": model_set})
 
     def add_set_species(self, species_id, event_hash, model_set):
-        self.set_species_arrows.append({"species_id": species_id, "event_hash": event_hash, "model_set": model_set})
+        self.check_target_exists(species_id)
 
-    def add_event_affect_value_arrow(self, species, event_hash, arrow_direction, model_set):
-        self.affect_value_arrows.append(
+    def add_event_affect_value_arrow(self, variable_set, species, event_hash, arrow_direction, model_set):
+        self.check_target_exists(variable_set)
+        self.assignments[variable_set].affect_value_arrows.append(
                 {"species": species, "event_hash": event_hash, "arrow_direction": arrow_direction,
                  "model_set": model_set})
 

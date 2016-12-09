@@ -98,22 +98,52 @@ class GenerateDot:
                 self.print_compartment_footer()
 
         for event in diff_object.events:
-            self.print_event_node(event["event_hash"], event["event_name"], event["model_set"])
-
-            for s in event.trigger_arrows:
-                self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
-
-            for a in event.set_species_arrows:
-                self.print_event_set_species_arrow(a["species_id"], a["event_hash"], a["model_set"])
-
-            for a in event.affect_value_arrows:
-                self.print_event_affect_value_arrow(a["species"], a["event_hash"], a["arrow_direction"], a["model_set"])
+            self.print_event_diff(event)
 
         # modified params
         for param_node in diff_object.param_nodes:
             self.print_param_node(param_node["variable_id"], param_node["variable_name"], param_node["model_set"])
 
         self.print_footer()
+
+
+    def print_event_diff(self, event):
+
+        if len(event.assignments) < 2:
+            self.print_event_node(event.event["event_hash"], event.event["event_name"], event.event["model_set"])
+
+            for s in event.trigger_arrows:
+                self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
+
+            for target_id in event.assignments:
+                self.print_event_set_species_arrow(target_id, event.event["event_hash"], event.event["model_set"])
+
+                for a2 in event.assignments[target_id].affect_value_arrows:
+                    self.print_event_affect_value_arrow(a2["species"], a2["event_hash"], a2["arrow_direction"], a2["model_set"])
+
+        else:
+
+            print "subgraph cluster_event_%s {\n" % event.event["event_hash"]
+
+            # trigger arrows go to diamond event node, as in single-assignment case
+            self.print_event_node(event.event["event_hash"], event.event["event_name"], event.event["model_set"])
+
+            for s in event.trigger_arrows:
+                self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
+
+            for target_id in event.assignments.keys():
+                # draw assignment node, like a rule
+                s = event.assignments[target_id]
+                rule_id = event.event["event_hash"] + "_" + target_id
+
+                self.print_rule_node(event.event["model_set"], rule_id, "", "") # TODO: wrong modelset, convert rate-law
+                self.print_event_target_arrow(event.event["model_set"], rule_id, target_id)
+
+                for modifier in s.affect_value_arrows:
+                    self.print_rule_modifier_arrow(modifier["model_set"], rule_id, modifier["species"], modifier["arrow_direction"])
+
+            print  "}"
+
 
     def assign_arrowhead(self, effect_direction):
         if effect_direction == "monotonic_increasing":
@@ -459,6 +489,21 @@ class GenerateDot:
         arrowhead = self.assign_arrowhead(arrow_direction)
         print '%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (modifier, rule_id, color, arrowhead, style)
 
+    def print_event_target_arrow(self, model_set, event_id, target):
+        """
+        Draw arrow from rule to species
+
+        Parameters
+        ----------
+        model_set : list of model numbers containing the feature
+
+        target : id of the species affected by the rule
+        """
+        color = self.assign_color(model_set)
+        style = self.check_style(model_set)
+        print 'rule_%s -> "%s" [color="%s", style="dotted" %s];' % (event_id, target, color, style)
+
+
     def print_rule_target_arrow(self, model_set, target):
         """
         Draw arrow from rule to species
@@ -550,11 +595,11 @@ class GenerateDot:
         if self.reaction_label == "none":
             event_name = ""
 
-        print '%s [label="%s", shape="diamond", color="%s" %s];' % (event_hash, event_name, color, style)
+        print '"%s" [label="%s", shape="diamond", color="%s" %s];' % (event_hash, event_name, color, style)
 
     def print_event_trigger_species_arrows(self, species, event_hash, model_set):
         color = self.assign_color(model_set)
-        print '%s -> %s [arrowhead="odot", color="%s", style="dashed"];' % (species, event_hash, color)
+        print '"%s" -> "%s" [arrowhead="odot", color="%s", style="dashed"];' % (species, event_hash, color)
 
     def print_event_set_species_arrow(self, species_id, event_hash, model_set):
         color = self.assign_color(model_set)
