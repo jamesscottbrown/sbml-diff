@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from accessor_functions import *
 from generate_dot import *
+from DiffObject import DiffObject
 from rate_laws import *
 from miriam import align_models
 from tabulate import tabulate
@@ -34,6 +35,8 @@ class SBMLDiff:
         self.cartoon = cartoon
         self.show_params = show_params
         self.hide_rules = hide_rules
+
+        self.diff_object = DiffObject()
 
         self.models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
 
@@ -185,13 +188,8 @@ class SBMLDiff:
         two non-identical events between models are treated as entirely separate; it would be nicer if color of only
         those visual elements corresponding to what actually changed.
         Also, we do not visually distinguish between species involved in different eventAssignment of one event.
-
-        Returns
-        -------
-        prints a list of the DOT statements to draw each event node
-
         """
-        # , so use the trigger condition as the id.
+        # so use the trigger condition as the id.
         # This makes matching a pain
         # Therefore, is there is any change we treat the whole thing as different
 
@@ -212,7 +210,6 @@ class SBMLDiff:
                 event_status[event_hash].append(model_num)
                 event_objects[event_hash] = event
 
-        # return event_strings
         for event_hash in event_objects.keys():
             self.diff_event(event_objects[event_hash], event_status[event_hash])
 
@@ -230,8 +227,10 @@ class SBMLDiff:
             for s in species_list.select("species"):
                 species_ids.append(s.attrs["id"])
 
-        # print event node
-        self.generate_dot.print_event_node(event_hash, event_name, model_set)
+        # record event node
+        event = self.diff_object.add_event()
+        event.set_event(event_hash, event_name, model_set)
+
 
         # process trigger statement
         trigger = event.select_one("trigger")
@@ -239,7 +238,7 @@ class SBMLDiff:
             for ci in trigger.select("ci"):
                 species = ci.text.strip()
                 if species in species_ids:
-                    self.generate_dot.print_event_trigger_species_arrows(species, event_hash, model_set)
+                    event.add_set_species(species, event_hash, model_set)
 
         # process assignment statements
         event_assignments = event.select("eventAssignment")
@@ -252,9 +251,10 @@ class SBMLDiff:
                 # arrow to species set
                 variable_id = event.attrs["variable"]
                 if variable_id in species_ids:
-                    self.generate_dot.print_event_set_species_arrow(variable_id, event_hash, model_set)
+                    event.add_set_species(variable_id, event_hash, model_set)
+
                 elif self.show_params:
-                    self.generate_dot.print_event_set_species_arrow(variable_id, event_hash, model_set)
+                    event.add_set_species(variable_id, event_hash, model_set)
                     if variable_id not in self.modified_params.keys():
                         self.modified_params[variable_id] = set()
                     self.modified_params[variable_id] = self.modified_params[variable_id].union(model_set)
@@ -273,31 +273,22 @@ class SBMLDiff:
                         modifier_arrows[arrow] = modifier_arrows[arrow].union(model_set)
 
             for arrow in modifier_arrows.keys():
-                self.generate_dot.print_event_affect_value_arrow(arrow[0], event_hash, arrow[1], list(modifier_arrows[arrow]))
+                event.add_event_affect_value_arrow(arrow[0], event_hash, arrow[1], list(modifier_arrows[arrow]))
 
     def diff_algebraic_rules(self):
         """
-        Compare all algebraic rules between models. Returns a list of the DOT statements to draw each rule node, but directly
-        prints the DOT statements for the corresponding arrows.
-
-        Returns
-        -------
-        a list of the DOT statements to draw each rule node
-
+        Compare all algebraic rules between models.
         """
 
         rule_status = {}
         species_status = {}
         rate_laws = {}
 
-        rule_strings = {}
-        rule_strings["NONE"] = []
-
         for model_num, model in enumerate(self.models):
 
             rule_list = model.select_one("listOfRules")
             if not rule_list:
-                return rule_strings
+                return
 
             # get details of each rule
             for rule in rule_list.select("algebraicRule"):
@@ -349,29 +340,22 @@ class SBMLDiff:
                 if rule_id in rate_laws.keys() and rate_law and rate_laws[rule_id] != rate_law:
                     rate_laws[rule_id] = "different"
 
-
         # produce output
         for rule_id in rule_status.keys():
+            rule = self.diff_object.add_rule()
 
             for species_id in species_status[rule_id]:
-                self.generate_dot.print_assignment_rule_arrow(species_status[rule_id][species_id], rule_id, species_id)
+                rule.add_assignment_rule_arrow(species_status[rule_id][species_id], rule_id, species_id)
 
             converted_rate_law = ""
             if rule_id in rate_laws.keys() and rate_laws[rule_id] != "different":
                 converted_rate_law = convert_rate_law(rate_laws[rule_id])
 
-            rule_strings["NONE"].append(self.generate_dot.print_rule_node(rule_status[rule_id], rule_id, rate_laws, converted_rate_law))
-        return rule_strings
+            rule.set_rule(rule_status[rule_id], rule_id, rate_laws, converted_rate_law)
 
     def diff_rules(self):
         """
-        Compare all (rate or assignment) rules between models. Returns a list of the DOT statements to draw each rule node, but directly
-        prints the DOT statements for the corresponding arrows.
-
-        Returns
-        -------
-        a list of the DOT statements to draw each rule node
-
+        Compare all (rate or assignment) rules between models.
         """
         rule_status = {}
         for model_num, model in enumerate(self.models):
@@ -389,34 +373,16 @@ class SBMLDiff:
 
                 rule_status[rule_target].add(model_num)
 
-        rule_strings = {}
-
         for rule_target in rule_status:
-            model_set = list(rule_status[rule_target])
-            inputs, compartment, rate_law = get_rule_details(self.models[model_set[0]], rule_target, self.species_compartment[model_num],
-                                                             draw_modifier_params=self.show_params)
-
-            if compartment not in rule_strings.keys():
-                rule_strings[compartment] = []
-
-            rule_string = self.diff_rule(rule_target)
-            rule_strings[compartment].append(rule_string)
-
-        return rule_strings
+            self.diff_rule(rule_target)
 
     def diff_rule(self, target_id):
         """
-        Compare a single rule between models. Returns the DOT statement to draw the node for the rule, but directly
-        prints the DOT statements for the corresponding arrows. This is to allow the rule node to be drawn in the correct
-        compartment.
+        Compare a single rule between models.
 
         Parameters
         ----------
         target_id : id of the species affected by this rule
-
-        Returns
-        -------
-        a DOT statement describing the nodes representing this rule
         """
         # if a reaction is shared, we need to consider whether its products, reactants and rate law are also shared
 
@@ -427,6 +393,7 @@ class SBMLDiff:
         target_status = set()
         rate_laws = ""
 
+        rule = self.diff_object.add_rule()
         for model_num, model in enumerate(self.models):
             modifiers, compartment, rate_law = get_rule_details(model, target_id, self.species_compartment[model_num])
 
@@ -451,29 +418,25 @@ class SBMLDiff:
         # modifier arrows
         for arrow in modifier_status:
             model_set = list(modifier_status[arrow])
-            self.generate_dot.print_rule_modifier_arrow(model_set, target_id, arrow[0], arrow[1])
+            rule.add_modifier_arrow(model_set, target_id, arrow[0], arrow[1])
+
 
         # target arrows
         model_set = list(target_status)
         species_list = self.models[model_set[0]].select_one('listOfSpecies')
         if self.show_params or (species_list and species_list.find(id=target_id)):
-            self.generate_dot.print_rule_target_arrow(model_set, target_id)
+            rule.add_target_arrow(model_set, target_id)
 
         # rate law
         converted_rate_law = ""
         if rate_laws and rate_laws != "different":
             converted_rate_law = convert_rate_law(rate_laws)
 
-        return self.generate_dot.print_rule_node(model_set, target_id, rate_laws, converted_rate_law)
+        rule.set_rule(model_set, target_id, rate_laws, converted_rate_law)
 
     def diff_reactions(self):
         """
-        Compare all reactions between models. Returns a list of the DOT statements to draw each reaction node, but directly
-        prints the DOT statements for the corresponding arrows.
-
-        Returns
-        -------
-         a list of the DOT statements to draw each reaction node
+        Compare all reactions between models.
         """
 
         reaction_status = {}
@@ -486,35 +449,16 @@ class SBMLDiff:
 
                 reaction_status[reaction].add(model_num)
 
-        reaction_strings = {}
-
         for reaction_id in reaction_status:
-            model_set = list(reaction_status[reaction_id])
-            model_num = model_set[0]
-            reaction = self.reactions[model_num][reaction_id]
-            reactant_list, product_list, compartment, rate_law, _, _ = get_reaction_details(self.models[model_num], reaction, self.species_compartment[model_num])
-
-            if compartment not in reaction_strings.keys():
-                reaction_strings[compartment] = []
-
-            reaction_string = self.diff_reaction(reaction_id)
-            reaction_strings[compartment].append(reaction_string)
-
-        return reaction_strings
+            self.diff_reaction(reaction_id)
 
     def diff_reaction(self, reaction_id):
         """
-        Compare a single reaction between models. Returns the DOT statement to draw the node for the reaction, but directly
-        prints the DOT statements for the corresponding arrows. This is to allow the reaction node to be drawn in the correct
-        compartment.
+        Compare a single reaction between models.
 
         Parameters
         ----------
         reaction_id : id of the reaction
-
-        Returns
-        -------
-         a DOT statement describing the node representing this reaction
         """
 
         # We need to consider whether the reaction's products, reactants and rate law are shared
@@ -524,6 +468,7 @@ class SBMLDiff:
 
         reactant_status = {}
         product_status = {}
+        compartment = ""
         rate_laws = ""
         rate_law_found = False
 
@@ -617,18 +562,20 @@ class SBMLDiff:
         if not ever_drawn:
             return ""
 
+        reaction = self.diff_object.add_reaction(compartment)
+
         # reactant arrows
         for reactant_num, reactant in enumerate(reactant_status):
             model_set = list(reactant_status[reactant])
-            self.generate_dot.print_reactant_arrow(model_set, reaction_id, reactant, reactant_stoichiometries[reactant])
+            reaction.add_reactant_arrow(model_set, reaction_id, reactant, reactant_stoichiometries[reactant])
 
         # product arrows
         for product_num, product in enumerate(product_status):
             model_set = list(product_status[product])
             if transcription_reaction:
-                self.generate_dot.print_transcription_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
+                reaction.add_transcription_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
             else:
-                self.generate_dot.print_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
+                reaction.add_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
 
         # rate law
         reaction_name = self.reaction_name[parent_model][reaction_id]
@@ -637,12 +584,8 @@ class SBMLDiff:
         if rate_laws and rate_laws != "different":
             converted_rate_law = convert_rate_law(rate_laws)
 
-        if transcription_reaction:
-            return self.generate_dot.print_transcription_reaction_node(reaction_model_set, reaction_id, rate_laws,
-                                                                       reaction_name, converted_rate_law, product_status)
-        else:
-            return self.generate_dot.print_reaction_node(reaction_model_set, reaction_id, rate_laws, reaction_name,
-                                                         converted_rate_law, fast_model_set, irreversible_model_set)
+        reaction.set_reaction(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law,
+                                     fast_model_set, irreversible_model_set, product_status, transcription_reaction)
 
     def find_downstream_species(self):
         """
@@ -742,7 +685,7 @@ class SBMLDiff:
                 self.elided_reactions[model_num].append(reaction)
                 self.downstream_species[model_num][species_to_elide] = product_species[0]
 
-    def diff_compartment(self, compartment_id, reaction_strings, rule_strings, algebraic_rule_strings):
+    def diff_compartment(self, compartment_id):
         """
         Print DOT output comparing a single compartment between models
 
@@ -753,17 +696,6 @@ class SBMLDiff:
         rule_strings : list of strings, each a DOT statement describing the nodes representing assignmentRules/rateRules
         algebraic_rule_strings : list of strings, each a DOT statement describing the nodes representing algebraicRules
         """
-        self.generate_dot.print_compartment_header(compartment_id)
-
-        # print the reaction squares that belong in this compartment
-        if compartment_id in reaction_strings.keys():
-            print "\n".join(reaction_strings[compartment_id])
-
-        # print the rule nodes that belong in this compartment
-        if compartment_id in rule_strings.keys():
-            print "\n".join(rule_strings[compartment_id])
-        if compartment_id in algebraic_rule_strings.keys():
-            print "\n".join(algebraic_rule_strings[compartment_id])
 
         # For each species, find set of models containing it
         species_status = {}
@@ -798,7 +730,7 @@ class SBMLDiff:
                     if species not in self.elided_list[model_num]:
                         draw = True
             if draw:
-                self.generate_dot.print_species_node(species_status[species], is_boundary_species[species], species, species_name)
+                self.diff_object.add_species(compartment_id, species_status[species], is_boundary_species[species], species, species_name)
 
         # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
         arrow_status = {}
@@ -814,9 +746,7 @@ class SBMLDiff:
                 arrow_status[arrow].add(model_num)
 
         for ind, arrow in enumerate(arrow_status):
-            self.generate_dot.print_regulatory_arrow(arrow_status[arrow], arrow[0], arrow[1], arrow[2])
-
-        self.generate_dot.print_compartment_footer()
+            self.diff_object.add_regulatory_arrow(compartment_id, arrow_status[arrow], arrow[0], arrow[1], arrow[2])
 
     def diff_models(self):
         """
@@ -829,24 +759,12 @@ class SBMLDiff:
         if self.align:
             align_models(self.models)
 
-        self.generate_dot.print_header()
+        self.diff_reactions()
 
-        reaction_strings = self.diff_reactions()
-
-        rule_strings = {}
-        algebraic_rule_strings = {}
         if not self.hide_rules:
-            rule_strings = self.diff_rules()
-            algebraic_rule_strings = self.diff_algebraic_rules()
+            self.diff_rules()
+            self.diff_algebraic_rules()
 
-        # Reactions and rules do not have compartments. We try to assign them based on compartment of reactants/products,
-        # but some may have been given the sentinel value "NONE". Print them here, before the contents of compartments.
-        if "NONE" in reaction_strings.keys():
-            print "\n".join(reaction_strings["NONE"])
-        if "NONE" in rule_strings.keys():
-            print "\n".join(rule_strings["NONE"])
-        if "NONE" in algebraic_rule_strings.keys():
-            print "\n".join(algebraic_rule_strings["NONE"])
 
         compartment_ids = set()
         for model_num, model in enumerate(self.models):
@@ -855,12 +773,14 @@ class SBMLDiff:
                     compartment_ids.add(compartment.attrs["id"])
 
         for compartment_id in compartment_ids:
-            self.diff_compartment(compartment_id, reaction_strings, rule_strings, algebraic_rule_strings)
+            self.diff_compartment(compartment_id)
 
         self.diff_events()
         if self.show_params:
             self.draw_modified_params()
-        self.generate_dot.print_footer()
+
+        # actually print the results of comparison
+        self.generate_dot.generate_dot(self.diff_object)
 
     def abstract_model(self, model, model_num):
         """
@@ -1077,4 +997,4 @@ class SBMLDiff:
             param = self.models[model_set[0]].find(id=param_id)
             if "name" in param.attrs.keys():
                 name = param.attrs["name"]
-            self.generate_dot.print_param_node(param_id, name, model_set)
+            self.diff_object.add_param_node(param_id, name, model_set)

@@ -44,6 +44,77 @@ class GenerateDot:
         self.rankdir = rankdir
         self.differences_found = False
 
+    def generate_dot(self, diff_object):
+        self.print_header()
+
+        for compartment_id in diff_object.compartments.keys():
+
+            compartment = diff_object.compartments[compartment_id]
+
+            if compartment_id is not "NONE":
+                self.print_compartment_header(compartment_id)
+
+            for species in compartment["species"]:
+                self.print_species_node(species["model_set"], species["isBoundary"], species["species_id"], species["species_name"])
+
+            for reaction in compartment["reactions"]:
+                # reaction node
+                r = reaction.reaction
+                if r["is_transcription"]:
+                    self.print_transcription_reaction_node(r["model_set"], r["reaction_id"], r["rate_law"], r["reaction_name"], r["converted_law"], r["product_status"])
+                else:
+                    self.print_reaction_node(r["model_set"], r["reaction_id"], r["rate_law"], r["reaction_name"], r["converted_law"],
+                            r["fast_model_set"], r["irreversible_model_set"])
+
+                # reactant arrows
+                for r in reaction.reactant_arrows:
+                    self.print_reactant_arrow(r["model_set"], r["reaction_id"], r["reactant"], r["stoich"])
+
+                # product arrows
+                for product_arrow in reaction.product_arrows:
+                    self.print_product_arrow(product_arrow["model_set"], product_arrow["reaction_id"], product_arrow["product"], product_arrow["stoich"])
+
+                for product_arrow in reaction.transcription_product_arrows:
+                    self.print_transcription_product_arrow(product_arrow["model_set"], product_arrow["reaction_id"], product_arrow["product"], product_arrow["stoich"])
+
+            for r in compartment["regulatory_arrows"]:
+                self.print_regulatory_arrow(r["model_set"], r["arrow_source"], r["arrow_target"], r["arrow_direction"])
+
+            for r in compartment["rules"]:
+
+                rule = r.rule
+                self.print_rule_node(rule["model_set"], rule["rule_id"], rule["rate_law"], rule["converted_rate_law"])
+
+                for arrow in r.assingment_arrows:
+                    self.print_assignment_rule_arrow(arrow["model_set"], arrow["rule_id"], arrow["species_id"])
+
+                for arrow in r.modifier_arrows:
+                    self.print_rule_modifier_arrow(arrow["model_set"], arrow["rule_id"], arrow["modifier"], arrow["arrow_direction"])
+
+                for arrow in r.target_arrows:
+                    self.print_rule_target_arrow(arrow["model_set"], arrow["target"])
+
+            if compartment_id is not "NONE":
+                self.print_compartment_footer()
+
+        for event in diff_object.events:
+            self.print_event_node(event["event_hash"], event["event_name"], event["model_set"])
+
+            for s in event.trigger_arrows:
+                self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
+
+            for a in event.set_species_arrows:
+                self.print_event_set_species_arrow(a["species_id"], a["event_hash"], a["model_set"])
+
+            for a in event.affect_value_arrows:
+                self.print_event_affect_value_arrow(a["species"], a["event_hash"], a["arrow_direction"], a["model_set"])
+
+        # modified params
+        for param_node in diff_object.param_nodes:
+            self.print_param_node(param_node["variable_id"], param_node["variable_name"], param_node["model_set"])
+
+        self.print_footer()
+
     def assign_arrowhead(self, effect_direction):
         if effect_direction == "monotonic_increasing":
             arrowhead = "vee"
@@ -213,7 +284,7 @@ class GenerateDot:
             result += "cds_%s_%s -> cds_%s_%s;\n" % (reaction_id, products[i], reaction_id, products[i-1])
 
         result += "}\n\n"
-        return result
+        print result
 
     def print_transcription_product_arrow(self, model_set, reaction_id, product, stoich):
         """
@@ -228,11 +299,6 @@ class GenerateDot:
         product : id of the product
 
         stoich : stoichiometry of this product for this reaction
-
-
-        Returns
-        -------
-        string representing this arrow
 
         """
         color = self.assign_color(model_set)
@@ -269,9 +335,6 @@ class GenerateDot:
 
         irreversible_model_set : list of indexes for models in which this reaction is irreversible
 
-        Returns
-        -------
-        string representing this node
 
         """
         fill = ''
@@ -294,7 +357,7 @@ class GenerateDot:
 
         reaction_name = self.reaction_details(reaction_name, irreversible_model_set, fast_model_set)
 
-        return '%s [shape="rectangle", color="%s", %s label=%s %s];' % (reaction_id, color, fill, reaction_name, style)
+        print '%s [shape="rectangle", color="%s", %s label=%s %s];' % (reaction_id, color, fill, reaction_name, style)
 
     # Used by diff_models()
     def print_header(self):
@@ -423,12 +486,6 @@ class GenerateDot:
         rate_law :
 
         converted_rate_law :
-
-
-        Returns
-        -------
-        string representing the node
-
         """
         fill = ''
         base_style = ''
@@ -444,7 +501,7 @@ class GenerateDot:
         if self.reaction_label in ["name+rate", "rate"]:
             rule_name = converted_rate_law
 
-        return 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style)
+        print 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style)
 
     def print_assignment_rule_arrow(self, model_set, rule_id, species_id):
         color = self.assign_color(model_set)
