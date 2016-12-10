@@ -200,12 +200,9 @@ class SBMLDiff:
 
             for event in event_list.select('event'):
 
-                if 'id' in event.attrs.keys():
-                    event_id = event.attrs['id']
-                    has_id[event_id] = True
-                else:
-                    event_id = hash(event)
-                    has_id[event_id] = False
+                if 'id' not in event.attrs.keys():
+                    event.attrs["id"] = str(hash(event))
+                event_id = event.attrs["id"]
 
                 if event_id not in event_status.keys():
                     event_status[event_id] = []
@@ -214,10 +211,7 @@ class SBMLDiff:
                 event_objects[event_id] = event
 
         for event_id in event_objects.keys():
-            if has_id[event_id]:
-                self.diff_event_with_id(event_id, event_status[event_id])
-            else:
-                self.diff_event(event_objects[event_id], event_status[event_id])
+            self.diff_event_with_id(event_id, event_status[event_id])
 
     def diff_event_with_id(self, event_id, model_set):
 
@@ -325,81 +319,6 @@ class SBMLDiff:
 
         for arrow in affects_value_status:
             diff_event.add_event_affect_value_arrow(arrow[2], arrow[0], event_id, arrow[1], list(modifier_arrows[arrow]))
-
-        # process assignment statements
-
-    def diff_event(self, event, model_set):
-
-        event_name = ""
-        if "name" in event.attrs.keys():
-            event_name = event.attrs["name"]
-
-        event_hash = str(hash(event)).replace("-", "_")
-
-        species_ids = []
-        species_list = self.models[model_set[0]].select_one("listOfSpecies")
-        if species_list:
-            for s in species_list.select("species"):
-                species_ids.append(s.attrs["id"])
-
-        # record event node
-        diff_event = self.diff_object.add_event()
-        diff_event.set_event(event_hash, event_name, model_set)
-
-        # process trigger statement
-        trigger = event.select_one("trigger")
-        if trigger:
-            for ci in trigger.select("ci"):
-                species = ci.text.strip()
-                if species in species_ids:
-                    diff_event.add_trigger_species(species, event_hash, model_set)
-
-                math_expr = trigger.select_one("math")
-                if math_expr:
-                    math_expr = convert_rate_law(math_expr)
-                    diff_event.set_trigger(math_expr)
-
-
-        # process assignment statements
-        event_assignments = event.select("eventAssignment")
-        if event_assignments:
-            for event in event_assignments:
-                if isinstance(event, NavigableString):
-                    continue
-
-                # arrow to species set
-                math_expr = event.select_one("math")
-                if math_expr:
-                    math_expr = convert_rate_law(math_expr)
-                else:
-                    math_expr = ""
-
-                variable_id = event.attrs["variable"]
-                if variable_id in species_ids:
-                    diff_event.add_set_species(variable_id, event_hash, math_expr, model_set)
-
-                elif self.show_params:
-                    diff_event.add_set_species(variable_id, event_hash, math_expr, model_set)
-                    if variable_id not in self.modified_params.keys():
-                        self.modified_params[variable_id] = set()
-                    self.modified_params[variable_id] = self.modified_params[variable_id].union(model_set)
-
-                # arrow from species affecting expression
-                modifier_arrows = {}
-                math = event.select_one("math")
-                for ci in math.select("ci"):
-                    species = ci.text.strip()
-                    if species in species_ids:
-                        arrow_direction = categorise_interaction(math.parent, species)
-                        arrow = (species, arrow_direction)
-
-                        if arrow not in modifier_arrows.keys():
-                            modifier_arrows[arrow] = set()
-
-                        modifier_arrows[arrow] = modifier_arrows[arrow].union(model_set)
-
-                for arrow in modifier_arrows.keys():
-                    diff_event.add_event_affect_value_arrow(variable_id, arrow[0], event_hash, arrow[1], list(modifier_arrows[arrow]))
 
     def diff_algebraic_rules(self):
         """
