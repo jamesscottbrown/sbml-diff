@@ -110,7 +110,7 @@ class GenerateDot:
     def print_event_diff(self, event):
 
         if len(event.assignments) < 2:
-            self.print_event_node(event.event["event_hash"], event.event["event_name"], event.event["model_set"])
+            self.print_event_node(event.event["event_hash"], event.event["event_name"], event.trigger_math, event.event["model_set"])
 
             for s in event.trigger_arrows:
                 self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
@@ -126,7 +126,7 @@ class GenerateDot:
             print "subgraph cluster_event_%s {\n" % event.event["event_hash"]
 
             # trigger arrows go to diamond event node, as in single-assignment case
-            self.print_event_node(event.event["event_hash"], event.event["event_name"], event.event["model_set"])
+            self.print_event_node(event.event["event_hash"], event.event["event_name"], event.trigger_math, event.event["model_set"])
 
             for s in event.trigger_arrows:
                 self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
@@ -136,7 +136,7 @@ class GenerateDot:
                 s = event.assignments[target_id]
                 rule_id = event.event["event_hash"] + "_" + target_id
 
-                self.print_rule_node(s.model_set, rule_id, "", "")
+                self.print_rule_node(s.model_set, rule_id, s.math_expr, s.math_expr)
                 self.print_event_target_arrow(s.model_set, rule_id, target_id)
 
                 for modifier in s.affect_value_arrows:
@@ -588,12 +588,22 @@ class GenerateDot:
 
         print '%s -> %s [style="dashed", color="%s", arrowhead="%s" %s];' % (modifier, target, color, arrowhead, style)
 
-    def print_event_node(self, event_hash, event_name, model_set):
-        color = self.assign_color(model_set)
-        style = self.check_style(model_set)
+    def print_event_node(self, event_hash, event_name, rate_law,  model_set):
+
+        base_style = ''
+        if rate_law == "different":
+            self.differences_found = True
+            base_style = 'dashed'
 
         if self.reaction_label == "none":
             event_name = ""
+        elif self.reaction_label == "name+rate":
+            event_name = event_name + "\n" + rate_law
+        elif self.reaction_label == "rate":
+            event_name = rate_law
+
+        color = self.assign_color(model_set)
+        style = self.check_style(model_set, base_style)
 
         print '"%s" [label="%s", shape="diamond", color="%s" %s];' % (event_hash, event_name, color, style)
 

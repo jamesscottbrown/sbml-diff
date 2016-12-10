@@ -235,6 +235,8 @@ class SBMLDiff:
         set_species_status = {}
         affects_value_status = {}
         modifier_arrows = {}
+        trigger_expr = ""
+        assignment_expr = {}
 
         for model_num in model_set:
             event = self.models[model_num].select_one('#' + event_id)
@@ -253,6 +255,14 @@ class SBMLDiff:
                         if species not in trigger_status.keys():
                             trigger_status[species] = []
                         trigger_status[species].append(model_num)
+
+                this_math_expr = trigger.select_one("math")
+                if this_math_expr:
+                    this_math_expr = convert_rate_law(this_math_expr)
+                    if not trigger_expr or this_math_expr == trigger_expr:
+                        trigger_expr = this_math_expr
+                    else:
+                        trigger_expr = "different"
 
 
             event_assignments = event.select("eventAssignment")
@@ -291,6 +301,12 @@ class SBMLDiff:
 
                             modifier_arrows[arrow].append(model_num)
 
+                    converted_math = convert_rate_law(math)
+                    if variable_id not in assignment_expr.keys():
+                        assignment_expr[variable_id] = converted_math
+                    elif assignment_expr[variable_id] != converted_math:
+                        assignment_expr[variable_id] = "different"
+
                     for arrow in modifier_arrows.keys():
                         if arrow not in affects_value_status.keys():
                             affects_value_status[arrow] = []
@@ -302,9 +318,10 @@ class SBMLDiff:
 
         for species in trigger_status:
             diff_event.add_trigger_species(species, event_id, trigger_status[species])
+        diff_event.set_trigger(trigger_expr)
 
         for species in set_species_status:
-            diff_event.add_set_species(species, event_id, set_species_status[species])
+            diff_event.add_set_species(species, event_id, assignment_expr[species], set_species_status[species])
 
         for arrow in affects_value_status:
             diff_event.add_event_affect_value_arrow(arrow[2], arrow[0], event_id, arrow[1], list(modifier_arrows[arrow]))
@@ -337,6 +354,12 @@ class SBMLDiff:
                 if species in species_ids:
                     diff_event.add_trigger_species(species, event_hash, model_set)
 
+                math_expr = trigger.select_one("math")
+                if math_expr:
+                    math_expr = convert_rate_law(math_expr)
+                    diff_event.set_trigger(math_expr)
+
+
         # process assignment statements
         event_assignments = event.select("eventAssignment")
         if event_assignments:
@@ -345,12 +368,18 @@ class SBMLDiff:
                     continue
 
                 # arrow to species set
+                math_expr = event.select_one("math")
+                if math_expr:
+                    math_expr = convert_rate_law(math_expr)
+                else:
+                    math_expr = ""
+
                 variable_id = event.attrs["variable"]
                 if variable_id in species_ids:
-                    diff_event.add_set_species(variable_id, event_hash, model_set)
+                    diff_event.add_set_species(variable_id, event_hash, math_expr, model_set)
 
                 elif self.show_params:
-                    diff_event.add_set_species(variable_id, event_hash, model_set)
+                    diff_event.add_set_species(variable_id, event_hash, math_expr, model_set)
                     if variable_id not in self.modified_params.keys():
                         self.modified_params[variable_id] = set()
                     self.modified_params[variable_id] = self.modified_params[variable_id].union(model_set)

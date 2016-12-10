@@ -62,12 +62,14 @@ class DiffEventAssignment:
     def __init__(self):
         self.affect_value_arrows = []
         self.model_set = []
+        self.math_expr = ""
 
 class DiffEvent:
     def __init__(self):
         self.event = {}
         self.trigger_arrows = []
         self.assignments = {}
+        self.trigger_math = ""
 
     def check_target_exists(self, target):
         if target not in self.assignments.keys():
@@ -79,9 +81,10 @@ class DiffEvent:
     def add_trigger_species(self, species, event_hash, model_set):
         self.trigger_arrows.append({"species": species, "event_hash": event_hash, "model_set": model_set})
 
-    def add_set_species(self, species_id, event_hash, model_set):
+    def add_set_species(self, species_id, event_hash, math_expr, model_set):
         self.check_target_exists(species_id)
         self.assignments[species_id].model_set = model_set
+        self.assignments[species_id].math_expr = math_expr
 
     def add_event_affect_value_arrow(self, variable_set, species, event_hash, arrow_direction, model_set):
         self.check_target_exists(variable_set)
@@ -89,6 +92,8 @@ class DiffEvent:
                 {"species": species, "event_hash": event_hash, "arrow_direction": arrow_direction,
                  "model_set": model_set})
 
+    def set_trigger(self, math_expr):
+        self.trigger_math = math_expr
 
 class DiffRule:
     def __init__(self):
