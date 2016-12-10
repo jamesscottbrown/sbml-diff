@@ -292,7 +292,7 @@ class GenerateDot:
         elif self.reaction_label == "name" or self.reaction_label == "":
             reaction_name = reaction_name
         elif self.reaction_label == "name+rate":
-            reaction_name = reaction_name + "\n" + converted_law
+            reaction_name = reaction_name + "<br/>" + converted_law
         elif self.reaction_label == "rate":
             reaction_name = converted_law
 
@@ -381,7 +381,7 @@ class GenerateDot:
         elif self.reaction_label == "name" or self.reaction_label == "":
             reaction_name = reaction_name
         elif self.reaction_label == "name+rate":
-            reaction_name = reaction_name + "\n" + converted_law
+            reaction_name = reaction_name + "<br/>" + converted_law
         elif self.reaction_label == "rate":
             reaction_name = converted_law
 
