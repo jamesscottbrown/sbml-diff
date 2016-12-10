@@ -61,6 +61,7 @@ class DiffObject:
 class DiffEventAssignment:
     def __init__(self):
         self.affect_value_arrows = []
+        self.model_set = []
 
 class DiffEvent:
     def __init__(self):
@@ -80,6 +81,7 @@ class DiffEvent:
 
     def add_set_species(self, species_id, event_hash, model_set):
         self.check_target_exists(species_id)
+        self.assignments[species_id].model_set = model_set
 
     def add_event_affect_value_arrow(self, variable_set, species, event_hash, arrow_direction, model_set):
         self.check_target_exists(variable_set)

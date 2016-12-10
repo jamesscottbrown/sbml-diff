@@ -116,7 +116,7 @@ class GenerateDot:
                 self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
 
             for target_id in event.assignments:
-                self.print_event_set_species_arrow(target_id, event.event["event_hash"], event.event["model_set"])
+                self.print_event_set_species_arrow(target_id, event.event["event_hash"], event.assignments[target_id]["model_set"])
 
                 for a2 in event.assignments[target_id].affect_value_arrows:
                     self.print_event_affect_value_arrow(a2["species"], a2["event_hash"], a2["arrow_direction"], a2["model_set"])
@@ -136,8 +136,8 @@ class GenerateDot:
                 s = event.assignments[target_id]
                 rule_id = event.event["event_hash"] + "_" + target_id
 
-                self.print_rule_node(event.event["model_set"], rule_id, "", "") # TODO: wrong modelset, convert rate-law
-                self.print_event_target_arrow(event.event["model_set"], rule_id, target_id)
+                self.print_rule_node(s.model_set, rule_id, "", "")
+                self.print_event_target_arrow(s.model_set, rule_id, target_id)
 
                 for modifier in s.affect_value_arrows:
                     self.print_rule_modifier_arrow(modifier["model_set"], rule_id, modifier["species"], modifier["arrow_direction"])
