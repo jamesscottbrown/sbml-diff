@@ -3,7 +3,7 @@ import copy
 import sys
 
 
-def convert_rate_law(math, variables_not_to_substitute=False, executable=False):
+def convert_rate_law(math, initial_values=False, variables_not_to_substitute=False, executable=False):
     """
     A wrapper for convert_rate_law_inner that returns only the converted expression.
 
@@ -22,11 +22,14 @@ def convert_rate_law(math, variables_not_to_substitute=False, executable=False):
     string representation of the kineticLaw
 
     """
+    if not initial_values:
+        initial_values = {}
+
     if math.select_one('piecewise') or math.name == 'piecewise':
         sys.stderr.write("Encountered a piecewise function\n")
         return ""
 
-    return convert_rate_law_inner(math, variables_not_to_substitute, executable)[1]
+    return convert_rate_law_inner(math, initial_values, variables_not_to_substitute, executable)[1]
 
 
 def add_parens(term_elementary, terms):
@@ -46,7 +49,7 @@ def add_parens(term_elementary, terms):
     return terms
 
 
-def convert_rate_law_inner(expression, variables_not_to_substitute=False, executable=False):
+def convert_rate_law_inner(expression, initial_values, variables_not_to_substitute=False, executable=False):
     """
     Recursively convert a MathML expression to a string.
     Limitations: we do not handle piecewise functions or user-defined functions.
@@ -102,7 +105,10 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
         term = expression.string.strip()
 
         if variables_not_to_substitute and term not in variables_not_to_substitute:
-            term = '1.0'
+            if term in initial_values.keys():
+                term = initial_values[term]
+            else:
+                term = '1.0'
 
         return elementary, term
 
@@ -119,7 +125,7 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
     if expression.name == "math":
         for child in expression.children:
             if not isinstance(child, NavigableString):
-                return convert_rate_law_inner(child, variables_not_to_substitute, executable)
+                return convert_rate_law_inner(child, initial_values, variables_not_to_substitute, executable)
 
     if expression.name == "csymbol":
         if "time" in expression.attrs['definitionURL']:
@@ -148,7 +154,7 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
         children_converted = []
         children_elementary = []
         for arg in args:
-            child_elementary, child_converted = convert_rate_law_inner(arg, variables_not_to_substitute, executable)
+            child_elementary, child_converted = convert_rate_law_inner(arg, initial_values, variables_not_to_substitute, executable)
             children_converted.append(child_converted)
             children_elementary.append(child_elementary)
 
@@ -215,14 +221,14 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
             if isinstance(child, NavigableString):
                 continue
 
-            child_elementary, child_converted = convert_rate_law_inner(child, variables_not_to_substitute, executable)
+            child_elementary, child_converted = convert_rate_law_inner(child, initial_values, variables_not_to_substitute, executable)
             return child_elementary, child_converted
 
     if expression.name == "degree":
         # degree tag used with root
         for child in expression.children:
             if not isinstance(child, NavigableString):
-                return convert_rate_law_inner(child, variables_not_to_substitute, executable)
+                return convert_rate_law_inner(child, initial_values, variables_not_to_substitute, executable)
 
 
 def inline_all_functions(model):

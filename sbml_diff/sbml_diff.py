@@ -53,15 +53,31 @@ class SBMLDiff:
 
         # avoid need to keep finding reactant compartments
         self.species_compartment = []
+        self.initial_value = []
         for model in self.models:
             tmp = {}
+            tmp_concentrations = {}
+
             species_list = model.select_one("listOfSpecies")
             if species_list:
                 for species in species_list.select("species"):
-                    id = species.attrs["id"]
+                    species_id = species.attrs["id"]
                     compartment = species.attrs["compartment"]
                     tmp[id] = compartment
+
+                    if "initialConcentration" in species.attrs:
+                        tmp_concentrations[species_id] = species.attrs["initialConcentration"]
+
             self.species_compartment.append(tmp)
+            self.initial_value.append(tmp_concentrations)
+
+        # get initial parameter values
+        self.initial_parameters = []
+        for model_num, model in enumerate(self.models):
+            for param in model.select("parameter"):
+                param_id = param.attrs["id"]
+                if "value" in param.attrs:
+                    self.initial_value[model_num][param_id] = param.attrs["value"]
 
         # avoid need to search for reaction name
         self.reaction_name = []
@@ -287,7 +303,7 @@ class SBMLDiff:
                     for ci in math.select("ci"):
                         species = ci.text.strip()
                         if species in species_ids:
-                            arrow_direction = categorise_interaction(math.parent, species)
+                            arrow_direction = categorise_interaction(math.parent, species, self.initial_value[model_num])
                             arrow = (species, arrow_direction, variable_id)
 
                             if arrow not in modifier_arrows.keys():
@@ -451,7 +467,7 @@ class SBMLDiff:
                 rate_laws = "different"
 
             for modifier in modifiers:
-                arrow_direction = categorise_interaction(rate_law.parent, modifier)
+                arrow_direction = categorise_interaction(rate_law.parent, modifier, self.initial_value[model_num])
                 arrow = (modifier, arrow_direction)
                 if arrow not in modifier_status.keys():
                     modifier_status[arrow] = set()
@@ -781,9 +797,9 @@ class SBMLDiff:
         arrow_status = {}
         for model_num, model in enumerate(self.models):
             if self.cartoon:
-                arrows = get_regulatory_arrow(model, compartment_id, self.reactions[model_num], self.species_compartment[model_num], elided_reactions=self.elided_reactions[model_num])
+                arrows = get_regulatory_arrow(model, compartment_id, self.reactions[model_num], self.species_compartment[model_num], self.initial_value[model_num], elided_reactions=self.elided_reactions[model_num])
             else:
-                arrows = get_regulatory_arrow(model, compartment_id, self.reactions[model_num], self.species_compartment[model_num])
+                arrows = get_regulatory_arrow(model, compartment_id, self.reactions[model_num], self.species_compartment[model_num], self.initial_value[model_num])
 
             for ind, arrow in enumerate(arrows):
                 if arrow not in arrow_status.keys():
@@ -880,14 +896,14 @@ class SBMLDiff:
                     if reactant == modifier:
                         continue
 
-                    effect = categorise_interaction(rate_law.parent, modifier)
+                    effect = categorise_interaction(rate_law.parent, modifier, self.initial_value[model_num])
                     if effect == "monotonic_increasing":
                         interactions[modifier][reactant].add("increase-degredation")
                     elif effect == "monotonic_decreasing":
                         interactions[modifier][reactant].add("decrease-degredation")
 
                 for product in product_list:
-                    effect = categorise_interaction(rate_law.parent, modifier)
+                    effect = categorise_interaction(rate_law.parent, modifier, self.initial_value[model_num])
                     if effect == "monotonic_increasing":
                         interactions[modifier][product].add("increase-production")
                     elif effect == "monotonic_decreasing":

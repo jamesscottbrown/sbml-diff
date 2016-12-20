@@ -3,7 +3,7 @@ from rate_laws import convert_rate_law
 import math  # needed for check_sign_numerically()
 
 
-def categorise_interaction(kinetic_law, species_id):
+def categorise_interaction(kinetic_law, species_id, initial_values):
     """
     Given a kineticLaw and the name of a species, determine whether the expression is a monotonic_increasing,
     monotonic_decreasing, or constant with respect to the concentration of that species.
@@ -34,10 +34,10 @@ def categorise_interaction(kinetic_law, species_id):
                 symbols.append(ci.text.strip())
         symbols = set(symbols)
 
-        return check_sign_numerically(math_expr, symbols, species_id)
+        return check_sign_numerically(math_expr, symbols, species_id, initial_values)
 
 
-def check_sign_numerically(expr, param_names, species_id):
+def check_sign_numerically(expr, param_names, species_id, initial_values):
     """
     Given a MathML expression, list of all parameter/species names, and the name of a species, determine whether the
     expression is a monotonic_increasing, monotonic_decreasing, or constant with respect to the concentration of that
@@ -64,7 +64,7 @@ def check_sign_numerically(expr, param_names, species_id):
 
     """
 
-    expr = convert_rate_law(expr, variables_not_to_substitute=[species_id], executable=True)
+    expr = convert_rate_law(expr, initial_values, variables_not_to_substitute=[species_id], executable=True)
 
     if not expr:
         return '?'

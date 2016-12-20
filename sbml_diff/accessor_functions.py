@@ -34,7 +34,7 @@ def get_params(model):
     return set(param_ids), param_values
 
 
-def get_regulatory_arrow(model, compartment, reactions, species_compartments, elided_reactions=False):
+def get_regulatory_arrow(model, compartment, reactions, species_compartments, initial_values, elided_reactions=False):
     """
     Find all regulatory interactions in a particular compartment of a model, and construct an array of strings
     representing these.
@@ -85,7 +85,7 @@ def get_regulatory_arrow(model, compartment, reactions, species_compartments, el
             if species_id in reactant_list:
                 continue
 
-            arrow_direction = categorise_interaction(kinetic_law, species_id)
+            arrow_direction = categorise_interaction(kinetic_law, species_id, initial_values)
             arrows.append((species_id, reaction_id, arrow_direction))
 
     return arrows
