@@ -172,10 +172,10 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
             return elementary, "%s ^ %s " % (children_converted[0], children_converted[1])
         elif operator == "gt":
             children_converted = add_parens(children_elementary, children_converted)
-            return elementary, "%s > %s " % (children_converted[0], child_converted[1])
+            return elementary, "%s > %s " % (children_converted[0], children_converted[1])
         elif operator == "lt":
             children_converted = add_parens(children_elementary, children_converted)
-            return elementary, "%s < %s " % (children_converted[0], child_converted[1])
+            return elementary, "%s < %s " % (children_converted[0], children_converted[1])
         elif operator == "delay":
             if executable:
                 return elementary, children_converted[0]
