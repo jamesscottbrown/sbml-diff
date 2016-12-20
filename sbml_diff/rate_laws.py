@@ -95,9 +95,6 @@ def convert_rate_law_inner(expression, variables_not_to_substitute=False, execut
 
         elementary = True
 
-        if variables_not_to_substitute and term not in variables_not_to_substitute:
-            term = '1.0'
-
         return elementary, term
 
     elif expression.name == "ci":
