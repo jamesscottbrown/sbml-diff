@@ -75,6 +75,8 @@ class SBMLDiff:
         self.initial_parameters = []
         for model_num, model in enumerate(self.models):
             for param in model.select("parameter"):
+                if "id" not in param.attrs.keys():
+                    continue
                 param_id = param.attrs["id"]
                 if "value" in param.attrs:
                     self.initial_value[model_num][param_id] = param.attrs["value"]
@@ -348,7 +350,7 @@ class SBMLDiff:
             diff_event.add_event_affect_value_arrow(arrow[2], arrow[0], event_id, arrow[1], list(modifier_arrows[arrow]))
 
         for arrow in assignment_param_arrows:
-            diff_event.add_assignment_param_arrow(arrow[2], arrow[0], event_id, arrow[1], list(modifier_arrows[arrow]))
+            diff_event.add_assignment_param_arrow(arrow[2], arrow[0], event_id, arrow[1], list(assignment_param_arrows[arrow]))
 
         for param in trigger_param_status:
             diff_event.add_param(param, trigger_param_status[param], event_id)
