@@ -3,7 +3,7 @@ import copy
 import sys
 
 
-def convert_rate_law(math, initial_values=False, variables_not_to_substitute=False, executable=False):
+def convert_rate_law(math, initial_values=False, non_default_variables=False, non_default_values=1, executable=False):
     """
     A wrapper for convert_rate_law_inner that returns only the converted expression.
 
@@ -11,7 +11,7 @@ def convert_rate_law(math, initial_values=False, variables_not_to_substitute=Fal
     ----------
     math : BeautifulSoup object representing a rateLaw (a bs4.element.Tag)
 
-    variables_not_to_substitute : if specified, the name of any species whose id is not in this list is replaced by 1.0
+    non_default_variables : if specified, the name of any species whose id is not in this list is replaced by 1.0
          (Default value = False)
 
     executable : if True, return a less human-readable string that can be eval'ed in Python (e.g. containing Math.e
@@ -29,7 +29,7 @@ def convert_rate_law(math, initial_values=False, variables_not_to_substitute=Fal
         sys.stderr.write("Encountered a piecewise function\n")
         return ""
 
-    return convert_rate_law_inner(math, initial_values, variables_not_to_substitute, executable)[1]
+    return convert_rate_law_inner(math, initial_values, non_default_variables, non_default_values, executable)[1]
 
 
 def add_parens(term_elementary, terms):
@@ -49,7 +49,7 @@ def add_parens(term_elementary, terms):
     return terms
 
 
-def convert_rate_law_inner(expression, initial_values, variables_not_to_substitute=False, executable=False):
+def convert_rate_law_inner(expression, initial_values, non_default_variables=False, non_default_values=1, executable=False):
     """
     Recursively convert a MathML expression to a string.
     Limitations: we do not handle piecewise functions or user-defined functions.
@@ -58,7 +58,7 @@ def convert_rate_law_inner(expression, initial_values, variables_not_to_substitu
     ----------
     expression :
         
-    variables_not_to_substitute : if specified, the name of any species whose id is not in this list is replaced by 1.0
+    non_default_variables : if specified, the name of any species whose id is not in this list is replaced by 1.0
          (Default value = False)
 
     executable : if True, return a less human-readable string that can be eval'ed in Python (e.g. containing Math.e
@@ -104,8 +104,10 @@ def convert_rate_law_inner(expression, initial_values, variables_not_to_substitu
         elementary = True
         term = expression.string.strip()
 
-        if variables_not_to_substitute and term not in variables_not_to_substitute:
-            if term in initial_values.keys():
+        if non_default_variables:
+            if term in non_default_variables:
+                term = non_default_values
+            elif term in initial_values.keys():
                 term = initial_values[term]
             else:
                 term = '1.0'
@@ -125,7 +127,7 @@ def convert_rate_law_inner(expression, initial_values, variables_not_to_substitu
     if expression.name == "math":
         for child in expression.children:
             if not isinstance(child, NavigableString):
-                return convert_rate_law_inner(child, initial_values, variables_not_to_substitute, executable)
+                return convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, executable)
 
     if expression.name == "csymbol":
         if "time" in expression.attrs['definitionURL']:
@@ -154,7 +156,7 @@ def convert_rate_law_inner(expression, initial_values, variables_not_to_substitu
         children_converted = []
         children_elementary = []
         for arg in args:
-            child_elementary, child_converted = convert_rate_law_inner(arg, initial_values, variables_not_to_substitute, executable)
+            child_elementary, child_converted = convert_rate_law_inner(arg, initial_values, non_default_variables, non_default_values, executable)
             children_converted.append(child_converted)
             children_elementary.append(child_elementary)
 
@@ -233,14 +235,14 @@ def convert_rate_law_inner(expression, initial_values, variables_not_to_substitu
             if isinstance(child, NavigableString):
                 continue
 
-            child_elementary, child_converted = convert_rate_law_inner(child, initial_values, variables_not_to_substitute, executable)
+            child_elementary, child_converted = convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, executable)
             return child_elementary, child_converted
 
     if expression.name == "degree":
         # degree tag used with root
         for child in expression.children:
             if not isinstance(child, NavigableString):
-                return convert_rate_law_inner(child, initial_values, variables_not_to_substitute, executable)
+                return convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, executable)
 
 
 def inline_all_functions(model):

@@ -64,16 +64,17 @@ def check_sign_numerically(expr, param_names, species_id, initial_values):
 
     """
 
-    expr = convert_rate_law(expr, initial_values, variables_not_to_substitute=[species_id], executable=True)
+    expr1 = convert_rate_law(expr, initial_values, non_default_variables=[species_id], non_default_values='1', executable=True)
+    expr2 = convert_rate_law(expr, initial_values, non_default_variables=[species_id], non_default_values='0.01', executable=True)
 
-    if not expr:
+    if not expr1 or not expr2:
         return '?'
 
     param_names.remove(species_id)
 
     try:
-        rate_change = eval(expr.replace(species_id, '1')) - eval(expr.replace(species_id, '0.01'))
-    except ZeroDivisionError:
+        rate_change = eval(expr1) - eval(expr2)
+    except (ZeroDivisionError, ValueError):
         return "?"
 
     if rate_change > 0:
