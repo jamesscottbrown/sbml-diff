@@ -181,6 +181,12 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
         elif operator == "geq":
             children_converted = add_parens(children_elementary, children_converted)
             return elementary, "%s >= %s " % (children_converted[0], children_converted[1])
+        elif operator == "eq":
+            children_converted = add_parens(children_elementary, children_converted)
+            if executable:
+                return elementary, "%s == %s " % (children_converted[0], children_converted[1])
+            return elementary, "%s = %s " % (children_converted[0], children_converted[1])
+
         elif operator == "lt":
             children_converted = add_parens(children_elementary, children_converted)
             return elementary, "%s < %s " % (children_converted[0], children_converted[1])
