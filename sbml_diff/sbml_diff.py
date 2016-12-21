@@ -656,20 +656,21 @@ class SBMLDiff:
                     reactant_status[reactant] = set()
                 reactant_status[reactant].add(model_num)
 
-            entities = rate_law.select("ci")
-            for entity in entities:
-                param = entity.string.strip()
+            if rate_law:
+                entities = rate_law.select("ci")
+                for entity in entities:
+                    param = entity.string.strip()
 
-                # check a param rather than species
-                if param in self.species_compartment[model_num].keys():
-                    continue
+                    # check a param rather than species
+                    if param in self.species_compartment[model_num].keys():
+                        continue
 
-                arrow_direction = categorise_interaction(rate_law.parent, param, self.initial_value[model_num])
-                arrow = (param, arrow_direction)
+                    arrow_direction = categorise_interaction(rate_law.parent, param, self.initial_value[model_num])
+                    arrow = (param, arrow_direction)
 
-                if arrow not in parameter_status.keys():
-                    parameter_status[arrow] = set()
-                parameter_status[arrow].add(model_num)
+                    if arrow not in parameter_status.keys():
+                        parameter_status[arrow] = set()
+                    parameter_status[arrow].add(model_num)
 
             for product in products:
                 # if producing something that's been elided, adjust arrows to point ot downstream species
