@@ -435,8 +435,7 @@ class SBMLDiff:
                 rule.add_algebraic_arrow(species_status[rule_id][species_id], rule_id, species_id)
 
             for param_id in param_status[rule_id]:
-                rule.add_parameter_rule(species_status[rule_id][param_id], rule_id, param_id, 'none')
-
+                rule.add_parameter_rule(param_status[rule_id][param_id], rule_id, param_id, 'none')
 
             converted_rate_law = ""
             if rule_id in rate_laws.keys() and rate_laws[rule_id] != "different":
