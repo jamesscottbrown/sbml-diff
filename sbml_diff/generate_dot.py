@@ -132,7 +132,7 @@ class GenerateDot:
                 self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
 
             for target_id in event.assignments:
-                self.print_event_set_species_arrow(target_id, event.event["event_hash"], event.assignments[target_id]["model_set"])
+                self.print_event_set_species_arrow(target_id, event.event["event_hash"], event.assignments[target_id].model_set)
 
                 for a2 in event.assignments[target_id].affect_value_arrows:
                     self.print_event_affect_value_arrow(a2["species"], a2["event_hash"], a2["arrow_direction"], a2["model_set"])
