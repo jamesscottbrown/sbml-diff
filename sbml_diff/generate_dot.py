@@ -688,7 +688,7 @@ class GenerateDot:
         elif reversible_string:
             format_string = '<%s<br/>(%s)>' % (old_label, reversible_string)
         else:
-            format_string = '"%s"' % old_label
+            format_string = '<%s>' % old_label
 
         if not format_string:
             format_string = '""'
