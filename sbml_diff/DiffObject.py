@@ -61,8 +61,10 @@ class DiffObject:
 class DiffEventAssignment:
     def __init__(self):
         self.affect_value_arrows = []
+        self.affect_value_param_arrows = []
         self.model_set = []
         self.math_expr = ""
+
 
 class DiffEvent:
     def __init__(self):
@@ -70,6 +72,7 @@ class DiffEvent:
         self.trigger_arrows = []
         self.assignments = {}
         self.trigger_math = ""
+        self.trigger_params = []
 
     def check_target_exists(self, target):
         if target not in self.assignments.keys():
@@ -92,8 +95,18 @@ class DiffEvent:
                 {"species": species, "event_hash": event_hash, "arrow_direction": arrow_direction,
                  "model_set": model_set})
 
+    def add_assignment_param_arrow(self, variable_set, species, event_hash, arrow_direction, model_set):
+        self.check_target_exists(variable_set)
+        self.assignments[variable_set].affect_value_param_arrows.append(
+                {"param": species, "event_hash": event_hash, "arrow_direction": arrow_direction,
+                 "model_set": model_set})
+
     def set_trigger(self, math_expr):
         self.trigger_math = math_expr
+
+    def add_param(self, param, model_set, event_hash):
+        self.trigger_params.append({"param": param, "model_set": model_set, "event_hash": event_hash})
+
 
 class DiffRule:
     def __init__(self):
@@ -101,6 +114,7 @@ class DiffRule:
         self.assingment_arrows = []
         self.modifier_arrows = []
         self.target_arrows = []
+        self.parameter_arrows = []
 
     def set_rule(self, model_set, rule_id, rate_law, converted_rate_law):
         self.rule = {"model_set": model_set, "rule_id": rule_id, "rate_law": rate_law,
@@ -116,6 +130,9 @@ class DiffRule:
     def add_target_arrow(self, model_set, target):
         self.target_arrows.append({"model_set": model_set, "target": target})
 
+    def add_parameter_rule(self, model_set, rule_id, param, arrow_direction):
+        self.parameter_arrows.append({"model_set": model_set, "rule_id": rule_id, "param": param, "arrow_direction": "none"})
+
 
 class DiffReaction:
     def __init__(self):
@@ -124,6 +141,7 @@ class DiffReaction:
         self.product_arrows = []
         self.transcription_reaction_nodes = []
         self.transcription_product_arrows = []
+        self.parameter_arrows = []
 
     def set_reaction(self, model_set, reaction_id, rate_law, reaction_name, converted_law,
                      fast_model_set, irreversible_model_set, product_status, is_transcription):
@@ -149,3 +167,6 @@ class DiffReaction:
     def add_transcription_product_arrow(self, model_set, reaction_id, product, stoich):
         self.transcription_product_arrows.append(
                 {"model_set": model_set, "reaction_id": reaction_id, "product": product, "stoich": stoich})
+
+    def add_parameter_arrow(self, model_set, reaction_id, param, arrow_direction):
+        self.parameter_arrows.append({"model_set": model_set, "reaction_id": reaction_id, "param": param, "arrow_direction": arrow_direction})

@@ -47,6 +47,10 @@ class GenerateDot:
     def generate_dot(self, diff_object):
         self.print_header()
 
+        params_to_draw = []
+        for p in diff_object.param_nodes:
+            params_to_draw.append(p["variable_id"])
+
         for compartment_id in diff_object.compartments.keys():
 
             compartment = diff_object.compartments[compartment_id]
@@ -69,6 +73,11 @@ class GenerateDot:
                 # reactant arrows
                 for r in reaction.reactant_arrows:
                     self.print_reactant_arrow(r["model_set"], r["reaction_id"], r["reactant"], r["stoich"])
+
+                # parameter arrows
+                for r in reaction.parameter_arrows:
+                    if r["param"] in params_to_draw:
+                        self.print_reaction_parameter_arrow(r["model_set"], r["reaction_id"], r["param"])
 
                 # product arrows
                 for product_arrow in reaction.product_arrows:
@@ -94,11 +103,15 @@ class GenerateDot:
                 for arrow in r.target_arrows:
                     self.print_rule_target_arrow(arrow["model_set"], arrow["target"])
 
+                for arrow in r.parameter_arrows:
+                    if arrow["param"] in params_to_draw:
+                        self.print_rule_parameter_arrow(arrow["model_set"], arrow["rule_id"], arrow["param"], arrow["arrow_direction"])
+
             if compartment_id is not "NONE":
                 self.print_compartment_footer()
 
         for event in diff_object.events:
-            self.print_event_diff(event)
+            self.print_event_diff(event, params_to_draw)
 
         # modified params
         for param_node in diff_object.param_nodes:
@@ -106,8 +119,11 @@ class GenerateDot:
 
         self.print_footer()
 
+    def print_event_diff(self, event, params_to_draw):
 
-    def print_event_diff(self, event):
+        for r in event.trigger_params:
+            if r["param"] in params_to_draw:
+                self.print_event_trigger_species_arrows(r["param"], r["event_hash"], r["model_set"])
 
         if len(event.assignments) < 2:
             self.print_event_node(event.event["event_hash"], event.event["event_name"], event.trigger_math, event.event["model_set"])
@@ -142,8 +158,11 @@ class GenerateDot:
                 for modifier in s.affect_value_arrows:
                     self.print_rule_modifier_arrow(modifier["model_set"], rule_id, modifier["species"], modifier["arrow_direction"])
 
-            print  "}"
+                for param in s.affect_value_param_arrows:
+                    if param["param"] in params_to_draw:
+                        self.print_rule_parameter_arrow(param["model_set"], rule_id, param["param"], param["arrow_direction"])
 
+            print "}"
 
     def assign_arrowhead(self, effect_direction):
         if effect_direction == "monotonic_increasing":
@@ -151,7 +170,7 @@ class GenerateDot:
         elif effect_direction == "monotonic_decreasing":
             arrowhead = "tee"
         else:
-            arrowhead = "diamond"
+            arrowhead = "none"
         return arrowhead
 
     def assign_color(self, model_set, ignore_difference=False):
@@ -278,6 +297,11 @@ class GenerateDot:
             self.differences_found = True
 
         print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
+
+    def print_reaction_parameter_arrow(self, model_set, reaction_id, param):
+        style = self.check_style(model_set, 'dashed')
+        color = self.assign_color(model_set)
+        print '%s -> %s [color="%s" %s];' % (param, reaction_id, color, style)
 
     def print_transcription_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law, product_status):
         base_style = ''
@@ -488,6 +512,13 @@ class GenerateDot:
 
         arrowhead = self.assign_arrowhead(arrow_direction)
         print '%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (modifier, rule_id, color, arrowhead, style)
+
+    def print_rule_parameter_arrow(self, model_set, target, param, arrow_direction):
+        color = self.assign_color(model_set)
+        style = self.check_style(model_set, 'dashed')
+        arrowhead = self.assign_arrowhead(arrow_direction)
+
+        print '%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (param, target, color, arrowhead, style)
 
     def print_event_target_arrow(self, model_set, event_id, target):
         """

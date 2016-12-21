@@ -231,7 +231,6 @@ class SBMLDiff:
 
     def diff_event_with_id(self, event_id, model_set):
 
-        # TODO
         for model_num in model_set:
             species_ids = []
             species_list = self.models[model_num].select_one("listOfSpecies")
@@ -247,6 +246,8 @@ class SBMLDiff:
         modifier_arrows = {}
         trigger_expr = ""
         assignment_expr = {}
+        trigger_param_status = {}
+        assignment_param_arrows = {}
 
         for model_num in model_set:
             event = self.models[model_num].select_one('#' + event_id)
@@ -259,12 +260,15 @@ class SBMLDiff:
             trigger = event.select_one("trigger")
             if trigger:
                 for ci in trigger.select("ci"):
-                    species = ci.text.strip()
-                    if species in species_ids:
-
-                        if species not in trigger_status.keys():
-                            trigger_status[species] = []
-                        trigger_status[species].append(model_num)
+                    entity = ci.text.strip()
+                    if entity in species_ids:
+                        if entity not in trigger_status.keys():
+                            trigger_status[entity] = []
+                        trigger_status[entity].append(model_num)
+                    else:
+                        if entity not in trigger_param_status.keys():
+                            trigger_param_status[entity] = []
+                        trigger_param_status[entity].append(model_num)
 
                 this_math_expr = trigger.select_one("math")
                 if this_math_expr:
@@ -302,14 +306,18 @@ class SBMLDiff:
                     math = event.select_one("math")
                     for ci in math.select("ci"):
                         species = ci.text.strip()
-                        if species in species_ids:
-                            arrow_direction = categorise_interaction(math.parent, species, self.initial_value[model_num])
-                            arrow = (species, arrow_direction, variable_id)
+                        arrow_direction = categorise_interaction(math.parent, species, self.initial_value[model_num])
+                        arrow = (species, arrow_direction, variable_id)
 
+                        if species in species_ids:
                             if arrow not in modifier_arrows.keys():
                                 modifier_arrows[arrow] = []
 
                             modifier_arrows[arrow].append(model_num)
+                        else:
+                            if arrow not in assignment_param_arrows.keys():
+                                assignment_param_arrows[arrow] = []
+                            assignment_param_arrows[arrow].append(model_num)
 
                     converted_math = convert_rate_law(math)
                     if variable_id not in assignment_expr.keys():
@@ -321,6 +329,9 @@ class SBMLDiff:
                         if arrow not in affects_value_status.keys():
                             affects_value_status[arrow] = []
                         affects_value_status[arrow].append(model_num)
+
+                    # arrow from param effe
+
 
         # record event node
         diff_event = self.diff_object.add_event()
@@ -336,6 +347,12 @@ class SBMLDiff:
         for arrow in affects_value_status:
             diff_event.add_event_affect_value_arrow(arrow[2], arrow[0], event_id, arrow[1], list(modifier_arrows[arrow]))
 
+        for arrow in assignment_param_arrows:
+            diff_event.add_assignment_param_arrow(arrow[2], arrow[0], event_id, arrow[1], list(modifier_arrows[arrow]))
+
+        for param in trigger_param_status:
+            diff_event.add_param(param, trigger_param_status[param], event_id)
+
     def diff_algebraic_rules(self):
         """
         Compare all algebraic rules between models.
@@ -343,6 +360,7 @@ class SBMLDiff:
 
         rule_status = {}
         species_status = {}
+        param_status = {}
         rate_laws = {}
 
         for model_num, model in enumerate(self.models):
@@ -358,15 +376,17 @@ class SBMLDiff:
                 species_ids = []
                 species_list = model.select_one("listOfSpecies")
                 species_in_rule = []
+                params_in_rule = []
                 if species_list:
                     for s in species_list.select("species"):
                         species_ids.append(s.attrs["id"])
 
                 for ci in rule.select("ci"):
                     species_id = ci.string.strip()
-                    if species_id not in species_ids:
-                        continue
-                    species_in_rule.append(species_id)
+                    if species_id in species_ids:
+                        species_in_rule.append(species_id)
+                    else:
+                        params_in_rule.append(species_id)
 
                 # Choose an id  to represent this rule
                 if "metaid" in rule.attrs.keys():
@@ -374,12 +394,11 @@ class SBMLDiff:
                 else:
                     rule_id = "assignmentRule" + "_".join(species_in_rule)
 
-
-
                 # record that model contained this rule
                 if rule_id not in rule_status.keys():
                     rule_status[rule_id] = []
                     species_status[rule_id] = {}
+                    param_status[rule_id] = {}
                 rule_status[rule_id].append(model_num)
 
                 # record species
@@ -389,6 +408,11 @@ class SBMLDiff:
 
                     species_status[rule_id][species_id].append(model_num)
 
+                # record params
+                for param_id in params_in_rule:
+                    if param_id not in param_status[rule_id].keys():
+                        param_status[rule_id][species_id] = []
+                    param_status[rule_id][species_id].append(model_num)
 
                 # record math expression
                 rate_law = rule.select_one("math")
@@ -407,6 +431,10 @@ class SBMLDiff:
 
             for species_id in species_status[rule_id]:
                 rule.add_assignment_arrow(species_status[rule_id][species_id], rule_id, species_id)
+
+            for param_id in param_status[rule_id]:
+                rule.add_parameter_rule(species_status[rule_id][param_id], rule_id, param_id, 'none')
+
 
             converted_rate_law = ""
             if rule_id in rate_laws.keys() and rate_laws[rule_id] != "different":
@@ -451,6 +479,7 @@ class SBMLDiff:
         # a rule has only one target, whereas reaction may have multiple products
 
         modifier_status = {}
+        parameter_status = {}
         target_status = set()
         rate_laws = ""
 
@@ -473,6 +502,21 @@ class SBMLDiff:
                     modifier_status[arrow] = set()
                 modifier_status[arrow].add(model_num)
 
+            entities = rate_law.select("ci")
+            for entity in entities:
+                param = entity.string.strip()
+
+                # check a param rather than species
+                if param in self.species_compartment[model_num].keys():
+                    continue
+
+                arrow_direction = categorise_interaction(rate_law.parent, param, self.initial_value[model_num])
+                arrow = (param, arrow_direction)
+
+                if arrow not in parameter_status.keys():
+                    parameter_status[arrow] = set()
+                parameter_status[arrow].add(model_num)
+
             # for target in targets:
             target_status.add(model_num)
 
@@ -481,6 +525,10 @@ class SBMLDiff:
             model_set = list(modifier_status[arrow])
             rule.add_modifier_arrow(model_set, target_id, arrow[0], arrow[1])
 
+        # parameter arrows
+        for arrow in parameter_status:
+            model_set = list(parameter_status[arrow])
+            rule.add_parameter_rule(model_set, target_id, arrow[0], arrow[1])
 
         # target arrows
         model_set = list(target_status)
@@ -529,6 +577,8 @@ class SBMLDiff:
 
         reactant_status = {}
         product_status = {}
+        parameter_status = {}
+
         compartment = ""
         rate_laws = ""
         rate_law_found = False
@@ -605,6 +655,21 @@ class SBMLDiff:
                     reactant_status[reactant] = set()
                 reactant_status[reactant].add(model_num)
 
+            entities = rate_law.select("ci")
+            for entity in entities:
+                param = entity.string.strip()
+
+                # check a param rather than species
+                if param in self.species_compartment[model_num].keys():
+                    continue
+
+                arrow_direction = categorise_interaction(rate_law.parent, param, self.initial_value[model_num])
+                arrow = (param, arrow_direction)
+
+                if arrow not in parameter_status.keys():
+                    parameter_status[arrow] = set()
+                parameter_status[arrow].add(model_num)
+
             for product in products:
                 # if producing something that's been elided, adjust arrows to point ot downstream species
                 if self.cartoon and product in self.elided_list[model_num]:
@@ -637,6 +702,11 @@ class SBMLDiff:
                 reaction.add_transcription_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
             else:
                 reaction.add_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
+
+        # parameter arrows
+        for arrow in parameter_status:
+            model_set = list(parameter_status[arrow])
+            reaction.add_parameter_arrow(model_set, reaction_id, arrow[0], arrow[1])
 
         # rate law
         reaction_name = self.reaction_name[parent_model][reaction_id]
