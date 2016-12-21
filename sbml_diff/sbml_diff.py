@@ -430,7 +430,7 @@ class SBMLDiff:
             rule = self.diff_object.add_rule()
 
             for species_id in species_status[rule_id]:
-                rule.add_assignment_arrow(species_status[rule_id][species_id], rule_id, species_id)
+                rule.add_algebraic_arrow(species_status[rule_id][species_id], rule_id, species_id)
 
             for param_id in param_status[rule_id]:
                 rule.add_parameter_rule(species_status[rule_id][param_id], rule_id, param_id, 'none')

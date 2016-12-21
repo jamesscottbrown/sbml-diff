@@ -111,7 +111,7 @@ class DiffEvent:
 class DiffRule:
     def __init__(self):
         self.rule = {}
-        self.assingment_arrows = []
+        self.algebraic_arrows = []
         self.modifier_arrows = []
         self.target_arrows = []
         self.parameter_arrows = []
@@ -120,8 +120,8 @@ class DiffRule:
         self.rule = {"model_set": model_set, "rule_id": rule_id, "rate_law": rate_law,
                      "converted_rate_law": converted_rate_law}
 
-    def add_assignment_arrow(self, model_set, rule_id, species_id):
-        self.assingment_arrows.append({"model_set": model_set, "rule_id": rule_id, "species_id": species_id})
+    def add_algebraic_arrow(self, model_set, rule_id, species_id):
+        self.algebraic_arrows.append({"model_set": model_set, "rule_id": rule_id, "species_id": species_id})
 
     def add_modifier_arrow(self, model_set, rule_id, modifier, arrow_direction):
         self.modifier_arrows.append(

@@ -94,8 +94,8 @@ class GenerateDot:
                 rule = r.rule
                 self.print_rule_node(rule["model_set"], rule["rule_id"], rule["rate_law"], rule["converted_rate_law"])
 
-                for arrow in r.assingment_arrows:
-                    self.print_assignment_rule_arrow(arrow["model_set"], arrow["rule_id"], arrow["species_id"])
+                for arrow in r.algebraic_arrows:
+                    self.print_algebraic_rule_arrow(arrow["model_set"], arrow["rule_id"], arrow["species_id"])
 
                 for arrow in r.modifier_arrows:
                     self.print_rule_modifier_arrow(arrow["model_set"], arrow["rule_id"], arrow["modifier"], arrow["arrow_direction"])
@@ -579,7 +579,7 @@ class GenerateDot:
 
         print 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style)
 
-    def print_assignment_rule_arrow(self, model_set, rule_id, species_id):
+    def print_algebraic_rule_arrow(self, model_set, rule_id, species_id):
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
         print 'rule_%s -> %s [color="%s", dir="none" %s];' % (rule_id, species_id, color, style)
