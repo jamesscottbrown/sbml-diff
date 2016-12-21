@@ -74,7 +74,7 @@ def check_sign_numerically(expr, param_names, species_id, initial_values):
 
     try:
         rate_change = eval(expr1) - eval(expr2)
-    except (ZeroDivisionError, ValueError):
+    except (ZeroDivisionError, ValueError, OverflowError):
         return "?"
 
     if rate_change > 0:
