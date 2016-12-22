@@ -181,7 +181,7 @@ class DiffElement:
         self.record[data_tuple].add(model_num)
 
     def get_models(self):
-        return list(reduce(lambda x,y: x.union(y), self.record.keys()))
+        return list(reduce(lambda x,y: x.union(self.record[y]), self.record.keys(), set()))
 
     def get_data(self):
         return self.record.keys()
