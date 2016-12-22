@@ -90,22 +90,25 @@ class GenerateDot:
                 self.print_regulatory_arrow(r["model_set"], r["arrow_source"], r["arrow_target"], r["arrow_direction"])
 
             for r in compartment["rules"]:
+                rate_law = r.rate_laws.compare()
+                self.print_rule_node(r.rate_laws.get_models(), r.rule_id, rate_law)
 
-                rule = r.rule
-                self.print_rule_node(rule["model_set"], rule["rule_id"], rule["rate_law"], rule["converted_rate_law"])
+                for arrow in r.algebraic_arrows.record:
+                    model_set = r.algebraic_arrows.record[arrow]
+                    self.print_algebraic_rule_arrow(model_set, arrow["rule_id"], arrow["species_id"])
 
-                for arrow in r.algebraic_arrows:
-                    self.print_algebraic_rule_arrow(arrow["model_set"], arrow["rule_id"], arrow["species_id"])
+                for arrow in r.modifier_arrows.record:
+                    model_set = r.modifier_arrows.record[arrow]
+                    self.print_rule_modifier_arrow(model_set, arrow["rule_id"], arrow["modifier"], arrow["arrow_direction"])
 
-                for arrow in r.modifier_arrows:
-                    self.print_rule_modifier_arrow(arrow["model_set"], arrow["rule_id"], arrow["modifier"], arrow["arrow_direction"])
+                for arrow in r.target_arrows.record:
+                    model_set = r.target_arrows.record[arrow]
+                    self.print_rule_target_arrow(model_set, arrow["target"])
 
-                for arrow in r.target_arrows:
-                    self.print_rule_target_arrow(arrow["model_set"], arrow["target"])
-
-                for arrow in r.parameter_arrows:
+                for arrow in r.parameter_arrows.record:
+                    model_set = r.parameter_arrows.record[arrow]
                     if arrow["param"] in params_to_draw:
-                        self.print_rule_parameter_arrow(arrow["model_set"], arrow["rule_id"], arrow["param"], arrow["arrow_direction"])
+                        self.print_rule_parameter_arrow(model_set, arrow["rule_id"], arrow["param"], arrow["arrow_direction"])
 
             if compartment_id is not "NONE":
                 self.print_compartment_footer()
@@ -121,46 +124,55 @@ class GenerateDot:
 
     def print_event_diff(self, event, params_to_draw):
 
-        for r in event.trigger_params:
+        for r in event.trigger_params.record:
+            model_set = event.trigger_params.record[r]
             if r["param"] in params_to_draw:
-                self.print_event_trigger_species_arrows(r["param"], r["event_hash"], r["model_set"])
+                self.print_event_trigger_species_arrows(r["param"], r["event_hash"], model_set)
+
+        trigger = event.trigger_math.compare()
 
         if len(event.assignments) < 2:
-            self.print_event_node(event.event["event_hash"], event.event["event_name"], event.trigger_math, event.event["model_set"])
+            self.print_event_node(event.event["event_hash"], event.event["event_name"], trigger, event.event["model_set"])
 
-            for s in event.trigger_arrows:
-                self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
+            for s in event.trigger_arrows.record:
+                model_set = event.trigger_arrows.record[s]
+                self.print_event_trigger_species_arrows(s["species"], s["event_hash"], model_set)
 
             for target_id in event.assignments:
-                self.print_event_set_species_arrow(target_id, event.event["event_hash"], event.assignments[target_id].model_set)
+                model_set = event.assignments[target_id].math_expr.get_models()
+                self.print_event_set_species_arrow(target_id, event.event["event_hash"], model_set)
 
-                for a2 in event.assignments[target_id].affect_value_arrows:
-                    self.print_event_affect_value_arrow(a2["species"], a2["event_hash"], a2["arrow_direction"], a2["model_set"])
+                assigment_record = event.assignments[target_id].affect_value_arrows.record
+                for a2 in assigment_record:
+                    model_set = assigment_record[a2]
+                    self.print_event_affect_value_arrow(a2["species"], a2["event_hash"], a2["arrow_direction"], model_set)
 
         else:
 
             print "subgraph cluster_event_%s {\n" % event.event["event_hash"]
 
-            # trigger arrows go to diamond event node, as in single-assignment case
-            self.print_event_node(event.event["event_hash"], event.event["event_name"], event.trigger_math, event.event["model_set"])
+            self.print_event_node(event.event["event_hash"], event.event["event_name"], trigger, event.event["model_set"])
 
-            for s in event.trigger_arrows:
-                self.print_event_trigger_species_arrows(s["species"], s["event_hash"], s["model_set"])
+            for s in event.trigger_arrows.record:
+                model_set = event.trigger_arrows.record[s]
+                self.print_event_trigger_species_arrows(s["species"], s["event_hash"], model_set)
 
             for target_id in event.assignments.keys():
                 # draw assignment node, like a rule
                 s = event.assignments[target_id]
                 rule_id = event.event["event_hash"] + "_" + target_id
 
-                self.print_rule_node(s.model_set, rule_id, s.math_expr, s.math_expr)
-                self.print_event_target_arrow(s.model_set, rule_id, target_id)
+                self.print_rule_node(s.math_expr.get_models(), rule_id, s.math_expr.compare())
+                self.print_event_target_arrow(s.math_expr.get_models(), rule_id, target_id)
 
-                for modifier in s.affect_value_arrows:
-                    self.print_rule_modifier_arrow(modifier["model_set"], rule_id, modifier["species"], modifier["arrow_direction"])
+                for modifier in s.affect_value_arrows.record:
+                    model_set = s.affect_value_arrows.record[modifier]
+                    self.print_rule_modifier_arrow(model_set, rule_id, modifier["species"], modifier["arrow_direction"])
 
-                for param in s.affect_value_param_arrows:
+                for param in s.affect_value_param_arrows.record:
                     if param["param"] in params_to_draw:
-                        self.print_rule_parameter_arrow(param["model_set"], rule_id, param["param"], param["arrow_direction"])
+                        model_set =  s.affect_value_param_arrows.record[param]
+                        self.print_rule_parameter_arrow(model_set, rule_id, param["param"], param["arrow_direction"])
 
             print "}"
 
@@ -547,7 +559,7 @@ class GenerateDot:
         style = self.check_style(model_set)
         print 'rule_%s -> %s [color="%s", style="dotted" %s];' % (target, target, color, style)
 
-    def print_rule_node(self, model_set, rule_id, rate_law, converted_rate_law):
+    def print_rule_node(self, model_set, rule_id, converted_rate_law):
         """
         Draw node corresponding to rule.
 
@@ -563,7 +575,7 @@ class GenerateDot:
         """
         fill = ''
         base_style = ''
-        if rate_law == "different":
+        if converted_rate_law == "different":
             self.differences_found = True
             fill = 'fillcolor="grey",'
             base_style = 'filled'

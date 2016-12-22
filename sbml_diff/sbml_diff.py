@@ -231,25 +231,15 @@ class SBMLDiff:
 
     def diff_event_with_id(self, event_id, model_set):
 
-        for model_num in model_set:
-            species_ids = []
-            species_list = self.models[model_num].select_one("listOfSpecies")
-            if species_list:
-                for s in species_list.select("species"):
-                    species_ids.append(s.attrs["id"])
+        diff_event = self.diff_object.add_event()
 
         # process trigger statement
         event_name = ""
-        trigger_status = {}
         set_species_status = {}
-        affects_value_status = {}
-        modifier_arrows = {}
-        trigger_expr = ""
         assignment_expr = {}
-        trigger_param_status = {}
-        assignment_param_arrows = {}
 
         for model_num in model_set:
+            species_ids = self.species_compartment[model_num].keys()
             event = self.models[model_num].select_one('#' + event_id)
 
             # process model name
@@ -262,21 +252,15 @@ class SBMLDiff:
                 for ci in trigger.select("ci"):
                     entity = ci.text.strip()
                     if entity in species_ids:
-                        if entity not in trigger_status.keys():
-                            trigger_status[entity] = []
-                        trigger_status[entity].append(model_num)
+                        diff_event.add_trigger_species(entity, event_id, model_num)
                     else:
-                        if entity not in trigger_param_status.keys():
-                            trigger_param_status[entity] = []
-                        trigger_param_status[entity].append(model_num)
+                        diff_event.add_param(entity, event_id, model_num)
 
-                this_math_expr = trigger.select_one("math")
-                if this_math_expr:
-                    this_math_expr = convert_rate_law(this_math_expr)
-                    if not trigger_expr or this_math_expr == trigger_expr:
-                        trigger_expr = this_math_expr
-                    else:
-                        trigger_expr = "different"
+                trigger_expr = trigger.select_one("math")
+                if not trigger_expr:
+                    trigger_expr = ""
+                trigger_expr = convert_rate_law(trigger_expr)
+                diff_event.add_trigger(trigger_expr, model_num)
 
             event_assignments = event.select("eventAssignment")
             if event_assignments:
@@ -284,90 +268,49 @@ class SBMLDiff:
                     if isinstance(event, NavigableString):
                         continue
 
+                    # math
+                    math = event.select_one("math")
+                    if not math:
+                        math = ""
+                    converted_math = convert_rate_law(math)
+
                     # arrow to species set
                     variable_id = event.attrs["variable"]
                     if variable_id in species_ids:
-
-                        if variable_id not in set_species_status.keys():
-                            set_species_status[variable_id] = []
-                        set_species_status[variable_id].append(model_num)
+                        diff_event.add_set_species(variable_id, converted_math, model_num)
 
                     elif self.show_params:
-                        if variable_id not in set_species_status.keys():
-                            set_species_status[variable_id] = []
-                        set_species_status[variable_id].append(model_num)
-
-                        if variable_id not in self.modified_params.keys():
-                            self.modified_params[variable_id] = set()
-                        self.modified_params[variable_id] = self.modified_params[variable_id].union(model_set)
+                        diff_event.add_set_species(variable_id, converted_math, model_num)
 
                     # arrow from species affecting expression
-                    math = event.select_one("math")
                     for ci in math.select("ci"):
                         species = ci.text.strip()
                         arrow_direction = categorise_interaction(math.parent, species, self.initial_value[model_num])
-                        arrow = (species, arrow_direction, variable_id)
 
                         if species in species_ids:
-                            if arrow not in modifier_arrows.keys():
-                                modifier_arrows[arrow] = []
-
-                            modifier_arrows[arrow].append(model_num)
+                            diff_event.add_event_affect_value_arrow(variable_id, species, event_id, arrow_direction, model_num)
                         else:
-                            if arrow not in assignment_param_arrows.keys():
-                                assignment_param_arrows[arrow] = []
-                            assignment_param_arrows[arrow].append(model_num)
-
-                    converted_math = convert_rate_law(math)
-                    if variable_id not in assignment_expr.keys():
-                        assignment_expr[variable_id] = converted_math
-                    elif assignment_expr[variable_id] != converted_math:
-                        assignment_expr[variable_id] = "different"
-
-                    for arrow in modifier_arrows.keys():
-                        if arrow not in affects_value_status.keys():
-                            affects_value_status[arrow] = []
-                        affects_value_status[arrow].append(model_num)
-
-                    # arrow from param effe
+                            diff_event.add_assignment_param_arrow(variable_id, species, event_id, arrow_direction, model_num)
 
         # record event node
-        diff_event = self.diff_object.add_event()
         diff_event.set_event(event_id, event_name, model_set)
-
-        for species in trigger_status:
-            diff_event.add_trigger_species(species, event_id, trigger_status[species])
-        diff_event.set_trigger(trigger_expr)
 
         for species in set_species_status:
             diff_event.add_set_species(species, event_id, assignment_expr[species], set_species_status[species])
-
-        for arrow in affects_value_status:
-            diff_event.add_event_affect_value_arrow(arrow[2], arrow[0], event_id, arrow[1], list(modifier_arrows[arrow]))
-
-        for arrow in assignment_param_arrows:
-            diff_event.add_assignment_param_arrow(arrow[2], arrow[0], event_id, arrow[1], list(assignment_param_arrows[arrow]))
-
-        for param in trigger_param_status:
-            diff_event.add_param(param, trigger_param_status[param], event_id)
 
     def diff_algebraic_rules(self):
         """
         Compare all algebraic rules between models.
         """
 
-        rule_status = {}
-        species_status = {}
-        param_status = {}
-        rate_laws = {}
+        rule_diffs = {}
 
         for model_num, model in enumerate(self.models):
 
             rule_list = model.select_one("listOfRules")
             if not rule_list:
-                return
+                continue
 
-            # get details of each rule
             for rule in rule_list.select("algebraicRule"):
 
                 # find species occurring in this rule
@@ -375,6 +318,7 @@ class SBMLDiff:
                 species_list = model.select_one("listOfSpecies")
                 species_in_rule = []
                 params_in_rule = []
+
                 if species_list:
                     for s in species_list.select("species"):
                         species_ids.append(s.attrs["id"])
@@ -391,53 +335,20 @@ class SBMLDiff:
                     rule_id = rule.attrs["metaid"]
                 else:
                     rule_id = "assignmentRule" + "_".join(species_in_rule)
+                if rule_id not in rule_diffs.keys():
+                    rule_diffs[rule_id] = self.diff_object.add_rule(rule_id)
 
-                # record that model contained this rule
-                if rule_id not in rule_status.keys():
-                    rule_status[rule_id] = []
-                    species_status[rule_id] = {}
-                    param_status[rule_id] = {}
-                rule_status[rule_id].append(model_num)
-
-                # record species
                 for species_id in species_in_rule:
-                    if species_id not in species_status[rule_id].keys():
-                        species_status[rule_id][species_id] = []
+                    rule_diffs[rule_id].add_algebraic_arrow(model_num, rule_id, species_id)
 
-                    species_status[rule_id][species_id].append(model_num)
-
-                # record params
                 for param_id in params_in_rule:
-                    if param_id not in param_status[rule_id].keys():
-                        param_status[rule_id][species_id] = []
-                    param_status[rule_id][species_id].append(model_num)
+                    rule_diffs[rule_id].add_parameter_rule(model_num, rule_id, param_id, 'none')
 
-                # record math expression
                 rate_law = rule.select_one("math")
-
                 if not rate_law:
-                    continue
-
-                if rate_law and rule_id not in rate_laws.keys():
-                    rate_laws[rule_id] = rate_law
-                if rule_id in rate_laws.keys() and rate_law and rate_laws[rule_id] != rate_law:
-                    rate_laws[rule_id] = "different"
-
-        # produce output
-        for rule_id in rule_status.keys():
-            rule = self.diff_object.add_rule()
-
-            for species_id in species_status[rule_id]:
-                rule.add_algebraic_arrow(species_status[rule_id][species_id], rule_id, species_id)
-
-            for param_id in param_status[rule_id]:
-                rule.add_parameter_rule(param_status[rule_id][param_id], rule_id, param_id, 'none')
-
-            converted_rate_law = ""
-            if rule_id in rate_laws.keys() and rate_laws[rule_id] != "different":
-                converted_rate_law = convert_rate_law(rate_laws[rule_id])
-
-            rule.set_rule(rule_status[rule_id], rule_id, rate_laws, converted_rate_law)
+                    rate_law = ""
+                converted_rate_law = convert_rate_law(rate_law)
+                rule_diffs[rule_id].add_rate_law(model_num, converted_rate_law)
 
     def diff_rules(self):
         """
@@ -475,70 +386,33 @@ class SBMLDiff:
         # 'modifiers' appear in the math expression of a rule that sets 'target'
         # a rule has only one target, whereas reaction may have multiple products
 
-        modifier_status = {}
-        parameter_status = {}
         target_status = set()
         rate_laws = ""
 
-        rule = self.diff_object.add_rule()
+        rule = self.diff_object.add_rule(target_id)
         for model_num, model in enumerate(self.models):
-            modifiers, compartment, rate_law = get_rule_details(model, target_id, self.species_compartment[model_num])
+            _, compartment, rate_law = get_rule_details(model, target_id, self.species_compartment[model_num])
 
             if not rate_law:
-                continue
+                rate_law = ""
 
-            if rate_law and not rate_laws:
-                rate_laws = rate_law
-            if rate_laws and rate_law and rate_laws != rate_law:
-                rate_laws = "different"
-
-            for modifier in modifiers:
-                arrow_direction = categorise_interaction(rate_law.parent, modifier, self.initial_value[model_num])
-                arrow = (modifier, arrow_direction)
-                if arrow not in modifier_status.keys():
-                    modifier_status[arrow] = set()
-                modifier_status[arrow].add(model_num)
+            converted_rate_law = convert_rate_law(rate_laws)
+            rule.add_rate_law(model_num, converted_rate_law)
 
             entities = rate_law.select("ci")
             for entity in entities:
-                param = entity.string.strip()
+                entity = entity.string.strip()
+                arrow_direction = categorise_interaction(rate_law.parent, entity, self.initial_value[model_num])
 
-                # check a param rather than species
-                if param in self.species_compartment[model_num].keys():
-                    continue
+                if entity in self.species_compartment[model_num].keys():
+                    rule.add_modifier_arrow(model_num, target_id, entity, arrow_direction)
+                else:
+                    rule.add_parameter_rule(model_num, target_id, entity, arrow_direction)
 
-                arrow_direction = categorise_interaction(rate_law.parent, param, self.initial_value[model_num])
-                arrow = (param, arrow_direction)
-
-                if arrow not in parameter_status.keys():
-                    parameter_status[arrow] = set()
-                parameter_status[arrow].add(model_num)
-
-            # for target in targets:
-            target_status.add(model_num)
-
-        # modifier arrows
-        for arrow in modifier_status:
-            model_set = list(modifier_status[arrow])
-            rule.add_modifier_arrow(model_set, target_id, arrow[0], arrow[1])
-
-        # parameter arrows
-        for arrow in parameter_status:
-            model_set = list(parameter_status[arrow])
-            rule.add_parameter_rule(model_set, target_id, arrow[0], arrow[1])
-
-        # target arrows
-        model_set = list(target_status)
-        species_list = self.models[model_set[0]].select_one('listOfSpecies')
-        if self.show_params or (species_list and species_list.find(id=target_id)):
-            rule.add_target_arrow(model_set, target_id)
-
-        # rate law
-        converted_rate_law = ""
-        if rate_laws and rate_laws != "different":
-            converted_rate_law = convert_rate_law(rate_laws)
-
-        rule.set_rule(model_set, target_id, rate_laws, converted_rate_law)
+            # targets
+            species_list = self.models[model_num].select_one('listOfSpecies')
+            if self.show_params or (species_list and species_list.find(id=target_id)):
+                rule.add_target_arrow(model_num, target_id)
 
     def diff_reactions(self):
         """

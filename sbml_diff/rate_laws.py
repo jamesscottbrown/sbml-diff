@@ -25,6 +25,9 @@ def convert_rate_law(math, initial_values=False, non_default_variables=False, no
     if not initial_values:
         initial_values = {}
 
+    if not math:
+        return ""
+
     if math.select_one('piecewise') or math.name == 'piecewise':
         sys.stderr.write("Encountered a piecewise function\n")
         return ""

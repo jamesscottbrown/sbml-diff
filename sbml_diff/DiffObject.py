@@ -1,3 +1,6 @@
+import collections
+
+
 class DiffObject:
     def __init__(self):
         self.compartments = {}
@@ -23,8 +26,8 @@ class DiffObject:
         self.events.append(new_event)
         return new_event
 
-    def add_rule(self, compartment=""):
-        new_rule = DiffRule()
+    def add_rule(self, rule_id, compartment=""):
+        new_rule = DiffRule(rule_id)
 
         if not compartment:
             compartment = "NONE"
@@ -60,19 +63,18 @@ class DiffObject:
 
 class DiffEventAssignment:
     def __init__(self):
-        self.affect_value_arrows = []
-        self.affect_value_param_arrows = []
-        self.model_set = []
-        self.math_expr = ""
+        self.affect_value_arrows = DiffElement()
+        self.affect_value_param_arrows = DiffElement()
+        self.math_expr = DiffElement()
 
 
 class DiffEvent:
     def __init__(self):
         self.event = {}
-        self.trigger_arrows = []
+        self.trigger_arrows = DiffElement()
         self.assignments = {}
-        self.trigger_math = ""
-        self.trigger_params = []
+        self.trigger_math = DiffElement()
+        self.trigger_params = DiffElement()
 
     def check_target_exists(self, target):
         if target not in self.assignments.keys():
@@ -81,57 +83,53 @@ class DiffEvent:
     def set_event(self, event_hash, event_name, model_set):
         self.event = {"event_hash": event_hash, "event_name": event_name, "model_set": model_set}
 
-    def add_trigger_species(self, species, event_hash, model_set):
-        self.trigger_arrows.append({"species": species, "event_hash": event_hash, "model_set": model_set})
+    def add_trigger_species(self, species, event_hash, model_num):
+        self.trigger_arrows.add({"species": species, "event_hash": event_hash}, model_num)
 
-    def add_set_species(self, species_id, event_hash, math_expr, model_set):
+    def add_set_species(self, species_id, math_expr, model_num):
         self.check_target_exists(species_id)
-        self.assignments[species_id].model_set = model_set
-        self.assignments[species_id].math_expr = math_expr
+        self.assignments[species_id].math_expr.add({"math_expr": math_expr}, model_num)
 
-    def add_event_affect_value_arrow(self, variable_set, species, event_hash, arrow_direction, model_set):
+    def add_event_affect_value_arrow(self, variable_set, species, event_hash, arrow_direction, model_num):
         self.check_target_exists(variable_set)
-        self.assignments[variable_set].affect_value_arrows.append(
-                {"species": species, "event_hash": event_hash, "arrow_direction": arrow_direction,
-                 "model_set": model_set})
+        self.assignments[variable_set].affect_value_arrows.add(
+                {"species": species, "event_hash": event_hash, "arrow_direction": arrow_direction}, model_num)
 
-    def add_assignment_param_arrow(self, variable_set, species, event_hash, arrow_direction, model_set):
+    def add_assignment_param_arrow(self, variable_set, species, event_hash, arrow_direction, model_num):
         self.check_target_exists(variable_set)
-        self.assignments[variable_set].affect_value_param_arrows.append(
-                {"param": species, "event_hash": event_hash, "arrow_direction": arrow_direction,
-                 "model_set": model_set})
+        self.assignments[variable_set].affect_value_param_arrows.add(
+                {"param": species, "event_hash": event_hash, "arrow_direction": arrow_direction}, model_num)
 
-    def set_trigger(self, math_expr):
-        self.trigger_math = math_expr
+    def add_trigger(self, math_expr, model_num):
+        self.trigger_math.add({"math_expr": math_expr}, model_num)
 
-    def add_param(self, param, model_set, event_hash):
-        self.trigger_params.append({"param": param, "model_set": model_set, "event_hash": event_hash})
+    def add_param(self, param, event_hash, model_num):
+        self.trigger_params.add({"param": param, "event_hash": event_hash}, model_num)
 
 
 class DiffRule:
-    def __init__(self):
-        self.rule = {}
-        self.algebraic_arrows = []
-        self.modifier_arrows = []
-        self.target_arrows = []
-        self.parameter_arrows = []
+    def __init__(self, rule_id):
+        self.rule_id = rule_id
+        self.algebraic_arrows = DiffElement()
+        self.modifier_arrows = DiffElement()
+        self.target_arrows = DiffElement()
+        self.parameter_arrows = DiffElement()
+        self.rate_laws = DiffElement()
 
-    def set_rule(self, model_set, rule_id, rate_law, converted_rate_law):
-        self.rule = {"model_set": model_set, "rule_id": rule_id, "rate_law": rate_law,
-                     "converted_rate_law": converted_rate_law}
+    def add_rate_law(self, model_num, converted_rate_law):
+        self.rate_laws.add({"converted_rate_law": converted_rate_law}, model_num)
 
-    def add_algebraic_arrow(self, model_set, rule_id, species_id):
-        self.algebraic_arrows.append({"model_set": model_set, "rule_id": rule_id, "species_id": species_id})
+    def add_algebraic_arrow(self, model_num, rule_id, species_id):
+        self.algebraic_arrows.add({"rule_id": rule_id, "species_id": species_id}, model_num)
 
-    def add_modifier_arrow(self, model_set, rule_id, modifier, arrow_direction):
-        self.modifier_arrows.append(
-                {"model_set": model_set, "rule_id": rule_id, "modifier": modifier, "arrow_direction": arrow_direction})
+    def add_modifier_arrow(self, model_num, rule_id, modifier, arrow_direction):
+        self.modifier_arrows.add({"rule_id": rule_id, "modifier": modifier, "arrow_direction": arrow_direction}, model_num)
 
-    def add_target_arrow(self, model_set, target):
-        self.target_arrows.append({"model_set": model_set, "target": target})
+    def add_target_arrow(self, model_num, target):
+        self.target_arrows.add({"target": target}, model_num)
 
-    def add_parameter_rule(self, model_set, rule_id, param, arrow_direction):
-        self.parameter_arrows.append({"model_set": model_set, "rule_id": rule_id, "param": param, "arrow_direction": arrow_direction})
+    def add_parameter_rule(self, model_num, rule_id, param, arrow_direction):
+        self.parameter_arrows.add({"rule_id": rule_id, "param": param, "arrow_direction": arrow_direction}, model_num)
 
 
 class DiffReaction:
@@ -170,3 +168,47 @@ class DiffReaction:
 
     def add_parameter_arrow(self, model_set, reaction_id, param, arrow_direction):
         self.parameter_arrows.append({"model_set": model_set, "reaction_id": reaction_id, "param": param, "arrow_direction": arrow_direction})
+
+
+class DiffElement:
+    def __init__(self):
+        self.record = {}
+
+    def add(self, data_tuple, model_num):
+        data_tuple = FrozenDict(data_tuple)
+        if data_tuple not in self.record.keys():
+            self.record[data_tuple] = set()
+        self.record[data_tuple].add(model_num)
+
+    def get_models(self):
+        return list(reduce(lambda x,y: x.union(y), self.record.keys()))
+
+    def get_data(self):
+        return self.record.keys()
+
+    def all_equal(self):
+        return len(self.record.values()) == 1
+
+    def compare(self):
+        if self.all_equal():
+            return list(self.record.values())[0]
+        else:
+            return "different"
+
+class FrozenDict(collections.Mapping):
+    """This class is from https://stackoverflow.com/posts/2705638/revisions"""
+
+    def __init__(self, *args, **kwargs):
+        self._d = dict(*args, **kwargs)
+
+    def __iter__(self):
+        return iter(self._d)
+
+    def __len__(self):
+        return len(self._d)
+
+    def __getitem__(self, key):
+        return self._d[key]
+
+    def __hash__(self):
+        return hash(tuple(sorted(self._d.iteritems())))
