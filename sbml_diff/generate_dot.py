@@ -25,7 +25,7 @@ class GenerateDot:
         # If too few colors specified, extend using categorical 12-step scheme from
         # http://geog.uoregon.edu/datagraphics/color_scales.htm#Categorical%20Color%20Schemes
         default_colors = ["#FFBF7F", "#FF7F00", "#FFFF99", "#FFFF32", "#B2FF8C", "#32FF00",
-                       "#A5EDFF", "#19B2FF", "#CCBFFF", "#654CFF", "#FF99BF", "#E51932"]
+                          "#A5EDFF", "#19B2FF", "#CCBFFF", "#654CFF", "#FF99BF", "#E51932"]
         if len(self.colors) < self.num_models:
             spare_colors = set(default_colors).difference(self.colors)
             extra_colors = self.num_models - len(self.colors)
@@ -67,8 +67,8 @@ class GenerateDot:
                 if r["is_transcription"]:
                     self.print_transcription_reaction_node(r["model_set"], r["reaction_id"], r["rate_law"], r["reaction_name"], r["converted_law"], r["product_status"])
                 else:
-                    self.print_reaction_node(r["model_set"], r["reaction_id"], r["rate_law"], r["reaction_name"], r["converted_law"],
-                            r["fast_model_set"], r["irreversible_model_set"])
+                    self.print_reaction_node(r["model_set"], r["reaction_id"], r["rate_law"], r["reaction_name"],
+                                             r["converted_law"], r["fast_model_set"], r["irreversible_model_set"])
 
                 # reactant arrows
                 for r in reaction.reactant_arrows:
@@ -447,7 +447,7 @@ class GenerateDot:
         print "\n"
         print "}"
 
-    def print_species_node(self, model_set, isBoundary, species_id, species_name):
+    def print_species_node(self, model_set, is_boundary, species_id, species_name):
         """
         Draw node representing a species.
 
@@ -465,14 +465,13 @@ class GenerateDot:
         base_style = ""
         doubled = ""
 
-        if isBoundary == '?':
+        if is_boundary == '?':
             base_style = 'dashed'
-        elif isBoundary.lower() == 'true':
+        elif is_boundary.lower() == 'true':
             doubled = 'peripheries=2'
 
         style = self.check_style(model_set, base_style)
         print '"%s" [color="%s",label="%s" %s %s %s];' % (species_id, color, species_name, doubled, fill, style)
-
 
     def print_regulatory_arrow(self, model_set, arrow_source, arrow_target, arrow_direction):
         """
@@ -534,7 +533,6 @@ class GenerateDot:
         style = self.check_style(model_set)
         print 'rule_%s -> "%s" [color="%s", style="dotted" %s];' % (event_id, target, color, style)
 
-
     def print_rule_target_arrow(self, model_set, target):
         """
         Draw arrow from rule to species
@@ -583,7 +581,6 @@ class GenerateDot:
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
         print 'rule_%s -> %s [color="%s", dir="none" %s];' % (rule_id, species_id, color, style)
-
 
     def print_abstracted_arrow(self, model_set, modifier, target, effect_type):
         """

@@ -131,7 +131,7 @@ class DiffRule:
         self.target_arrows.append({"model_set": model_set, "target": target})
 
     def add_parameter_rule(self, model_set, rule_id, param, arrow_direction):
-        self.parameter_arrows.append({"model_set": model_set, "rule_id": rule_id, "param": param, "arrow_direction": "none"})
+        self.parameter_arrows.append({"model_set": model_set, "rule_id": rule_id, "param": param, "arrow_direction": arrow_direction})
 
 
 class DiffReaction:

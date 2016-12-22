@@ -138,7 +138,7 @@ def get_species_compartment(model, species_id, species_compartments):
         return "NONE"
 
     if species_id in species_compartments.keys():
-        return  species_compartments[species_id]
+        return species_compartments[species_id]
     else:
         return "NONE"
 
@@ -225,7 +225,6 @@ def get_reaction_details(model, reaction, species_compartments):
     else:
         rate_law = ""
 
-
     return reactant_list, product_list, compartment, rate_law, reactant_stoichiometries, product_stoichiometries
 
 
@@ -254,7 +253,7 @@ def get_reactions(model):
     return reactions
 
 
-def get_rule_details(model, target_id, species_compartments, draw_modifier_params=True):
+def get_rule_details(model, target_id, species_compartments):
     """
     Given the id of a species affected by a rule, find details of that rule.
 

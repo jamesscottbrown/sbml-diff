@@ -82,6 +82,7 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
 
         if "type" in expression.attrs.keys():
             children = []
+            term = ""
             for child in expression.children:
                 children.append(child)
 
@@ -270,12 +271,12 @@ def inline_all_functions(model):
     # Get function definitions
     function_definition = {}
 
-    listOfFunctionDefinitions = model.select_one('listOfFunctionDefinitions')
+    function_definitions = model.select_one('listOfFunctionDefinitions')
 
-    if not listOfFunctionDefinitions:
+    if not function_definitions:
         return model
 
-    for function in listOfFunctionDefinitions.select("functionDefinition"):
+    for function in function_definitions.select("functionDefinition"):
 
         function_id = function.attrs["id"]
         math = copy.copy(function.select_one("math").select_one("lambda"))
@@ -303,17 +304,17 @@ def inline_all_functions(model):
         replaced = False
 
         for math in model.select("math"):
-            for apply in math.select('apply'):
+            for apply_element in math.select('apply'):
                 # get list of tag children
                 children = []
-                for child in apply.contents:
+                for child in apply_element.contents:
                     if not isinstance(child, NavigableString):
                         children.append(child)
 
                 name = children[0].text.strip()
                 if name in function_definition.keys():
                     inlined = inline_function_call(function_definition[name], children[1:])
-                    apply.replace_with(inlined)
+                    apply_element.replace_with(inlined)
                     replaced = True
                     break
     return model
@@ -350,6 +351,5 @@ def inline_function_call(func, arguments):
         if args[i] in cis.keys():
             for ci in cis[args[i]]:
                 ci.replace_with(copy.copy(arguments[i]))
-
 
     return math

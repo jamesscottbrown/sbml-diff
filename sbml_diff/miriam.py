@@ -30,25 +30,25 @@ def align_element(models, element_type):
     for model in models:
         for tag in model.select(element_type):
             identifiers = get_identifiers(tag)
-            id = tag["id"]
+            tag_id = tag["id"]
 
             if not identifiers:
                 continue
 
-            if id in all_identifiers.keys() and all_identifiers[id] != identifiers:
-                sys.stderr.write("Cannot match using MIRIAM identifiers: %s id %s has two or more sets of annotations\n"\
-                      % (element_type, id))
-                print "Set one: \n", get_identifiers(all_identifiers[id])
+            if tag_id in all_identifiers.keys() and all_identifiers[tag_id] != identifiers:
+                sys.stderr.write("Cannot match using MIRIAM identifiers: %s id %s has two or more sets of annotations\n"
+                                 % (element_type, tag_id))
+                print "Set one: \n", get_identifiers(all_identifiers[tag_id])
                 print "Set two: \n", identifiers
                 sys.exit()
 
             identifier_values = all_identifiers.values()
             if identifiers in identifier_values:
                 rename_to = all_identifiers.keys()[identifier_values.index(identifiers)]
-                if rename_to != id:
-                    elements.append((model, id, rename_to))
+                if rename_to != tag_id:
+                    elements.append((model, tag_id, rename_to))
 
-            all_identifiers[id] = identifiers
+            all_identifiers[tag_id] = identifiers
 
     if len(all_identifiers.keys()) == 0:
         sys.stderr.write("Cannot fully match using MIRIAM identifiers: no %s in any model has any identifier\n" % element_type)

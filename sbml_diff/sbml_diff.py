@@ -97,7 +97,6 @@ class SBMLDiff:
 
             self.reaction_name.append(tmp)
 
-
         if self.cartoon:
             self.elided_list = []
             self.elided_reactions = []
@@ -122,13 +121,13 @@ class SBMLDiff:
             if "level1" in model.select_one('sbml').attrs['xmlns']:
                 raise RuntimeError("Every model must be in SBML level 2 or higher, since sbml-diff relies on id attributes")
 
-    def print_rate_law_table(self, format="simple"):
+    def print_rate_law_table(self, output_format="simple"):
         """
         Print a table of kineticLaws, in which rows correspond to reactions and columns to models.
 
         Parameters
         ----------
-        format : a table format supported by tabulate (e.g. simple, html)
+        output_format : a table format supported by tabulate (e.g. simple, html)
         """
 
         # get list of all reactions in all models
@@ -160,15 +159,15 @@ class SBMLDiff:
 
             rows.append(rates)
 
-        print tabulate(rows, ["Reaction"] + self.model_names, tablefmt=format)
+        print tabulate(rows, ["Reaction"] + self.model_names, tablefmt=output_format)
 
-    def compare_params(self, format="simple"):
+    def compare_params(self, output_format="simple"):
         """
         Print a table of parameter values, in which rows correspond to reactions and columns to models.
 
         Parameters
         ----------
-        format : a table format supported by tabulate (e.g. simple, html)
+        output_format : a table format supported by tabulate (e.g. simple, html)
         """
 
         models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
@@ -197,7 +196,7 @@ class SBMLDiff:
                     self.generate_dot.differences_found = True
             rows.append(row)
 
-        print tabulate(rows, ["Parameter"] + self.model_names, tablefmt=format)
+        print tabulate(rows, ["Parameter"] + self.model_names, tablefmt=output_format)
 
     def diff_events(self):
         """
@@ -209,7 +208,6 @@ class SBMLDiff:
 
         event_status = {}
         event_objects = {}
-        has_id = {}
 
         for model_num, model in enumerate(self.models):
             event_list = model.select_one("listOfEvents")
@@ -280,7 +278,6 @@ class SBMLDiff:
                     else:
                         trigger_expr = "different"
 
-
             event_assignments = event.select("eventAssignment")
             if event_assignments:
                 for event in event_assignments:
@@ -333,7 +330,6 @@ class SBMLDiff:
                         affects_value_status[arrow].append(model_num)
 
                     # arrow from param effe
-
 
         # record event node
         diff_event = self.diff_object.add_event()
@@ -422,7 +418,7 @@ class SBMLDiff:
                 if not rate_law:
                     continue
 
-                if rate_law and not rule_id in rate_laws.keys():
+                if rate_law and rule_id not in rate_laws.keys():
                     rate_laws[rule_id] = rate_law
                 if rule_id in rate_laws.keys() and rate_law and rate_laws[rule_id] != rate_law:
                     rate_laws[rule_id] = "different"
@@ -718,7 +714,7 @@ class SBMLDiff:
             converted_rate_law = convert_rate_law(rate_laws)
 
         reaction.set_reaction(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law,
-                                     fast_model_set, irreversible_model_set, product_status, transcription_reaction)
+                              fast_model_set, irreversible_model_set, product_status, transcription_reaction)
 
     def find_downstream_species(self):
         """
@@ -737,7 +733,6 @@ class SBMLDiff:
             self.elided_list.append([])
             self.elided_reactions.append([])
             self.downstream_species.append({})
-
 
             # first, form a list of species that cannot safely be elided, because they are a reactant or modifier in a
             # reaction other than degredation or translation
@@ -897,7 +892,6 @@ class SBMLDiff:
         if not self.hide_rules:
             self.diff_rules()
             self.diff_algebraic_rules()
-
 
         compartment_ids = set()
         for model_num, model in enumerate(self.models):

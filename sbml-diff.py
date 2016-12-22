@@ -56,13 +56,13 @@ if __name__ == '__main__':
         all_colors = args.colors.split(",")
 
         if len(all_colors) != num_files:
-            print "Error: number of colors (%s) does not match number of input files (%s)\n" % (len(all_colors), num_files)
+            print "Error: number of colors (%s) does not match number of input files (%s)\n" %\
+                  (len(all_colors), num_files)
             parser.print_help()
             sys.exit(0)
 
     else:
-        all_colors = ["#e41a1c","#377eb8","#4daf4a","#984ea3","#ff7f00","#ffff33","#a65628","#f781bf","#999999"]
-
+        all_colors = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33", "#a65628", "#f781bf", "#999999"]
 
     reaction_labels = ""
     if args.labels:
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     else:
         old_stdout = sys.stdout
 
-    buffer = StringIO()
-    f = codecs.getwriter("utf8")(buffer)
+    output_buffer = StringIO()
+    f = codecs.getwriter("utf8")(output_buffer)
     sys.stdout = f
 
     rankdir = "TB"
@@ -134,7 +134,6 @@ if __name__ == '__main__':
             sys.stdout = old_stdout
 
         sys.exit()
-
 
     try:
 
