@@ -63,7 +63,7 @@ class SBMLDiff:
                 for species in species_list.select("species"):
                     species_id = species.attrs["id"]
                     compartment = species.attrs["compartment"]
-                    tmp[id] = compartment
+                    tmp[species_id] = compartment
 
                     if "initialConcentration" in species.attrs:
                         tmp_concentrations[species_id] = species.attrs["initialConcentration"]
