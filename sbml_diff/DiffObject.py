@@ -6,59 +6,54 @@ class DiffObject:
         self.compartments = {}
         self.add_compartment("NONE")
         self.events = []  # should probably be moved into compartment ?
-        self.rules = []
-        self.reactions = []
         self.param_nodes = []
 
-    def add_compartment(self, compartment):
-        self.compartments[compartment] = {}
-        self.compartments[compartment]["rules"] = []
-        self.compartments[compartment]["reactions"] = []
-        self.compartments[compartment]["species"] = []
-        self.compartments[compartment]["regulatory_arrows"] = []
+    def add_compartment(self, compartment_id):
+        self.compartments[compartment_id] = DiffCompartment()
+        return self.compartments[compartment_id]
 
     def check_compartment_exists(self, compartment):
         if compartment not in self.compartments.keys():
             self.add_compartment(compartment)
+        return self.compartments[compartment]
 
     def add_event(self):
         new_event = DiffEvent()
         self.events.append(new_event)
         return new_event
 
-    def add_rule(self, rule_id, compartment=""):
-        new_rule = DiffRule(rule_id)
-
-        if not compartment:
-            compartment = "NONE"
-
-        self.check_compartment_exists(compartment)
-        self.compartments[compartment]["rules"].append(new_rule)
-        return new_rule
-
-    def add_reaction(self, compartment=""):
-        new_reaction = DiffReaction()
-
-        if not compartment:
-            compartment = "NONE"
-        self.check_compartment_exists(compartment)
-        self.compartments[compartment]["reactions"].append(new_reaction)
-        return new_reaction
-
-    def add_species(self, compartment, model_set, is_boundary, species_id, species_name):
-        self.check_compartment_exists(compartment)
-        self.compartments[compartment]["species"].append(
-                {"model_set": model_set, "isBoundary": is_boundary, "species_id": species_id,
-                 "species_name": species_name})
-
-    def add_regulatory_arrow(self, compartment, model_set, arrow_source, arrow_target, arrow_direction):
-        self.check_compartment_exists(compartment)
-        self.compartments[compartment]["regulatory_arrows"].append(
-                {"model_set": model_set, "arrow_source": arrow_source, "arrow_target": arrow_target,
-                 "arrow_direction": arrow_direction})
-
     def add_param_node(self, variable_id, variable_name, model_set):
         self.param_nodes.append({"variable_id": variable_id, "variable_name": variable_name, "model_set": model_set})
+
+
+class DiffCompartment:
+    def __init__(self):
+        self.species = {}
+        self.regulatory_arrows = DiffElement()
+        self.reactions = []
+        self.rules = []
+
+    def add_species(self, species_id, is_boundary, species_name, elided, model_num):
+
+        if species_id not in self.species.keys():
+            self.species[species_id] = DiffElement()
+
+        self.species[species_id].add({"species_id": species_id, "is_boundary": is_boundary, "species_name": species_name,
+                          "elided": elided}, model_num)
+
+    def add_regulatory_arrow(self, arrow_source, arrow_target, arrow_direction, model_num):
+        self.regulatory_arrows.add({"arrow_source": arrow_source, "arrow_target": arrow_target,
+                                    "arrow_direction": arrow_direction}, model_num)
+
+    def add_reaction(self):
+        new_reaction = DiffReaction()
+        self.reactions.append(new_reaction)
+        return new_reaction
+
+    def add_rule(self, rule_id):
+        new_rule = DiffRule(rule_id)
+        self.rules.append(new_rule)
+        return new_rule
 
 
 class DiffEventAssignment:
@@ -194,6 +189,19 @@ class DiffElement:
             return list(self.record.values())[0]
         else:
             return "different"
+
+    def compare_attribute(self, attribute_name):
+        val_set = False
+        val = False
+        for data_tuple in self.record:
+            if not val_set:
+                val = data_tuple[attribute_name]
+                val_set = True
+            elif val != data_tuple[attribute_name]:
+                return "different"
+
+        return val
+
 
 class FrozenDict(collections.Mapping):
     """This class is from https://stackoverflow.com/posts/2705638/revisions"""

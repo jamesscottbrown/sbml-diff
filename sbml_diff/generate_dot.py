@@ -58,10 +58,19 @@ class GenerateDot:
             if compartment_id is not "NONE":
                 self.print_compartment_header(compartment_id)
 
-            for species in compartment["species"]:
-                self.print_species_node(species["model_set"], species["isBoundary"], species["species_id"], species["species_name"])
+            for species_id in compartment.species.keys():
 
-            for reaction in compartment["reactions"]:
+                diff_species = compartment.species[species_id]
+                for species in diff_species.record:
+
+                    model_set = diff_species.record[species]
+                    is_boundary = diff_species.compare_attribute("is_boundary")
+                    species_name = diff_species.compare_attribute("species_name")
+
+                    if not diff_species.compare_attribute("elided") == True:
+                        self.print_species_node(model_set, is_boundary, species["species_id"], species_name)
+
+            for reaction in compartment.reactions:
                 # reaction node
                 r = reaction.reaction
                 if r["is_transcription"]:
@@ -86,10 +95,11 @@ class GenerateDot:
                 for product_arrow in reaction.transcription_product_arrows:
                     self.print_transcription_product_arrow(product_arrow["model_set"], product_arrow["reaction_id"], product_arrow["product"], product_arrow["stoich"])
 
-            for r in compartment["regulatory_arrows"]:
-                self.print_regulatory_arrow(r["model_set"], r["arrow_source"], r["arrow_target"], r["arrow_direction"])
+            for r in compartment.regulatory_arrows.record:
+                model_set = compartment.regulatory_arrows.record[r]
+                self.print_regulatory_arrow(model_set, r["arrow_source"], r["arrow_target"], r["arrow_direction"])
 
-            for r in compartment["rules"]:
+            for r in compartment.rules:
                 rate_law = r.rate_laws.compare()
                 self.print_rule_node(r.rate_laws.get_models(), r.rule_id, rate_law)
 
@@ -477,7 +487,7 @@ class GenerateDot:
         base_style = ""
         doubled = ""
 
-        if is_boundary == '?':
+        if is_boundary == 'different':
             base_style = 'dashed'
         elif is_boundary.lower() == 'true':
             doubled = 'peripheries=2'

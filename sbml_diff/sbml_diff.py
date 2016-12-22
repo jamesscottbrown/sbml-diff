@@ -336,7 +336,7 @@ class SBMLDiff:
                 else:
                     rule_id = "assignmentRule" + "_".join(species_in_rule)
                 if rule_id not in rule_diffs.keys():
-                    rule_diffs[rule_id] = self.diff_object.add_rule(rule_id)
+                    rule_diffs[rule_id] = self.diff_object.compartments["NONE"].add_rule(rule_id)
 
                 for species_id in species_in_rule:
                     rule_diffs[rule_id].add_algebraic_arrow(model_num, rule_id, species_id)
@@ -386,18 +386,21 @@ class SBMLDiff:
         # 'modifiers' appear in the math expression of a rule that sets 'target'
         # a rule has only one target, whereas reaction may have multiple products
 
-        target_status = set()
-        rate_laws = ""
+        # Rules assigned to different compartments are considered to be distinct, event if they have the same targer
 
-        rule = self.diff_object.add_rule(target_id)
+        diff_rules = {}
         for model_num, model in enumerate(self.models):
             _, compartment, rate_law = get_rule_details(model, target_id, self.species_compartment[model_num])
+
+            self.diff_object.check_compartment_exists(compartment)
+            if compartment not in diff_rules.keys():
+                diff_rules[compartment] = self.diff_object.compartments[compartment].add_rule(target_id)
 
             if not rate_law:
                 rate_law = ""
 
-            converted_rate_law = convert_rate_law(rate_laws)
-            rule.add_rate_law(model_num, converted_rate_law)
+            converted_rate_law = convert_rate_law(rate_law)
+            diff_rules[compartment].add_rate_law(model_num, converted_rate_law)
 
             entities = rate_law.select("ci")
             for entity in entities:
@@ -405,14 +408,14 @@ class SBMLDiff:
                 arrow_direction = categorise_interaction(rate_law.parent, entity, self.initial_value[model_num])
 
                 if entity in self.species_compartment[model_num].keys():
-                    rule.add_modifier_arrow(model_num, target_id, entity, arrow_direction)
+                    diff_rules[compartment].add_modifier_arrow(model_num, target_id, entity, arrow_direction)
                 else:
-                    rule.add_parameter_rule(model_num, target_id, entity, arrow_direction)
+                    diff_rules[compartment].add_parameter_rule(model_num, target_id, entity, arrow_direction)
 
             # targets
             species_list = self.models[model_num].select_one('listOfSpecies')
             if self.show_params or (species_list and species_list.find(id=target_id)):
-                rule.add_target_arrow(model_num, target_id)
+                diff_rules[compartment].add_target_arrow(model_num, target_id)
 
     def diff_reactions(self):
         """
@@ -560,7 +563,8 @@ class SBMLDiff:
         if not ever_drawn:
             return ""
 
-        reaction = self.diff_object.add_reaction(compartment)
+        self.diff_object.check_compartment_exists(compartment)
+        reaction = self.diff_object.compartments[compartment].add_reaction()
 
         # reactant arrows
         for reactant_num, reactant in enumerate(reactant_status):
@@ -694,61 +698,36 @@ class SBMLDiff:
         Parameters
         ----------
         compartment_id : the id of a compartment
-        reaction_strings : list of strings, each a DOT statement describing the nodes representing reaction
-        rule_strings : list of strings, each a DOT statement describing the nodes representing assignmentRules/rateRules
-        algebraic_rule_strings : list of strings, each a DOT statement describing the nodes representing algebraicRules
         """
 
-        # For each species, find set of models containing it
-        species_status = {}
-        is_boundary_species = {}
+        diff_compartment = self.diff_object.check_compartment_exists(compartment_id)
+
+        # Process all species
         for model_num, model in enumerate(self.models):
             for species in get_species(model, compartment_id):
-
-                if species not in species_status.keys():
-                    species_status[species] = set()
-                species_status[species].add(model_num)
 
                 s = model.select_one("listOfSpecies").find(id=species)
                 is_boundary = ""
                 if "boundaryCondition" in s.attrs.keys():
                     is_boundary = s.attrs["boundaryCondition"]
 
-                if species not in is_boundary_species.keys():
-                    is_boundary_species[species] = is_boundary
-                elif is_boundary_species[species] != is_boundary:
-                    is_boundary_species[species] = '?'
+                species_name = get_species_name(model, species)
 
-        for species in species_status:
-            parent_model_index = list(species_status[species])[0]
-            parent_model = self.models[parent_model_index]
-            species_name = get_species_name(parent_model, species)
+                elided = False
+                if self.cartoon and species in self.elided_list[model_num]:
+                    elided = True
 
-            # In cartoon mode, don't draw species node unless there is >=1 model in which it is present and not elided
-            draw = True
-            if self.cartoon:
-                draw = False
-                for model_num in species_status[species]:
-                    if species not in self.elided_list[model_num]:
-                        draw = True
-            if draw:
-                self.diff_object.add_species(compartment_id, species_status[species], is_boundary_species[species], species, species_name)
+                diff_compartment.add_species(species, is_boundary, species_name, elided, model_num)
 
-        # for each regulatory interaction - (reactant, reaction, effect direction) tuple - find set of models containing it
-        arrow_status = {}
+        # Process regulatory interactions
         for model_num, model in enumerate(self.models):
             if self.cartoon:
                 arrows = get_regulatory_arrow(model, compartment_id, self.reactions[model_num], self.species_compartment[model_num], self.initial_value[model_num], elided_reactions=self.elided_reactions[model_num])
             else:
                 arrows = get_regulatory_arrow(model, compartment_id, self.reactions[model_num], self.species_compartment[model_num], self.initial_value[model_num])
 
-            for ind, arrow in enumerate(arrows):
-                if arrow not in arrow_status.keys():
-                    arrow_status[arrow] = set()
-                arrow_status[arrow].add(model_num)
-
-        for ind, arrow in enumerate(arrow_status):
-            self.diff_object.add_regulatory_arrow(compartment_id, arrow_status[arrow], arrow[0], arrow[1], arrow[2])
+            for arrow in arrows:
+                diff_compartment.add_regulatory_arrow(arrow[0], arrow[1], arrow[2], model_num)
 
     def diff_models(self):
         """
@@ -773,6 +752,7 @@ class SBMLDiff:
                 if "id" in compartment.attrs.keys():
                     compartment_ids.add(compartment.attrs["id"])
 
+        self.diff_object.check_compartment_exists("NONE") # Is this necessary?
         for compartment_id in compartment_ids:
             self.diff_compartment(compartment_id)
 
