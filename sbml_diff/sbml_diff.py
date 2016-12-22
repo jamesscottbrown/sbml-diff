@@ -349,7 +349,7 @@ class SBMLDiff:
         """
         Compare all (rate or assignment) rules between models.
         """
-        rule_status = {}
+        rule_targets = set()
         for model_num, model in enumerate(self.models):
             rule_targets = get_variables_set_by_rules(model)
 
@@ -360,12 +360,9 @@ class SBMLDiff:
                         self.modified_params[rule_target] = set()
                     self.modified_params[rule_target].add(model_num)
 
-                if rule_target not in rule_status.keys():
-                    rule_status[rule_target] = set()
+                rule_targets.add(rule_target)
 
-                rule_status[rule_target].add(model_num)
-
-        for rule_target in rule_status:
+        for rule_target in rule_targets:
             self.diff_rule(rule_target)
 
     def diff_rule(self, target_id):
@@ -417,17 +414,13 @@ class SBMLDiff:
         Compare all reactions between models.
         """
 
-        reaction_status = {}
+        reaction_list = set()
         for model_num, model in enumerate(self.models):
             reactions = get_reactions(model)
-
             for reaction in reactions:
-                if reaction not in reaction_status.keys():
-                    reaction_status[reaction] = set()
-
-                reaction_status[reaction].add(model_num)
-
-        for reaction_id in reaction_status:
+                reaction_list.add(reaction)
+                
+        for reaction_id in reaction_list:
             self.diff_reaction(reaction_id)
 
     def diff_reaction(self, reaction_id):
