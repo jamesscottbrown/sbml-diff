@@ -235,8 +235,6 @@ class SBMLDiff:
 
         # process trigger statement
         event_name = ""
-        set_species_status = {}
-        assignment_expr = {}
 
         for model_num in model_set:
             species_ids = self.species_compartment[model_num].keys()
@@ -294,9 +292,6 @@ class SBMLDiff:
 
         # record event node
         diff_event.set_event(event_id, event_name, model_set)
-
-        for species in set_species_status:
-            diff_event.add_set_species(species, event_id, assignment_expr[species], set_species_status[species])
 
     def diff_algebraic_rules(self):
         """
