@@ -30,7 +30,7 @@ class DiffCompartment:
     def __init__(self):
         self.species = {}
         self.regulatory_arrows = DiffElement()
-        self.reactions = []
+        self.reactions = {}
         self.rules = []
 
     def add_species(self, species_id, is_boundary, species_name, elided, model_num):
@@ -45,16 +45,18 @@ class DiffCompartment:
         self.regulatory_arrows.add({"arrow_source": arrow_source, "arrow_target": arrow_target,
                                     "arrow_direction": arrow_direction}, model_num)
 
-    def add_reaction(self):
-        new_reaction = DiffReaction()
-        self.reactions.append(new_reaction)
-        return new_reaction
+    def add_reaction(self, reaction_id, rate_law, reaction_name, converted_rate_law, is_fast, is_irreversible, is_transcription, model_num):
+        if reaction_id not in self.reactions.keys():
+            self.reactions[reaction_id] = DiffReaction(reaction_id)
+
+        self.reactions[reaction_id].add_instance(rate_law, reaction_name, converted_rate_law, is_fast, is_irreversible, is_transcription, model_num)
+
+        return self.reactions[reaction_id]
 
     def add_rule(self, rule_id):
         new_rule = DiffRule(rule_id)
         self.rules.append(new_rule)
         return new_rule
-
 
 class DiffEventAssignment:
     def __init__(self):
@@ -128,41 +130,46 @@ class DiffRule:
 
 
 class DiffReaction:
-    def __init__(self):
-        self.reaction = {}
-        self.reactant_arrows = []
-        self.product_arrows = []
-        self.transcription_reaction_nodes = []
-        self.transcription_product_arrows = []
-        self.parameter_arrows = []
+    def __init__(self, reaction_id):
+        self.reaction_id = reaction_id
+        self.reaction_node = DiffElement()
+        self.reactant_arrows = {}
+        self.product_arrows = {}
+        self.transcription_reaction_nodes = DiffElement()
+        self.transcription_product_arrows = {}
+        self.parameter_arrows = {}
 
-    def set_reaction(self, model_set, reaction_id, rate_law, reaction_name, converted_law,
-                     fast_model_set, irreversible_model_set, product_status, is_transcription):
-        self.reaction = {"model_set": model_set, "reaction_id": reaction_id, "rate_law": rate_law,
-                         "reaction_name": reaction_name, "converted_law": converted_law,
-                         "fast_model_set": fast_model_set, "irreversible_model_set": irreversible_model_set,
-                         "product_status": product_status, "is_transcription": is_transcription}
+    def add_instance(self, rate_law, reaction_name, converted_rate_law, is_fast, is_irreversible, is_transcription, model_num):
+        self.reaction_node.add({"rate_law": rate_law, "reaction_name": reaction_name,
+                                "converted_rate_law": converted_rate_law, "is_fast": is_fast,
+                                "is_irreversible": is_irreversible, "is_transcription": is_transcription}, model_num)
 
-    def add_reactant_arrow(self, model_set, reaction_id, reactant, stoich):
-        self.reactant_arrows.append(
-                {"model_set": model_set, "reaction_id": reaction_id, "reactant": reactant, "stoich": stoich})
+    def add_reactant_arrow(self, reaction_id, reactant, stoich, model_num):
+        if reactant not in self.reactant_arrows.keys():
+            self.reactant_arrows[reactant] = DiffElement()
+        self.reactant_arrows[reactant].add({"reaction_id": reaction_id, "reactant": reactant, "stoich": stoich}, model_num)
 
-    def add_product_arrow(self, model_set, reaction_id, product, stoich):
-        self.product_arrows.append(
-                {"model_set": model_set, "reaction_id": reaction_id, "product": product, "stoich": stoich})
+    def add_product_arrow(self, reaction_id, product, stoich, model_num):
+        if product not in self.product_arrows.keys():
+            self.product_arrows[product] = DiffElement()
 
-    def add_transcription_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law,
-                                        product_status):
-        self.transcription_reaction_nodes.append(
-                {"model_set": model_set, "reaction_id": reaction_id, "rate_law": rate_law,
-                 "reaction_name": reaction_name, "converted_law": converted_law, "product_status": product_status})
+        self.product_arrows[product].add({"reaction_id": reaction_id, "product": product, "stoich": stoich}, model_num)
 
-    def add_transcription_product_arrow(self, model_set, reaction_id, product, stoich):
-        self.transcription_product_arrows.append(
-                {"model_set": model_set, "reaction_id": reaction_id, "product": product, "stoich": stoich})
+    def add_transcription_reaction_node(self, reaction_id, rate_law, reaction_name, converted_law,
+                                        product_status, model_num):
+        self.transcription_reaction_nodes.add({"reaction_id": reaction_id, "rate_law": rate_law,
+                 "reaction_name": reaction_name, "converted_law": converted_law, "product_status": product_status}, model_num)
 
-    def add_parameter_arrow(self, model_set, reaction_id, param, arrow_direction):
-        self.parameter_arrows.append({"model_set": model_set, "reaction_id": reaction_id, "param": param, "arrow_direction": arrow_direction})
+    def add_transcription_product_arrow(self, reaction_id, product, stoich, model_num):
+        if product not in self.transcription_product_arrows.keys():
+            self.transcription_product_arrows[product] = DiffElement()
+        self.transcription_product_arrows[product].add({"reaction_id": reaction_id, "product": product, "stoich": stoich}, model_num)
+
+    def add_parameter_arrow(self, reaction_id, param, arrow_direction, model_num):
+        if param not in self.parameter_arrows.keys():
+            self.parameter_arrows[param] = DiffElement()
+
+        self.parameter_arrows[param].add({"reaction_id": reaction_id, "param": param, "arrow_direction": arrow_direction}, model_num)
 
 
 class DiffElement:
@@ -190,7 +197,7 @@ class DiffElement:
         else:
             return "different"
 
-    def compare_attribute(self, attribute_name):
+    def compare_attribute(self, attribute_name, different="different"):
         val_set = False
         val = False
         for data_tuple in self.record:
@@ -198,10 +205,17 @@ class DiffElement:
                 val = data_tuple[attribute_name]
                 val_set = True
             elif val != data_tuple[attribute_name]:
-                return "different"
+                return different
 
         return val
 
+    def find_models(self, attribute_name, value):
+
+        model_set = set()
+        for data_tuple in self.record:
+            if attribute_name in data_tuple.keys() and data_tuple[attribute_name] == value:
+                model_set = model_set.union(self.record[data_tuple])
+        return model_set
 
 class FrozenDict(collections.Mapping):
     """This class is from https://stackoverflow.com/posts/2705638/revisions"""

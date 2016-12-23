@@ -70,30 +70,65 @@ class GenerateDot:
                     if not diff_species.compare_attribute("elided") == True:
                         self.print_species_node(model_set, is_boundary, species["species_id"], species_name)
 
-            for reaction in compartment.reactions:
+            for reaction_id in compartment.reactions:
+
+                reaction = compartment.reactions[reaction_id]
                 # reaction node
-                r = reaction.reaction
-                if r["is_transcription"]:
-                    self.print_transcription_reaction_node(r["model_set"], r["reaction_id"], r["rate_law"], r["reaction_name"], r["converted_law"], r["product_status"])
+                r = reaction.reaction_node
+                d = r.get_data()[0]
+
+
+                if r.compare_attribute("is_transcription") == True:
+                    product_status = {}
+                    for product in reaction.transcription_product_arrows:
+                        if product not in product_status.keys():
+                            product_status[product] = set()
+
+                        product_arrows = reaction.transcription_product_arrows[product]
+                        for r1 in product_arrows.record.keys():
+                            model_set = product_arrows.record[r1]
+                        product_status[product] = product_status[product].union(model_set)
+
+                    self.print_transcription_reaction_node(r.get_models(), reaction.reaction_id, r.compare_attribute("rate_law"), r.compare_attribute("reaction_name"), r.compare_attribute("converted_rate_law"), product_status)
                 else:
-                    self.print_reaction_node(r["model_set"], r["reaction_id"], r["rate_law"], r["reaction_name"],
-                                             r["converted_law"], r["fast_model_set"], r["irreversible_model_set"])
+                    fast_model_set = r.find_models("is_fast", True)
+                    irreversible_model_set = r.find_models("is_irreversible", True)
+
+                    self.print_reaction_node(r.get_models(), reaction.reaction_id, r.compare_attribute("rate_law"),
+                                             r.compare_attribute("reaction_name"), r.compare_attribute("converted_rate_law"),
+                                             fast_model_set, irreversible_model_set)
 
                 # reactant arrows
-                for r in reaction.reactant_arrows:
-                    self.print_reactant_arrow(r["model_set"], r["reaction_id"], r["reactant"], r["stoich"])
+                for reactant in reaction.reactant_arrows:
+
+                    reaction_arrow = reaction.reactant_arrows[reactant]
+
+                    for r in reaction_arrow.record:
+                        model_set = reaction_arrow.record[r]
+                        self.print_reactant_arrow(model_set, r["reaction_id"], r["reactant"], reaction_arrow.compare_attribute("stoich", '?'))
 
                 # parameter arrows
-                for r in reaction.parameter_arrows:
-                    if r["param"] in params_to_draw:
-                        self.print_reaction_parameter_arrow(r["model_set"], r["reaction_id"], r["param"])
+                for param in reaction.parameter_arrows:
+                    parameter_arrow = reaction.parameter_arrows[param]
+
+                    for r in parameter_arrow.record:
+                        model_set = parameter_arrow.record[r]
+                        if r["param"] in params_to_draw:
+                            self.print_reaction_parameter_arrow(model_set, r["reaction_id"], r["param"])
 
                 # product arrows
-                for product_arrow in reaction.product_arrows:
-                    self.print_product_arrow(product_arrow["model_set"], product_arrow["reaction_id"], product_arrow["product"], product_arrow["stoich"])
+                for product in reaction.product_arrows:
+                    product_arrow = reaction.product_arrows[product]
 
-                for product_arrow in reaction.transcription_product_arrows:
-                    self.print_transcription_product_arrow(product_arrow["model_set"], product_arrow["reaction_id"], product_arrow["product"], product_arrow["stoich"])
+                    for r in product_arrow.record:
+                        model_set = product_arrow.record[r]
+                        self.print_product_arrow(model_set, r["reaction_id"], r["product"], product_arrow.compare_attribute("stoich", '?'))
+
+                for product in reaction.transcription_product_arrows:
+                    transcription_product_arrow = reaction.transcription_product_arrows[product]
+                    for r in transcription_product_arrow.record:
+                        model_set = transcription_product_arrow.record[r]
+                        self.print_transcription_product_arrow(model_set, r["reaction_id"], r["product"], transcription_product_arrow.compare_attribute("stoich", '?'))
 
             for r in compartment.regulatory_arrows.record:
                 model_set = compartment.regulatory_arrows.record[r]

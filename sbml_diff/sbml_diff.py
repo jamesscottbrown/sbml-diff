@@ -351,9 +351,9 @@ class SBMLDiff:
         """
         rule_targets = set()
         for model_num, model in enumerate(self.models):
-            rule_targets = get_variables_set_by_rules(model)
+            these_rule_targets = get_variables_set_by_rules(model)
 
-            for rule_target in rule_targets:
+            for rule_target in these_rule_targets:
                 species_list = model.select_one('listOfSpecies')
                 if not species_list or not species_list.find(id=rule_target):
                     if rule_target not in self.modified_params.keys():
@@ -419,7 +419,7 @@ class SBMLDiff:
             reactions = get_reactions(model)
             for reaction in reactions:
                 reaction_list.add(reaction)
-                
+
         for reaction_id in reaction_list:
             self.diff_reaction(reaction_id)
 
@@ -433,23 +433,8 @@ class SBMLDiff:
         """
 
         # We need to consider whether the reaction's products, reactants and rate law are shared
-        reaction_model_set = set()
-        fast_model_set = set()
-        irreversible_model_set = set()
-
-        reactant_status = {}
-        product_status = {}
-        parameter_status = {}
-
-        compartment = ""
-        rate_laws = ""
-        rate_law_found = False
-
-        reactant_stoichiometries = {}
         product_stoichiometries = {}
-
-        transcription_reaction = False
-        ever_drawn = False
+        is_transcription = False
 
         for model_num, model in enumerate(self.models):
             if reaction_id not in self.reactions[model_num].keys():
@@ -464,6 +449,7 @@ class SBMLDiff:
                 if reaction in self.elided_reactions[model_num]:
                     show_reaction = False
 
+                # TODO: FIXME
                 # If a reaction has only one reaction, and it is an elided species (e.g. translation, mRNA degredation), do not print anything
                 if len(reactants) == 1 and reactants[0] in self.elided_list[model_num]:
                     show_reaction = False
@@ -478,45 +464,46 @@ class SBMLDiff:
 
             if self.cartoon and "sboTerm" in reaction.attrs.keys() and \
                     reaction.attrs['sboTerm'] in ["SBO:0000183", "SBO:0000589"]:
-                transcription_reaction = True
+                is_transcription = True
 
             # only perform comparison between models in which this reaction actually occurs
             if not reactants and not products and not compartment and not rate_law and not rs and not ps:
                 continue
 
-            reaction_model_set.add(model_num)
-
+            is_fast = False
             if "fast" in reaction.attrs.keys() and reaction.attrs["fast"] in ['1', 'true']:
-                fast_model_set.add(model_num)
+                is_fast = True
+            is_irreversible = False
             if "reversible" in reaction.attrs.keys() and reaction.attrs["reversible"] in ['0', 'false']:
-                irreversible_model_set.add(model_num)
+                is_irreversible = True
 
-            # check if any stoichiometry values change between models
-            # record the stoichiometry of every reactant or product associated with this reaction in any model
-            # if a reactant/product has 2 or more storichiometries between the models, record it as '?'
+            converted_rate_law = convert_rate_law(rate_law)
+            reaction_name = self.reaction_name[model_num][reaction_id]
+
+            self.diff_object.check_compartment_exists(compartment)
+            diff_compartment = self.diff_object.compartments[compartment]
+            diff_reaction = diff_compartment.add_reaction(reaction_id, rate_law, reaction_name,
+                                                          converted_rate_law, is_fast, is_irreversible,
+                                                          is_transcription, model_num)
+
+            # reactant arrows
             for ind, stoich in enumerate(rs):
-                if reactants[ind] not in reactant_stoichiometries.keys():
-                    reactant_stoichiometries[reactants[ind]] = stoich
-                elif stoich != reactant_stoichiometries[reactants[ind]]:
-                    reactant_stoichiometries[reactants[ind]] = '?'
+                diff_reaction.add_reactant_arrow(reaction_id, reactants[ind], stoich, model_num)
 
+            # product arrows
             for ind, stoich in enumerate(ps):
-                if products[ind] not in product_stoichiometries.keys():
-                    product_stoichiometries[products[ind]] = stoich
-                elif stoich != product_stoichiometries[products[ind]]:
-                    product_stoichiometries[products[ind]] = '?'
 
-            if not rate_law_found:
-                rate_laws = rate_law
-                rate_law_found = True
-            if rate_law_found and re.sub('\s', '', str(rate_law)) != re.sub('\s', '', str(rate_laws)):
-                rate_laws = "different"
+                # if producing something that's been elided, adjust arrows to point ot downstream species
+                product = products[ind]
+                if self.cartoon and product in self.elided_list[model_num]:
+                    product = self.downstream_species[model_num][product]
 
-            for reactant in reactants:
-                if reactant not in reactant_status.keys():
-                    reactant_status[reactant] = set()
-                reactant_status[reactant].add(model_num)
+                if is_transcription:
+                    diff_reaction.add_transcription_product_arrow(reaction_id, product, stoich, model_num)
+                else:
+                    diff_reaction.add_product_arrow(reaction_id, product, stoich, model_num)
 
+            # parameter arrows
             if rate_law:
                 entities = rate_law.select("ci")
                 for entity in entities:
@@ -527,60 +514,7 @@ class SBMLDiff:
                         continue
 
                     arrow_direction = categorise_interaction(rate_law.parent, param, self.initial_value[model_num])
-                    arrow = (param, arrow_direction)
-
-                    if arrow not in parameter_status.keys():
-                        parameter_status[arrow] = set()
-                    parameter_status[arrow].add(model_num)
-
-            for product in products:
-                # if producing something that's been elided, adjust arrows to point ot downstream species
-                if self.cartoon and product in self.elided_list[model_num]:
-                    new_product = self.downstream_species[model_num][product]
-                    product_stoichiometries[new_product] = product_stoichiometries[product]
-                    product = new_product
-
-                if product not in product_status.keys():
-                    product_status[product] = set()
-                product_status[product].add(model_num)
-
-            parent_model = model_num
-            ever_drawn = True
-
-        # If reaction should not be drawn for any models, return now
-        if not ever_drawn:
-            return ""
-
-        self.diff_object.check_compartment_exists(compartment)
-        reaction = self.diff_object.compartments[compartment].add_reaction()
-
-        # reactant arrows
-        for reactant_num, reactant in enumerate(reactant_status):
-            model_set = list(reactant_status[reactant])
-            reaction.add_reactant_arrow(model_set, reaction_id, reactant, reactant_stoichiometries[reactant])
-
-        # product arrows
-        for product_num, product in enumerate(product_status):
-            model_set = list(product_status[product])
-            if transcription_reaction:
-                reaction.add_transcription_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
-            else:
-                reaction.add_product_arrow(model_set, reaction_id, product, product_stoichiometries[product])
-
-        # parameter arrows
-        for arrow in parameter_status:
-            model_set = list(parameter_status[arrow])
-            reaction.add_parameter_arrow(model_set, reaction_id, arrow[0], arrow[1])
-
-        # rate law
-        reaction_name = self.reaction_name[parent_model][reaction_id]
-
-        converted_rate_law = ""
-        if rate_laws and rate_laws != "different":
-            converted_rate_law = convert_rate_law(rate_laws)
-
-        reaction.set_reaction(reaction_model_set, reaction_id, rate_laws, reaction_name, converted_rate_law,
-                              fast_model_set, irreversible_model_set, product_status, transcription_reaction)
+                    diff_reaction.add_parameter_arrow(reaction_id, param, arrow_direction, model_num)
 
     def find_downstream_species(self):
         """
