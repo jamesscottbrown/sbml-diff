@@ -612,7 +612,7 @@ class SBMLDiff:
                 reactant_list = reaction.select_one("listOfReactants")
                 if reactant_list:
                     for reactant in reactant_list.select("speciesReference"):
-                        non_intermediates.append(reactant["id"])
+                        non_intermediates.append(reactant.attrs["species"])
 
                 modifier_list = reaction.select_one("listOfModifiers")
                 if modifier_list:
