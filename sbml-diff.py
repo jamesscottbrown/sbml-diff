@@ -9,10 +9,11 @@ import codecs
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""
     Summarise one, or compare two or more, SBML models as a network or table.
-    Supports four distinct kinds of output:
+    Supports five distinct kinds of output:
 
     * DOT representation of reaction network (circles representing species, squares representing reactions)
     * DOT representation of an abstraction of reaction network, showing only species (--abstract)
+    * DOT representation of a cartoon view of a genetic regulatory network (--cartoon)
     * a table of parameters (--params)
     * a table of kinetic laws for each reaction (--kineticstable)
 

@@ -21,17 +21,21 @@ This will install both the package and command-line tool.
     usage: sbml-diff.py [-h] [--params] [--kinetics] [--abstract]
                         [--ignore IGNORE] [--elide ELIDE] [--colors COLORS]
                         [--labels LABELS] [--stoich] [--outfile OUTFILE]
-                        [--model MODEL]
-                        infile [infile ...]
+                        [--model MODEL] [--align] [--cartoon] [--force]
+                        [--hide-params] [--hide-rules] [--complete]
+                        infile [infile ...]    
 
-    Summarise one, or compare two or more, SBML models as a network or table.
-    Supports four distinct kinds of output:
+        Summarise one, or compare two or more, SBML models as a network or table.
+        Supports five distinct kinds of output:    
 
-    * DOT representation of reaction network (circles representing species, squares representing reactions)
-    * DOT representation of an abstraction of reaction network, showing only species (--abstract)
-    * a table of parameters (--params)
-    * a table of kinetic laws for each reaction (--kineticstable)
+        * DOT representation of reaction network (circles representing species, squares representing reactions)
+        * DOT representation of an abstraction of reaction network, showing only species (--abstract)
+        * DOT representation of a cartoon view of a genetic regulatory network (--cartoon)
+        * a table of parameters (--params)
+        * a table of kinetic laws for each reaction (--kineticstable)    
 
+        If one or more kinds of table are requested, DOT output is not produced.    
+    
 
     positional arguments:
       infile                List of input SBML files    
@@ -57,3 +61,12 @@ This will install both the package and command-line tool.
       --outfile OUTFILE     Output file
       --model MODEL         Make visual elements not corresponding to the n'th
                             model invisible
+      --align               Treat species/reactions with different ids in
+                            different models as the same if they have the same set
+                            of MIRIAM annnotations
+      --cartoon             Draw transcription using SBOL glyphs
+      --force, -f           Draw comparison even if files are identical
+      --hide-params         Hide parameters modified by rules/events
+      --hide-rules          Do not show rules
+      --complete            If no changes, exit quietly. Otherwise return param
+                            table, kinetic table, and DOT output
