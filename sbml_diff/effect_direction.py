@@ -3,7 +3,7 @@ from rate_laws import convert_rate_law
 import math  # needed for check_sign_numerically()
 
 
-def categorise_interaction(kinetic_law, species_id, initial_values):
+def categorise_interaction(kinetic_law, species_id, initial_values, use_sympy=False):
     """
     Given a kineticLaw and the name of a species, determine whether the expression is a monotonic_increasing,
     monotonic_decreasing, or constant with respect to the concentration of that species.
@@ -34,8 +34,38 @@ def categorise_interaction(kinetic_law, species_id, initial_values):
                 symbols.append(ci.text.strip())
         symbols = set(symbols)
 
-        return check_sign_numerically(math_expr, symbols, species_id, initial_values)
+        if use_sympy:
+            return check_sign_algebraically(math_expr, symbols, species_id, initial_values)
+        else:
+            return check_sign_numerically(math_expr, symbols, species_id, initial_values)
 
+
+def check_sign_algebraically(expr, param_names, species_id, initial_values):
+
+    import sympy
+    from sympy import Symbol
+
+    # create variables for each param and species
+    for parameter_name in param_names:
+        exec("%s = Symbol('%s', positive=True)" % (parameter_name, parameter_name))
+
+    # create variables for time and avogadro's constant: N_A
+    exec("t = Symbol('t', positive=True)")
+    exec("N_A = Symbol('N_A', positive=True)")
+
+    exec("query_var = %s" % species_id)
+
+    converted_rate_law = convert_rate_law(expr, output_type="sympy")
+    if converted_rate_law == "piecewise":
+        return "?"
+
+    exec("rate = %s" % converted_rate_law)
+    if sympy.simplify(rate.diff(query_var)).is_positive:
+        return "monotonic_increasing"
+    elif sympy.simplify(rate.diff(query_var)).is_negative:
+        return "monotonic_decreasing"
+    else:
+        return "?"
 
 def check_sign_numerically(expr, param_names, species_id, initial_values):
     """
@@ -64,8 +94,8 @@ def check_sign_numerically(expr, param_names, species_id, initial_values):
 
     """
 
-    expr1 = convert_rate_law(expr, initial_values, non_default_variables=[species_id], non_default_values='1', executable=True)
-    expr2 = convert_rate_law(expr, initial_values, non_default_variables=[species_id], non_default_values='0.01', executable=True)
+    expr1 = convert_rate_law(expr, initial_values, non_default_variables=[species_id], non_default_values='1', output_type="executable")
+    expr2 = convert_rate_law(expr, initial_values, non_default_variables=[species_id], non_default_values='0.01', output_type="executable")
 
     if not expr1 or not expr2:
         return '?'

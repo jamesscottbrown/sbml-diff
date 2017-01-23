@@ -3,7 +3,7 @@ import copy
 import sys
 
 
-def convert_rate_law(math, initial_values=False, non_default_variables=False, non_default_values=1, executable=False):
+def convert_rate_law(math, initial_values=False, non_default_variables=False, non_default_values=1, output_type=""):
     """
     A wrapper for convert_rate_law_inner that returns only the converted expression.
 
@@ -14,8 +14,8 @@ def convert_rate_law(math, initial_values=False, non_default_variables=False, no
     non_default_variables : if specified, the name of any species whose id is not in this list is replaced by 1.0
          (Default value = False)
 
-    executable : if True, return a less human-readable string that can be eval'ed in Python (e.g. containing Math.e
-        instead of e) (Default value = False)
+    output_type : if "executable", return a less human-readable string that can be eval'ed in Python; if "sympy"
+        generate string that uses sympy functions (rather than math functions)
 
     Returns
     -------
@@ -30,9 +30,11 @@ def convert_rate_law(math, initial_values=False, non_default_variables=False, no
 
     if math.select_one('piecewise') or math.name == 'piecewise':
         sys.stderr.write("Encountered a piecewise function\n")
+        if output_type in ["executable", "sympy"]:
+            return "piecewise"
         return ""
 
-    return convert_rate_law_inner(math, initial_values, non_default_variables, non_default_values, executable)[1]
+    return convert_rate_law_inner(math, initial_values, non_default_variables, non_default_values, output_type)[1]
 
 
 def add_parens(term_elementary, terms):
@@ -52,7 +54,31 @@ def add_parens(term_elementary, terms):
     return terms
 
 
-def convert_rate_law_inner(expression, initial_values, non_default_variables=False, non_default_values=1, executable=False):
+def convert_function(output_type, function_name):
+    executable_replacement = {'exp': 'math.exp', 'ln': 'math.log', 'log': 'math.log10', 'ceiling': 'math.ceil',
+                          'floor': 'math.floor', 'factorial': 'math.factorial', 'pi': 'math.pi', 'e': 'math.e',
+                          'infinity': 'float("Inf")', "sqrt": "math.sqrt", "abs": "abs", "cos": "math.cos",
+                          "sin": "math.sin", "tan": "math.tan", "sinh": "math.sinh", "cosh": "math.cosh",
+                          "tanh": "math.tanh", "arcsin": "math.asin", "arccos": "math.acos", "arctan": "math.atan",
+                          "t": "1", "N_A": "1"}
+
+    sympy_replacement = {'exp': 'sympy.exp', 'ln': 'sympy.log', 'log': 'sympy.log10', 'ceiling': 'sympy.ceiling',
+                         'floor': 'sympy.floor', 'factorial': 'sympy.factorial', 'pi': 'sympy.pi', 'e': 'sympy.mpmath.e',
+                         'infinity': 'float("Inf")', "sqrt": "sympy.sqrt", "abs": "abs", "cos": "sympy.cos",
+                         "sin": "sympy.sin", "tan": "sympy.tan", "sinh": "sympy.sinh", "cosh": "sympy.cosh",
+                         "tanh": "sympy.tanh", "arcsin": "sympy.asin", "arccos": "sympy.acos", "arctan": "sympy.atan",
+                         "root": "sympy.root",
+                         "t": "t", "N_A": "N_A"}
+
+    if not output_type:
+        return function_name
+    elif output_type == "executable":
+        return executable_replacement[function_name]
+    elif output_type == "sympy":
+        return sympy_replacement[function_name]
+
+
+def convert_rate_law_inner(expression, initial_values, non_default_variables=False, non_default_values=1, output_type=""):
     """
     Recursively convert a MathML expression to a string.
     Limitations: we do not handle piecewise functions or user-defined functions.
@@ -73,13 +99,9 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
 
     """
 
-    executable_replacement = {'exp': 'math.exp', 'ln': 'math.log', 'log': 'math.log10', 'ceiling': 'math.ceil',
-                              'floor': 'math.floor', 'factorial': 'math.factorial', 'pi': 'math.pi', 'e': 'math.e',
-                              'infinity': 'float("Inf")', "sqrt": "math.sqrt", "abs": "abs", "cos": "math.cos",
-                              "sin": "math.sin", "tan": "math.tan", "sinh": "math.sinh", "cosh": "math.cosh",
-                              "tanh": "math.tanh", "arcsin": "math.asin", "arccos": "math.acos", "arctan": "math.atan"}
-
     elementary = False
+
+    generate_code = (output_type in ["executable", "sympy"])
 
     if expression.name == "cn":
 
@@ -91,7 +113,7 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
 
             if expression.attrs["type"] == "e-notation":
                 term = "%s * 10^(%s)" % (children[0], children[2])
-                if executable:
+                if generate_code:
                     term = "%s * 10**(%s)" % (children[0], children[2])
             elif expression.attrs["type"] in ["real", "integer"]:
                 term = children[0]
@@ -119,29 +141,22 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
         return elementary, term
 
     if expression.name in ["pi", "infinity"]:
-        if executable:
-            return True, executable_replacement[expression.name]
-        return True, expression.name
+        return True, convert_function(output_type, expression.name)
     if expression.name == "exponentiale":
-        if executable:
-            return True, executable_replacement["e"]
-        return True, "e"
+        return True, convert_function(output_type, "e")
 
     # math may contain either an <apply> or a <cn>
     if expression.name == "math":
         for child in expression.children:
             if not isinstance(child, NavigableString):
-                return convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, executable)
+                return convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, output_type)
 
     if expression.name == "csymbol":
         if "time" in expression.attrs['definitionURL']:
-            if executable:
-                return True, '1'
-            return True, "t"
+            return True, convert_function(output_type, "t")
+
         if "avogadro" in expression.attrs['definitionURL']:
-            if executable:
-                return True, '1'
-            return True, "N_A"
+            return True, convert_function(output_type, "N_A")
 
     # First child is operator; next are arguments
     if expression.name == "apply":
@@ -160,7 +175,7 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
         children_converted = []
         children_elementary = []
         for arg in args:
-            child_elementary, child_converted = convert_rate_law_inner(arg, initial_values, non_default_variables, non_default_values, executable)
+            child_elementary, child_converted = convert_rate_law_inner(arg, initial_values, non_default_variables, non_default_values, output_type)
             children_converted.append(child_converted)
             children_elementary.append(child_elementary)
 
@@ -176,7 +191,7 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
             return elementary, "%s / %s" % (children_converted[0], children_converted[1])
         elif operator == "power":
             children_converted = add_parens(children_elementary, children_converted)
-            if executable:
+            if generate_code:
                 return elementary, "%s ** %s " % (children_converted[0], children_converted[1])
             return elementary, "%s ^ %s " % (children_converted[0], children_converted[1])
         elif operator == "gt":
@@ -187,10 +202,9 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
             return elementary, "%s >= %s " % (children_converted[0], children_converted[1])
         elif operator == "eq":
             children_converted = add_parens(children_elementary, children_converted)
-            if executable:
+            if generate_code:
                 return elementary, "%s == %s " % (children_converted[0], children_converted[1])
             return elementary, "%s = %s " % (children_converted[0], children_converted[1])
-
         elif operator == "lt":
             children_converted = add_parens(children_elementary, children_converted)
             return elementary, "%s < %s " % (children_converted[0], children_converted[1])
@@ -204,40 +218,35 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
             children_converted = add_parens(children_elementary, children_converted)
             return elementary, "%s and %s " % (children_converted[0], children_converted[1])
         elif operator == "delay":
-            if executable:
+            if output_type in ["executable", "sympy"]:
                 return elementary, children_converted[0]
             return elementary, "delay(%s, %s)" % (children_converted[0], children_converted[1])
         elif operator in ["exp", "ln", "floor", "ceiling", "factorial", "abs", "cos", "sin", "tan", "sinh", "cosh",
                           "tanh", "arcsin", "arccos", "arctan"]:
-            if executable:
-                return elementary, "%s(%s)" % (executable_replacement[operator], children_converted[0])
-            return elementary, "%s(%s)" % (operator, children_converted[0])
+            return elementary, "%s(%s)" % (convert_function(output_type, operator), children_converted[0])
         elif operator == "log":
-
             if len(children_converted) == 1:
-                if executable:
-                    return elementary, "%s(%s)" % (executable_replacement["log"], children_converted[0])
-                return elementary, "%s(%s)" % ("log", children_converted[0])
-
+                return elementary, "%s(%s)" % (convert_function(output_type, "log"), children_converted[0])
             else:
-                if executable:
+                if output_type == "executable":
                     # NB. second argument to math.log is base [opposite to mathML]
                     return elementary, "math.log(%s, %s)" % (children_converted[1], children_converted[0])
+                elif output_type == "sympy":
+                    return elementary, "sympy.log(%s, %s)" % (children_converted[1], children_converted[0])
+
                 return elementary, "%s_%s(%s)" % ("log", children_converted[0], children_converted[1])
 
         elif operator == "root":
 
             # default to sqrt()
             if len(children_converted) == 1:
-                if executable:
-                    return elementary, "%s(%s)" % (executable_replacement["sqrt"], children_converted[0])
-                return elementary, "%s(%s)" % ("sqrt", children_converted[0])
+                return elementary, "%s(%s)" % (convert_function(output_type, "sqrt"), children_converted[0])
 
             # otherwise root(n,a) = pow(a, 1/n)
             if len(children_converted) == 2:
-                if executable:
+                if output_type == "executable":
                     return elementary, "pow(%s, 1/%s)" % (children_converted[1], children_converted[0])
-                return elementary, "%s(%s, %s)" % ("root", children_converted[0], children_converted[1])
+                return elementary, "%s(%s, %s)" % (convert_function(output_type, "root"), children_converted[0], children_converted[1])
 
     elif expression.name == "logbase":
 
@@ -245,14 +254,14 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
             if isinstance(child, NavigableString):
                 continue
 
-            child_elementary, child_converted = convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, executable)
+            child_elementary, child_converted = convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, output_type)
             return child_elementary, child_converted
 
     if expression.name == "degree":
         # degree tag used with root
         for child in expression.children:
             if not isinstance(child, NavigableString):
-                return convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, executable)
+                return convert_rate_law_inner(child, initial_values, non_default_variables, non_default_values, output_type)
 
 
 def inline_all_functions(model):

@@ -45,6 +45,8 @@ if __name__ == '__main__':
     parser.add_argument('--hide-params', help="Hide parameters modified by rules/events", action="store_true")
     parser.add_argument('--hide-rules', help="Do not show rules", action="store_true")
 
+    parser.add_argument('--sympy', help="Determine arrow directions symbolically using sympy", action="store_true")
+
     parser.add_argument('--complete', help="If no changes, exit quietly. Otherwise return param table, kinetic table," +
                                            " and DOT output", action="store_true")
 
@@ -101,6 +103,10 @@ if __name__ == '__main__':
         rankdir = "LR"
         cartoon = True
 
+    use_sympy = False
+    if args.sympy:
+        use_sympy = True
+
     all_models = []
     all_model_names = []
     for inFile in args.infile:
@@ -115,7 +121,7 @@ if __name__ == '__main__':
                                              rankdir=rankdir, model_names=all_model_names)
 
     sd = sbml_diff.SBMLDiff(all_models, all_model_names, output_formatter, align=align, cartoon=cartoon,
-                            show_params=show_params, hide_rules=hide_rules)
+                            show_params=show_params, hide_rules=hide_rules, use_sympy=use_sympy)
 
     if args.complete:
 
