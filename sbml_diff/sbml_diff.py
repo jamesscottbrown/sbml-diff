@@ -356,7 +356,7 @@ class SBMLDiff:
 
             for rule_target in these_rule_targets:
                 species_list = model.select_one('listOfSpecies')
-                if not species_list or not species_list.find(id=rule_target):
+                if not species_list or rule_target not in self.species_compartment[model_num].keys():
                     if rule_target not in self.modified_params.keys():
                         self.modified_params[rule_target] = set()
                     self.modified_params[rule_target].add(model_num)
@@ -406,8 +406,7 @@ class SBMLDiff:
                     diff_rules[compartment].add_parameter_rule(model_num, target_id, entity, arrow_direction)
 
             # targets
-            species_list = self.models[model_num].select_one('listOfSpecies')
-            if self.show_params or (species_list and species_list.find(id=target_id)):
+            if self.show_params or (target_id in self.species_compartment[model_num].keys()):
                 diff_rules[compartment].add_target_arrow(model_num, target_id)
 
     def diff_reactions(self):
