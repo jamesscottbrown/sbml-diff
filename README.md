@@ -1,10 +1,10 @@
-# sbml-diff
+# sbml-diff ([project homepage](http://sysos.eng.ox.ac.uk/tebio/sbml-diff))
 
 sbml-diff is a tool for visually representing a single SBML model, or for visually comparing 2 or more SBML models. It can be used in three ways:
 
 * As a command-line tool (`sbml-diff.py`)
 * As a python package (see package_demo.py for an example)
-* through our [web interface](http://sysos.eng.ox.ac.uk/tebio/upload)
+* through our [web interface](http://sbml-diff.jamesscottbrown.com/upload)
 
 It relies on elements having `id` attributes, so does not work with [SBML Level](http://sbml.org/Documents/Specifications) 1, but supports files in Level 2 Version 1 - Level 3 Version 1 Core.
 
