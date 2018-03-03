@@ -5,3 +5,6 @@ sbml-diff.py --label=none --hide-rules BIOMD0000000012.xml  | dot -Tpdf -o hidde
 
 sbml-diff.py --abstract BIOMD0000000012.xml | dot -Tpdf -o abstract.pdf
 sbml-diff.py --abstract -e=X,Y,Z BIOMD0000000012.xml | dot -Tpdf -o abstract.pdf
+
+sbml-diff.py --cartoon BIOMD0000000012.xml | dot -Tpdf -o cartoon.pdf
+sbml-diff.py --hide-rules --cartoon BIOMD0000000012.xml | dot -Tpdf -o cartoon-norules.pdf
