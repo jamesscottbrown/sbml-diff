@@ -105,7 +105,7 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
 
     if expression.name == "cn":
 
-        if "type" in expression.attrs.keys():
+        if "type" in list(expression.attrs.keys()):
             children = []
             term = ""
             for child in expression.children:
@@ -133,7 +133,7 @@ def convert_rate_law_inner(expression, initial_values, non_default_variables=Fal
         if non_default_variables:
             if term in non_default_variables:
                 term = non_default_values
-            elif term in initial_values.keys():
+            elif term in list(initial_values.keys()):
                 term = initial_values[term]
             else:
                 term = '1.0'
@@ -324,7 +324,7 @@ def inline_all_functions(model):
                         children.append(child)
 
                 name = children[0].text.strip()
-                if name in function_definition.keys():
+                if name in list(function_definition.keys()):
                     inlined = inline_function_call(function_definition[name], children[1:])
                     apply_element.replace_with(inlined)
                     replaced = True
@@ -354,13 +354,13 @@ def inline_function_call(func, arguments):
     for ci in math.select("ci"):
         variable_name = ci.text.strip()
         if variable_name in args:
-            if variable_name not in cis.keys():
+            if variable_name not in list(cis.keys()):
                 cis[variable_name] = []
             cis[variable_name].append(ci)
 
     # now replace each element in this list
     for i in range(len(args)):
-        if args[i] in cis.keys():
+        if args[i] in list(cis.keys()):
             for ci in cis[args[i]]:
                 ci.replace_with(copy.copy(arguments[i]))
 

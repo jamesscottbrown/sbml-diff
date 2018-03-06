@@ -51,14 +51,14 @@ class GenerateDot:
         for p in diff_object.param_nodes:
             params_to_draw.append(p["variable_id"])
 
-        for compartment_id in diff_object.compartments.keys():
+        for compartment_id in list(diff_object.compartments.keys()):
 
             compartment = diff_object.compartments[compartment_id]
 
             if compartment_id is not "NONE":
                 self.print_compartment_header(compartment_id)
 
-            for species_id in compartment.species.keys():
+            for species_id in list(compartment.species.keys()):
 
                 diff_species = compartment.species[species_id]
                 for species in diff_species.record:
@@ -81,11 +81,11 @@ class GenerateDot:
                 if r.compare_attribute("is_transcription") == True:
                     product_status = {}
                     for product in reaction.transcription_product_arrows:
-                        if product not in product_status.keys():
+                        if product not in list(product_status.keys()):
                             product_status[product] = set()
 
                         product_arrows = reaction.transcription_product_arrows[product]
-                        for r1 in product_arrows.record.keys():
+                        for r1 in list(product_arrows.record.keys()):
                             model_set = product_arrows.record[r1]
                         product_status[product] = product_status[product].union(model_set)
 
@@ -194,7 +194,7 @@ class GenerateDot:
 
         else:
 
-            print "subgraph cluster_event_%s {\n" % event.event["event_hash"]
+            print("subgraph cluster_event_%s {\n" % event.event["event_hash"])
 
             self.print_event_node(event.event["event_hash"], event.event["event_name"], trigger, event.event["model_set"])
 
@@ -202,7 +202,7 @@ class GenerateDot:
                 model_set = event.trigger_arrows.record[s]
                 self.print_event_trigger_species_arrows(s["species"], s["event_hash"], model_set)
 
-            for target_id in event.assignments.keys():
+            for target_id in list(event.assignments.keys()):
                 # draw assignment node, like a rule
                 s = event.assignments[target_id]
                 rule_id = event.event["event_hash"] + "_" + target_id
@@ -219,7 +219,7 @@ class GenerateDot:
                         model_set =  s.affect_value_param_arrows.record[param]
                         self.print_rule_parameter_arrow(model_set, rule_id, param["param"], param["arrow_direction"])
 
-            print "}"
+            print("}")
 
     def assign_arrowhead(self, effect_direction):
         if effect_direction == "monotonic_increasing":
@@ -320,7 +320,7 @@ class GenerateDot:
             color = "black"
             self.differences_found = True
 
-        print '%s -> %s [color="%s"%s%s];' % (reactant, reaction_id, color, stoich_string, style)
+        print('%s -> %s [color="%s"%s%s];' % (reactant, reaction_id, color, stoich_string, style))
 
     def print_product_arrow(self, model_set, reaction_id, product, stoich):
         """
@@ -353,12 +353,12 @@ class GenerateDot:
             color = "black"
             self.differences_found = True
 
-        print '%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style)
+        print('%s -> %s [color="%s"%s%s];' % (reaction_id, product, color, stoich_string, style))
 
     def print_reaction_parameter_arrow(self, model_set, reaction_id, param):
         style = self.check_style(model_set, 'dashed')
         color = self.assign_color(model_set)
-        print '%s -> %s [color="%s" %s];' % (param, reaction_id, color, style)
+        print('%s -> %s [color="%s" %s];' % (param, reaction_id, color, style))
 
     def print_transcription_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law, product_status):
         base_style = ''
@@ -377,7 +377,7 @@ class GenerateDot:
         elif self.reaction_label == "rate":
             reaction_name = converted_law
 
-        products = product_status.keys()
+        products = list(product_status.keys())
         result = ""
         result += "subgraph cluster_%s {\n" % reaction_id
         result += 'label="%s";\n' % reaction_name
@@ -395,7 +395,7 @@ class GenerateDot:
             result += "cds_%s_%s -> cds_%s_%s;\n" % (reaction_id, products[i], reaction_id, products[i-1])
 
         result += "}\n\n"
-        print result
+        print(result)
 
     def print_transcription_product_arrow(self, model_set, reaction_id, product, stoich):
         """
@@ -423,7 +423,7 @@ class GenerateDot:
             color = "black"
             self.differences_found = True
 
-        print 'cds_%s_%s -> %s [color="%s"%s%s];' % (reaction_id, product, product, color, stoich_string, style)
+        print('cds_%s_%s -> %s [color="%s"%s%s];' % (reaction_id, product, product, color, stoich_string, style))
 
     def print_reaction_node(self, model_set, reaction_id, rate_law, reaction_name, converted_law,
                             fast_model_set, irreversible_model_set):
@@ -468,14 +468,14 @@ class GenerateDot:
 
         reaction_name = self.reaction_details(reaction_name, irreversible_model_set, fast_model_set)
 
-        print '%s [shape="rectangle", color="%s", %s label=%s %s];' % (reaction_id, color, fill, reaction_name, style)
+        print('%s [shape="rectangle", color="%s", %s label=%s %s];' % (reaction_id, color, fill, reaction_name, style))
 
     # Used by diff_models()
     def print_header(self):
         """ Print header needed for valid DOT file"""
-        print "\n\n"
-        print "digraph comparison {"
-        print "rankdir = %s;" % self.rankdir
+        print("\n\n")
+        print("digraph comparison {")
+        print("rankdir = %s;" % self.rankdir)
 
     def print_footer(self):
         """ Print footer needed for valid DOT file  """
@@ -483,8 +483,8 @@ class GenerateDot:
         for i in range(0, len(self.model_names)):
             file_strings.append("<font color='%s'>%s</font>" % (self.assign_color([i], ignore_difference=True), self.model_names[i]))
 
-        print 'label=<Files: %s>;' % ', '.join(file_strings)
-        print "}"
+        print('label=<Files: %s>;' % ', '.join(file_strings))
+        print("}")
 
     def print_compartment_header(self, compartment_id):
         """
@@ -494,15 +494,15 @@ class GenerateDot:
         ----------
         compartment_id : id of a compartment
         """
-        print "\n"
-        print "subgraph cluster_%s {" % compartment_id
-        print "graph[style=dotted];"
-        print 'label="%s";' % compartment_id
+        print("\n")
+        print("subgraph cluster_%s {" % compartment_id)
+        print("graph[style=dotted];")
+        print('label="%s";' % compartment_id)
 
     def print_compartment_footer(self):
         """ Print DOT code to end the subgraph representing a compartment """
-        print "\n"
-        print "}"
+        print("\n")
+        print("}")
 
     def print_species_node(self, model_set, is_boundary, species_id, species_name):
         """
@@ -528,7 +528,7 @@ class GenerateDot:
             doubled = 'peripheries=2'
 
         style = self.check_style(model_set, base_style)
-        print '"%s" [color="%s",label="%s" %s %s %s];' % (species_id, color, species_name, doubled, fill, style)
+        print('"%s" [color="%s",label="%s" %s %s %s];' % (species_id, color, species_name, doubled, fill, style))
 
     def print_regulatory_arrow(self, model_set, arrow_source, arrow_target, arrow_direction):
         """
@@ -546,7 +546,7 @@ class GenerateDot:
         color = self.assign_color(model_set)
         style = self.check_style(model_set, 'dashed')
         arrowhead = self.assign_arrowhead(arrow_direction)
-        print '"%s" -> "%s" [color="%s", arrowhead="%s" %s];' % (arrow_source, arrow_target, color, arrowhead, style)
+        print('"%s" -> "%s" [color="%s", arrowhead="%s" %s];' % (arrow_source, arrow_target, color, arrowhead, style))
 
     def print_rule_modifier_arrow(self, model_set, rule_id, modifier, arrow_direction):
         """
@@ -567,14 +567,14 @@ class GenerateDot:
         style = self.check_style(model_set, 'dashed')
 
         arrowhead = self.assign_arrowhead(arrow_direction)
-        print '%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (modifier, rule_id, color, arrowhead, style)
+        print('%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (modifier, rule_id, color, arrowhead, style))
 
     def print_rule_parameter_arrow(self, model_set, target, param, arrow_direction):
         color = self.assign_color(model_set)
         style = self.check_style(model_set, 'dashed')
         arrowhead = self.assign_arrowhead(arrow_direction)
 
-        print '%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (param, target, color, arrowhead, style)
+        print('%s -> rule_%s [color="%s", arrowhead="%s" %s];' % (param, target, color, arrowhead, style))
 
     def print_event_target_arrow(self, model_set, event_id, target):
         """
@@ -588,7 +588,7 @@ class GenerateDot:
         """
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
-        print 'rule_%s -> "%s" [color="%s", style="dotted" %s];' % (event_id, target, color, style)
+        print('rule_%s -> "%s" [color="%s", style="dotted" %s];' % (event_id, target, color, style))
 
     def print_rule_target_arrow(self, model_set, target):
         """
@@ -602,7 +602,7 @@ class GenerateDot:
         """
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
-        print 'rule_%s -> %s [color="%s", style="dotted" %s];' % (target, target, color, style)
+        print('rule_%s -> %s [color="%s", style="dotted" %s];' % (target, target, color, style))
 
     def print_rule_node(self, model_set, rule_id, converted_rate_law):
         """
@@ -632,12 +632,12 @@ class GenerateDot:
         if self.reaction_label in ["name+rate", "rate"]:
             rule_name = converted_rate_law
 
-        print 'rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style)
+        print('rule_%s [shape="parallelogram", color="%s", %s label="%s" %s];' % (rule_id, color, fill, rule_name, style))
 
     def print_algebraic_rule_arrow(self, model_set, rule_id, species_id):
         color = self.assign_color(model_set)
         style = self.check_style(model_set)
-        print 'rule_%s -> %s [color="%s", dir="none" %s];' % (rule_id, species_id, color, style)
+        print('rule_%s -> %s [color="%s", dir="none" %s];' % (rule_id, species_id, color, style))
 
     def print_abstracted_arrow(self, model_set, modifier, target, effect_type):
         """
@@ -671,7 +671,7 @@ class GenerateDot:
         else:
             arrowhead = "tee"
 
-        print '%s -> %s [style="dashed", color="%s", arrowhead="%s" %s];' % (modifier, target, color, arrowhead, style)
+        print('%s -> %s [style="dashed", color="%s", arrowhead="%s" %s];' % (modifier, target, color, arrowhead, style))
 
     def print_event_node(self, event_hash, event_name, rate_law,  model_set):
 
@@ -690,24 +690,24 @@ class GenerateDot:
         color = self.assign_color(model_set)
         style = self.check_style(model_set, base_style)
 
-        print '"%s" [label="%s", shape="diamond", color="%s" %s];' % (event_hash, event_name, color, style)
+        print('"%s" [label="%s", shape="diamond", color="%s" %s];' % (event_hash, event_name, color, style))
 
     def print_event_trigger_species_arrows(self, species, event_hash, model_set):
         color = self.assign_color(model_set)
-        print '"%s" -> "%s" [arrowhead="odot", color="%s", style="dashed"];' % (species, event_hash, color)
+        print('"%s" -> "%s" [arrowhead="odot", color="%s", style="dashed"];' % (species, event_hash, color))
 
     def print_event_set_species_arrow(self, species_id, event_hash, model_set):
         color = self.assign_color(model_set)
-        print '%s -> %s [color="%s"];' % (event_hash, species_id, color)
+        print('%s -> %s [color="%s"];' % (event_hash, species_id, color))
 
     def print_event_affect_value_arrow(self, species, event_hash, arrow_direction, model_set):
         color = self.assign_color(model_set)
         arrowhead = self.assign_arrowhead(arrow_direction)
-        print '%s -> %s [color="%s", arrowhead="%s", style="dashed"];' % (species, event_hash, color, arrowhead)
+        print('%s -> %s [color="%s", arrowhead="%s", style="dashed"];' % (species, event_hash, color, arrowhead))
 
     def print_param_node(self, variable_id, variable_name, model_set):
         color = self.assign_color(model_set)
-        print '%s [label="%s", shape=none, color="%s"];' % (variable_id, variable_name, color)
+        print('%s [label="%s", shape=none, color="%s"];' % (variable_id, variable_name, color))
 
     def reaction_details(self, old_label, irreversible_model_set, fast_model_set):
         """

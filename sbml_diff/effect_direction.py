@@ -1,5 +1,5 @@
 from bs4 import NavigableString, Tag
-from rate_laws import convert_rate_law
+from .rate_laws import convert_rate_law
 import math  # needed for check_sign_numerically()
 
 

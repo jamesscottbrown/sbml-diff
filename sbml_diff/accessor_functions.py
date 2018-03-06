@@ -1,4 +1,4 @@
-from effect_direction import categorise_interaction
+from .effect_direction import categorise_interaction
 
 
 def get_params(model):
@@ -28,7 +28,7 @@ def get_params(model):
         param_ids.append(param_id)
 
         param_values[param_id] = "?"
-        if "value" in param.attrs.keys():
+        if "value" in list(param.attrs.keys()):
             param_values[param_id] = param.attrs["value"]
 
     return set(param_ids), param_values
@@ -137,7 +137,7 @@ def get_species_compartment(model, species_id, species_compartments):
     if not species_compartments:
         return "NONE"
 
-    if species_id in species_compartments.keys():
+    if species_id in list(species_compartments.keys()):
         return species_compartments[species_id]
     else:
         return "NONE"
@@ -349,7 +349,7 @@ def get_species_name(model, species_id):
 
     """
     s = model.select_one("listOfSpecies").find(id=species_id)
-    if "name" in s.attrs.keys() and s.attrs["name"]:
+    if "name" in list(s.attrs.keys()) and s.attrs["name"]:
         return s.attrs["name"]
     else:
         return species_id
@@ -372,7 +372,7 @@ def get_reaction_name(model, reaction_id):
 
     """
     r = model.select_one("listOfReactions").find(id=reaction_id)
-    if "name" in r.attrs.keys() and r.attrs["name"]:
+    if "name" in list(r.attrs.keys()) and r.attrs["name"]:
         return r.attrs["name"]
     else:
         return reaction_id

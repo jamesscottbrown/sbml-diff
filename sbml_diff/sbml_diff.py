@@ -1,9 +1,9 @@
 from bs4 import BeautifulSoup
-from accessor_functions import *
-from generate_dot import *
-from DiffObject import DiffObject
-from rate_laws import *
-from miriam import align_models
+from .accessor_functions import *
+from .generate_dot import *
+from .DiffObject import DiffObject
+from .rate_laws import *
+from .miriam import align_models
 from tabulate import tabulate
 import sys
 import re
@@ -39,7 +39,7 @@ class SBMLDiff:
 
         self.diff_object = DiffObject()
 
-        self.models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
+        self.models = [BeautifulSoup(x, 'xml') for x in self.model_strings]
 
         # Avoid need to search for reactions by id
         self.reactions = []
@@ -76,7 +76,7 @@ class SBMLDiff:
         self.initial_parameters = []
         for model_num, model in enumerate(self.models):
             for param in model.select("parameter"):
-                if "id" not in param.attrs.keys():
+                if "id" not in list(param.attrs.keys()):
                     continue
                 param_id = param.attrs["id"]
                 if "value" in param.attrs:
@@ -91,7 +91,7 @@ class SBMLDiff:
             if reaction_list:
                 for r in reaction_list.select("reaction"):
                     reaction_id = r.attrs["id"]
-                    if "name" in r.attrs.keys() and r.attrs["name"]:
+                    if "name" in list(r.attrs.keys()) and r.attrs["name"]:
                         tmp[reaction_id] = r.attrs["name"]
                     else:
                         tmp[reaction_id] = reaction_id
@@ -116,7 +116,7 @@ class SBMLDiff:
             if model.select_one('listOfReactions') and not model.select_one('listOfSpecies'):
                 raise RuntimeError("Every model that includes a listOfReactions must include a listOfSpecies.")
 
-            if not model.select_one('sbml') or 'xmlns' not in model.select_one('sbml').attrs.keys():
+            if not model.select_one('sbml') or 'xmlns' not in list(model.select_one('sbml').attrs.keys()):
                 raise RuntimeError("Every file must be an sbml model")
 
             if "level1" in model.select_one('sbml').attrs['xmlns']:
@@ -160,7 +160,7 @@ class SBMLDiff:
 
             rows.append(rates)
 
-        print tabulate(rows, ["Reaction"] + self.model_names, tablefmt=output_format)
+        print(tabulate(rows, ["Reaction"] + self.model_names, tablefmt=output_format))
 
     def compare_params(self, output_format="simple"):
         """
@@ -171,7 +171,7 @@ class SBMLDiff:
         output_format : a table format supported by tabulate (e.g. simple, html)
         """
 
-        models = map(lambda x: BeautifulSoup(x, 'xml'), self.model_strings)
+        models = [BeautifulSoup(x, 'xml') for x in self.model_strings]
 
         param_value = {}
         for model_num, model in enumerate(models):
@@ -179,15 +179,15 @@ class SBMLDiff:
 
             for param_id in param_ids:
 
-                if param_id not in param_value.keys():
+                if param_id not in list(param_value.keys()):
                     param_value[param_id] = {}
                 param_value[param_id][model_num] = param_values[param_id]
 
         rows = []
-        for param_id in param_value.keys():
+        for param_id in list(param_value.keys()):
             row = [param_id]
             for model_num, model in enumerate(models):
-                if model_num in param_value[param_id].keys():
+                if model_num in list(param_value[param_id].keys()):
                     row.append(param_value[param_id][model_num])
                 else:
                     row.append("-")
@@ -197,7 +197,7 @@ class SBMLDiff:
                     self.generate_dot.differences_found = True
             rows.append(row)
 
-        print tabulate(rows, ["Parameter"] + self.model_names, tablefmt=output_format)
+        print(tabulate(rows, ["Parameter"] + self.model_names, tablefmt=output_format))
 
     def diff_events(self):
         """
@@ -217,17 +217,17 @@ class SBMLDiff:
 
             for event in event_list.select('event'):
 
-                if 'id' not in event.attrs.keys():
+                if 'id' not in list(event.attrs.keys()):
                     event.attrs["id"] = str(hash(event))
                 event_id = event.attrs["id"]
 
-                if event_id not in event_status.keys():
+                if event_id not in list(event_status.keys()):
                     event_status[event_id] = []
 
                 event_status[event_id].append(model_num)
                 event_objects[event_id] = event
 
-        for event_id in event_objects.keys():
+        for event_id in list(event_objects.keys()):
             self.diff_event_with_id(event_id, event_status[event_id])
 
     def diff_event_with_id(self, event_id, model_set):
@@ -238,11 +238,11 @@ class SBMLDiff:
         event_name = ""
 
         for model_num in model_set:
-            species_ids = self.species_compartment[model_num].keys()
+            species_ids = list(self.species_compartment[model_num].keys())
             event = self.models[model_num].select_one('#' + event_id)
 
             # process model name
-            if not event_name and "name" in event.attrs.keys():
+            if not event_name and "name" in list(event.attrs.keys()):
                 event_name = event.attrs["name"]
 
             # process trigger statements
@@ -327,11 +327,11 @@ class SBMLDiff:
                         params_in_rule.append(species_id)
 
                 # Choose an id  to represent this rule
-                if "metaid" in rule.attrs.keys():
+                if "metaid" in list(rule.attrs.keys()):
                     rule_id = rule.attrs["metaid"]
                 else:
                     rule_id = "assignmentRule" + "_".join(species_in_rule)
-                if rule_id not in rule_diffs.keys():
+                if rule_id not in list(rule_diffs.keys()):
                     rule_diffs[rule_id] = self.diff_object.compartments["NONE"].add_rule(rule_id)
 
                 for species_id in species_in_rule:
@@ -356,8 +356,8 @@ class SBMLDiff:
 
             for rule_target in these_rule_targets:
                 species_list = model.select_one('listOfSpecies')
-                if not species_list or rule_target not in self.species_compartment[model_num].keys():
-                    if rule_target not in self.modified_params.keys():
+                if not species_list or rule_target not in list(self.species_compartment[model_num].keys()):
+                    if rule_target not in list(self.modified_params.keys()):
                         self.modified_params[rule_target] = set()
                     self.modified_params[rule_target].add(model_num)
 
@@ -386,7 +386,7 @@ class SBMLDiff:
             _, compartment, rate_law = get_rule_details(model, target_id, self.species_compartment[model_num])
 
             self.diff_object.check_compartment_exists(compartment)
-            if compartment not in diff_rules.keys():
+            if compartment not in list(diff_rules.keys()):
                 diff_rules[compartment] = self.diff_object.compartments[compartment].add_rule(target_id)
 
             if not rate_law:
@@ -400,13 +400,13 @@ class SBMLDiff:
                 entity = entity.string.strip()
                 arrow_direction = categorise_interaction(rate_law.parent, entity, self.initial_value[model_num], use_sympy=self.use_sympy)
 
-                if entity in self.species_compartment[model_num].keys():
+                if entity in list(self.species_compartment[model_num].keys()):
                     diff_rules[compartment].add_modifier_arrow(model_num, target_id, entity, arrow_direction)
                 else:
                     diff_rules[compartment].add_parameter_rule(model_num, target_id, entity, arrow_direction)
 
             # targets
-            if self.show_params or (target_id in self.species_compartment[model_num].keys()):
+            if self.show_params or (target_id in list(self.species_compartment[model_num].keys())):
                 diff_rules[compartment].add_target_arrow(model_num, target_id)
 
     def diff_reactions(self):
@@ -437,7 +437,7 @@ class SBMLDiff:
         is_transcription = False
 
         for model_num, model in enumerate(self.models):
-            if reaction_id not in self.reactions[model_num].keys():
+            if reaction_id not in list(self.reactions[model_num].keys()):
                 continue
             reaction = self.reactions[model_num][reaction_id]
 
@@ -462,7 +462,7 @@ class SBMLDiff:
             if not show_reaction:
                 continue
 
-            if self.cartoon and "sboTerm" in reaction.attrs.keys() and \
+            if self.cartoon and "sboTerm" in list(reaction.attrs.keys()) and \
                     reaction.attrs['sboTerm'] in ["SBO:0000183", "SBO:0000589"]:
                 is_transcription = True
 
@@ -471,10 +471,10 @@ class SBMLDiff:
                 continue
 
             is_fast = False
-            if "fast" in reaction.attrs.keys() and reaction.attrs["fast"] in ['1', 'true']:
+            if "fast" in list(reaction.attrs.keys()) and reaction.attrs["fast"] in ['1', 'true']:
                 is_fast = True
             is_irreversible = False
-            if "reversible" in reaction.attrs.keys() and reaction.attrs["reversible"] in ['0', 'false']:
+            if "reversible" in list(reaction.attrs.keys()) and reaction.attrs["reversible"] in ['0', 'false']:
                 is_irreversible = True
 
             converted_rate_law = convert_rate_law(rate_law)
@@ -510,7 +510,7 @@ class SBMLDiff:
                     param = entity.string.strip()
 
                     # check a param rather than species
-                    if param in self.species_compartment[model_num].keys():
+                    if param in list(self.species_compartment[model_num].keys()):
                         continue
 
                     arrow_direction = categorise_interaction(rate_law.parent, param, self.initial_value[model_num], use_sympy=self.use_sympy)
@@ -540,7 +540,7 @@ class SBMLDiff:
             for reaction in model.select('reaction'):
 
                 # skip degredation or translation reactions
-                if "sboTerm" in reaction.attrs.keys() and reaction.attrs["sboTerm"] in ["SBO:0000184", "SBO:0000179"]:
+                if "sboTerm" in list(reaction.attrs.keys()) and reaction.attrs["sboTerm"] in ["SBO:0000184", "SBO:0000179"]:
                     continue
 
                 reactant_list = reaction.select_one("listOfReactants")
@@ -556,7 +556,7 @@ class SBMLDiff:
             # Now loop through reactions, identifying those that should be elided
             for reaction in model.select('reaction'):
 
-                if "sboTerm" not in reaction.attrs.keys() or reaction.attrs["sboTerm"] != "SBO:0000184":
+                if "sboTerm" not in list(reaction.attrs.keys()) or reaction.attrs["sboTerm"] != "SBO:0000184":
                     continue
 
                 # if reaction has different kineticLaw in different models, don't elide it
@@ -630,7 +630,7 @@ class SBMLDiff:
 
                 s = model.select_one("listOfSpecies").find(id=species)
                 is_boundary = ""
-                if "boundaryCondition" in s.attrs.keys():
+                if "boundaryCondition" in list(s.attrs.keys()):
                     is_boundary = s.attrs["boundaryCondition"]
 
                 species_name = get_species_name(model, species)
@@ -657,7 +657,7 @@ class SBMLDiff:
         """
 
         self.check_model_supported()
-        self.models = map(lambda x: inline_all_functions(x), self.models)
+        self.models = [inline_all_functions(x) for x in self.models]
 
         if self.align:
             align_models(self.models)
@@ -671,7 +671,7 @@ class SBMLDiff:
         compartment_ids = set()
         for model_num, model in enumerate(self.models):
             for compartment in model.select('compartment'):
-                if "id" in compartment.attrs.keys():
+                if "id" in list(compartment.attrs.keys()):
                     compartment_ids.add(compartment.attrs["id"])
 
         self.diff_object.check_compartment_exists("NONE") # Is this necessary?
@@ -787,16 +787,16 @@ class SBMLDiff:
             species_list = species_list.union(species)
 
             for s in species:
-                if s not in models_containing_species.keys():
+                if s not in list(models_containing_species.keys()):
                     models_containing_species[s] = set()
                 models_containing_species[s].add(model_num)
 
                 species_object = model.select_one("listOfSpecies").find(id=s)
                 is_boundary = ""
-                if "boundaryCondition" in species_object.attrs.keys():
+                if "boundaryCondition" in list(species_object.attrs.keys()):
                     is_boundary = species_object.attrs["boundaryCondition"]
 
-                if s not in is_boundary_species.keys():
+                if s not in list(is_boundary_species.keys()):
                     is_boundary_species[s] = is_boundary
                 elif is_boundary_species[s] != is_boundary:
                     is_boundary_species[s] = '?'
@@ -888,16 +888,16 @@ class SBMLDiff:
             interactions.pop(s)
 
             for s2 in species_list:
-                if s2 in interactions.keys():
+                if s2 in list(interactions.keys()):
                     interactions[s2].pop(s)
 
         return interactions
 
     def draw_modified_params(self):
-        for param_id in self.modified_params.keys():
+        for param_id in list(self.modified_params.keys()):
             model_set = list(self.modified_params[param_id])
             name = param_id
             param = self.models[model_set[0]].find(id=param_id)
-            if "name" in param.attrs.keys():
+            if "name" in list(param.attrs.keys()):
                 name = param.attrs["name"]
             self.diff_object.add_param_node(param_id, name, model_set)

@@ -1,4 +1,5 @@
 import collections
+from functools import reduce
 
 
 class DiffObject:
@@ -13,7 +14,7 @@ class DiffObject:
         return self.compartments[compartment_id]
 
     def check_compartment_exists(self, compartment):
-        if compartment not in self.compartments.keys():
+        if compartment not in list(self.compartments.keys()):
             self.add_compartment(compartment)
         return self.compartments[compartment]
 
@@ -35,7 +36,7 @@ class DiffCompartment:
 
     def add_species(self, species_id, is_boundary, species_name, elided, model_num):
 
-        if species_id not in self.species.keys():
+        if species_id not in list(self.species.keys()):
             self.species[species_id] = DiffElement()
 
         self.species[species_id].add({"species_id": species_id, "is_boundary": is_boundary, "species_name": species_name,
@@ -46,7 +47,7 @@ class DiffCompartment:
                                     "arrow_direction": arrow_direction}, model_num)
 
     def add_reaction(self, reaction_id, rate_law, reaction_name, converted_rate_law, is_fast, is_irreversible, is_transcription, model_num):
-        if reaction_id not in self.reactions.keys():
+        if reaction_id not in list(self.reactions.keys()):
             self.reactions[reaction_id] = DiffReaction(reaction_id)
 
         self.reactions[reaction_id].add_instance(rate_law, reaction_name, converted_rate_law, is_fast, is_irreversible, is_transcription, model_num)
@@ -74,7 +75,7 @@ class DiffEvent:
         self.trigger_params = DiffElement()
 
     def check_target_exists(self, target):
-        if target not in self.assignments.keys():
+        if target not in list(self.assignments.keys()):
             self.assignments[target] = DiffEventAssignment()
 
     def set_event(self, event_hash, event_name, model_set):
@@ -145,12 +146,12 @@ class DiffReaction:
                                 "is_irreversible": is_irreversible, "is_transcription": is_transcription}, model_num)
 
     def add_reactant_arrow(self, reaction_id, reactant, stoich, model_num):
-        if reactant not in self.reactant_arrows.keys():
+        if reactant not in list(self.reactant_arrows.keys()):
             self.reactant_arrows[reactant] = DiffElement()
         self.reactant_arrows[reactant].add({"reaction_id": reaction_id, "reactant": reactant, "stoich": stoich}, model_num)
 
     def add_product_arrow(self, reaction_id, product, stoich, model_num):
-        if product not in self.product_arrows.keys():
+        if product not in list(self.product_arrows.keys()):
             self.product_arrows[product] = DiffElement()
 
         self.product_arrows[product].add({"reaction_id": reaction_id, "product": product, "stoich": stoich}, model_num)
@@ -161,12 +162,12 @@ class DiffReaction:
                  "reaction_name": reaction_name, "converted_law": converted_law, "product_status": product_status}, model_num)
 
     def add_transcription_product_arrow(self, reaction_id, product, stoich, model_num):
-        if product not in self.transcription_product_arrows.keys():
+        if product not in list(self.transcription_product_arrows.keys()):
             self.transcription_product_arrows[product] = DiffElement()
         self.transcription_product_arrows[product].add({"reaction_id": reaction_id, "product": product, "stoich": stoich}, model_num)
 
     def add_parameter_arrow(self, reaction_id, param, arrow_direction, model_num):
-        if param not in self.parameter_arrows.keys():
+        if param not in list(self.parameter_arrows.keys()):
             self.parameter_arrows[param] = DiffElement()
 
         self.parameter_arrows[param].add({"reaction_id": reaction_id, "param": param, "arrow_direction": arrow_direction}, model_num)
@@ -178,18 +179,18 @@ class DiffElement:
 
     def add(self, data_tuple, model_num):
         data_tuple = FrozenDict(data_tuple)
-        if data_tuple not in self.record.keys():
+        if data_tuple not in list(self.record.keys()):
             self.record[data_tuple] = set()
         self.record[data_tuple].add(model_num)
 
     def get_models(self):
-        return list(reduce(lambda x,y: x.union(self.record[y]), self.record.keys(), set()))
+        return list(reduce(lambda x,y: x.union(self.record[y]), list(self.record.keys()), set()))
 
     def get_data(self):
-        return self.record.keys()
+        return list(self.record.keys())
 
     def all_equal(self):
-        return len(self.record.values()) == 1
+        return len(list(self.record.values())) == 1
 
     def compare(self):
         if self.all_equal():
@@ -213,7 +214,7 @@ class DiffElement:
 
         model_set = set()
         for data_tuple in self.record:
-            if attribute_name in data_tuple.keys() and data_tuple[attribute_name] == value:
+            if attribute_name in list(data_tuple.keys()) and data_tuple[attribute_name] == value:
                 model_set = model_set.union(self.record[data_tuple])
         return model_set
 
@@ -233,4 +234,4 @@ class FrozenDict(collections.Mapping):
         return self._d[key]
 
     def __hash__(self):
-        return hash(tuple(sorted(self._d.iteritems())))
+        return hash(tuple(sorted(self._d.items())))
